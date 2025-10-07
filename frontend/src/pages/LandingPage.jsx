@@ -123,7 +123,7 @@ const LandingPage = () => {
   </div>
 
   <div 
-    className="absolute bottom-8 transform -translate-x-1/2 animate-bounce z-10 cursor-pointer hover:scale-110 transition-transform"
+    className="absolute bottom-8 justify-center transform -translate-x-1/2 animate-bounce z-10 cursor-pointer hover:scale-110 transition-transform"
     onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
   >
     <ChevronDown className="w-12 h-12 text-blue-900" strokeWidth={3} />
