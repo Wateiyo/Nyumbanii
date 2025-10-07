@@ -466,15 +466,17 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <h3 className="font-bold text-lg mb-4">Karibu Nyumbanii</h3>
-              <p className="text-gray-400">Bridging the gap between landlords and tenants across Kenya.</p>
+              <h3 className="font-bold text-lg mb-4"> <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
+            </div> Karibu Nyumbanii</h3>
+              <p className="text-gray-400">Bridging the gap between landlords and tenants.</p>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <button onClick={() => navigate('/listings')} className="hover:text-white font-medium transition-colors">Listings</button>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
               </ul>
             </div>
             <div>
@@ -494,7 +496,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 Karibu Nyumbanii. All rights reserved.</p>
+            <p>&copy; 2025 Nyumbanii. All rights reserved.</p>
           </div>
         </div>
       </footer>
