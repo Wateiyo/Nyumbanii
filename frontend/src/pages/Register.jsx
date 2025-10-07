@@ -416,7 +416,7 @@ const Register = ({ onNavigateHome, onRegisterSuccess }) => {
                 className="w-full h-auto rounded-3xl shadow-2xl"
               />
               <div className="mt-8 text-center">
-                <h2 className="text-3xl font-bold text-white mb-4">Manage Properties Easily</h2>
+                <h2 className="text-3xl font-bold text-transparent mb-4">Manage Properties Easily</h2>
                 <p className="text-blue-100 text-lg">Access your dashboard, track rent payments, and communicate with tenants all in one place.</p>
               </div>
             </div>
