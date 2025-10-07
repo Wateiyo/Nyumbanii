@@ -20,7 +20,13 @@ import {
   CalendarCheck,
   Send,
   MapPin,
-  Camera
+  Camera,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Bed,
+  Bath,
+  Square
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -34,7 +40,10 @@ const LandlordDashboard = () => {
   const [showTenantModal, setShowTenantModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showListingModal, setShowListingModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const [passwordData, setPasswordData] = useState({
     current: '',
@@ -76,6 +85,19 @@ const LandlordDashboard = () => {
     amount: '',
     dueDate: '',
     method: ''
+  });
+  
+  const [newListing, setNewListing] = useState({
+    property: '',
+    unit: '',
+    bedrooms: '',
+    bathrooms: '',
+    area: '',
+    rent: '',
+    deposit: '',
+    description: '',
+    amenities: '',
+    images: []
   });
   
   const [newMemo, setNewMemo] = useState({
@@ -125,6 +147,49 @@ const LandlordDashboard = () => {
   const [memos, setMemos] = useState([
     { id: 1, title: 'Water Maintenance Notice', message: 'Water will be shut off on Sunday, October 13th from 8 AM to 2 PM for routine maintenance. Please plan accordingly.', priority: 'high', targetAudience: 'all', sentBy: 'Tom Doe', sentAt: '2025-10-04 10:30', recipients: 18 },
     { id: 2, title: 'Rent Payment Reminder', message: 'Friendly reminder that rent for October is due by the 5th. Please ensure timely payment to avoid late fees.', priority: 'normal', targetAudience: 'all', sentBy: 'Tom Doe', sentAt: '2025-10-01 09:00', recipients: 18 }
+  ]);
+
+  const [listings, setListings] = useState([
+    { 
+      id: 1, 
+      property: 'Sunset Apartments', 
+      unit: '3B',
+      bedrooms: 2, 
+      bathrooms: 2, 
+      area: 85, 
+      rent: 45000,
+      deposit: 45000,
+      description: 'Beautiful 2-bedroom apartment with modern finishes and great natural light.',
+      amenities: ['Parking', 'Security', 'Water', 'Backup Generator'],
+      images: [
+        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+        'https://images.unsplash.com/photo-1556912173-3bb406ef7e77?w=800'
+      ],
+      status: 'available',
+      postedDate: '2025-10-01'
+    },
+    { 
+      id: 2, 
+      property: 'Garden View', 
+      unit: '5A',
+      bedrooms: 3, 
+      bathrooms: 2, 
+      area: 110, 
+      rent: 52000,
+      deposit: 52000,
+      description: 'Spacious 3-bedroom unit with garden view and modern kitchen.',
+      amenities: ['Gym', 'Swimming Pool', 'Parking', 'Security'],
+      images: [
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
+        'https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=800',
+        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800',
+        'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800'
+      ],
+      status: 'available',
+      postedDate: '2025-09-28'
+    }
   ]);
 
   const [profileSettings, setProfileSettings] = useState({
@@ -327,6 +392,53 @@ const LandlordDashboard = () => {
     }
   };
 
+  const handleAddListing = () => {
+    if (newListing.property && newListing.unit && newListing.bedrooms && newListing.rent) {
+      const listing = {
+        id: listings.length + 1,
+        property: newListing.property,
+        unit: newListing.unit,
+        bedrooms: parseInt(newListing.bedrooms),
+        bathrooms: parseInt(newListing.bathrooms) || 1,
+        area: parseInt(newListing.area) || 0,
+        rent: parseInt(newListing.rent),
+        deposit: parseInt(newListing.deposit) || parseInt(newListing.rent),
+        description: newListing.description,
+        amenities: newListing.amenities.split(',').map(a => a.trim()).filter(a => a),
+        images: newListing.images.length > 0 ? newListing.images : [
+          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
+        ],
+        status: 'available',
+        postedDate: new Date().toISOString().split('T')[0]
+      };
+      setListings([...listings, listing]);
+      setNewListing({ property: '', unit: '', bedrooms: '', bathrooms: '', area: '', rent: '', deposit: '', description: '', amenities: '', images: [] });
+      setShowListingModal(false);
+      alert('Listing published successfully!');
+    } else {
+      alert('Please fill in all required fields');
+    }
+  };
+
+  const handleDeleteListing = (id) => {
+    if (window.confirm('Are you sure you want to delete this listing?')) {
+      setListings(listings.filter(l => l.id !== id));
+      alert('Listing deleted successfully!');
+    }
+  };
+
+  const handleImageUrlAdd = () => {
+    const url = prompt('Enter image URL:');
+    if (url) {
+      setNewListing({...newListing, images: [...newListing.images, url]});
+    }
+  };
+
+  const handleRemoveImage = (index) => {
+    setNewListing({...newListing, images: newListing.images.filter((_, i) => i !== index)});
+  };
+
   const handleRecordPayment = (paymentId) => {
     const today = new Date().toISOString().split('T')[0];
     setPayments(payments.map(payment => 
@@ -369,13 +481,28 @@ const LandlordDashboard = () => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
-          {['dashboard', 'properties', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'memos', 'settings'].map((view) => {
-            const icons = { dashboard: Home, properties: Building, viewings: Eye, calendar: Calendar, maintenance: Wrench, tenants: Users, payments: DollarSign, memos: Mail, settings: Settings };
+          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'memos', 'settings'].map((view) => {
+            const icons = { 
+              dashboard: Home, 
+              properties: Building, 
+              listings: Eye,
+              viewings: CalendarCheck, 
+              calendar: Calendar, 
+              maintenance: Wrench, 
+              tenants: Users, 
+              payments: DollarSign, 
+              memos: Mail, 
+              settings: Settings 
+            };
             const Icon = icons[view];
+            const labels = {
+              listings: 'Browse Listings',
+              memos: 'Updates & Memos'
+            };
             return (
               <button key={view} onClick={() => setCurrentView(view)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}>
                 <Icon className="w-5 h-5" />
-                {sidebarOpen && <span className="capitalize">{view === 'memos' ? 'Updates & Memos' : view}</span>}
+                {sidebarOpen && <span className="capitalize">{labels[view] || view}</span>}
               </button>
             );
           })}
@@ -573,6 +700,93 @@ const LandlordDashboard = () => {
               </div>
             </div>
           )}
+
+          {currentView === 'listings' && (
+                      <div className="bg-white rounded-xl shadow-sm p-6">
+                        <div className="flex justify-between items-center mb-6">
+                          <div>
+                            <h2 className="text-xl font-bold text-gray-900">Property Listings</h2>
+                            <p className="text-sm text-gray-600">Manage your available units for rent</p>
+                          </div>
+                          <button onClick={() => setShowListingModal(true)} className="flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition">
+                            <Plus className="w-5 h-5" />Add Listing
+                          </button>
+                        </div>
+          
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {listings.map(listing => (
+                            <div key={listing.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition">
+                              <div className="relative h-48 bg-gray-200">
+                                {listing.images && listing.images.length > 0 ? (
+                                  <img src={listing.images[0]} alt={`${listing.property} - ${listing.unit}`} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                                    <Home className="w-16 h-16 text-[#003366] opacity-50" />
+                                  </div>
+                                )}
+                                <div className="absolute top-3 right-3">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${listing.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                    {listing.status}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="p-5">
+                                <h3 className="font-bold text-gray-900 text-lg mb-1">{listing.property}</h3>
+                                <p className="text-sm text-gray-600 mb-3">Unit {listing.unit}</p>
+                                
+                                <div className="flex items-center gap-4 mb-3 text-sm text-gray-600">
+                                  <div className="flex items-center gap-1">
+                                    <Bed className="w-4 h-4" /><span>{listing.bedrooms} bed</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Bath className="w-4 h-4" /><span>{listing.bathrooms} bath</span>
+                                  </div>
+                                  {listing.area > 0 && (
+                                    <div className="flex items-center gap-1">
+                                      <Square className="w-4 h-4" /><span>{listing.area} m²</span>
+                                    </div>
+                                  )}
+                                </div>
+          
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                  {listing.amenities.slice(0, 3).map((amenity, idx) => (
+                                    <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">{amenity}</span>
+                                  ))}
+                                  {listing.amenities.length > 3 && (
+                                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">+{listing.amenities.length - 3} more</span>
+                                  )}
+                                </div>
+          
+                                <div className="mb-4">
+                                  <p className="text-sm text-gray-600">Monthly Rent</p>
+                                  <p className="text-2xl font-bold text-[#003366]">KES {listing.rent.toLocaleString()}</p>
+                                </div>
+          
+                                <div className="flex gap-2">
+                                  <button onClick={() => { setSelectedListing(listing); setCurrentImageIndex(0); }} className="flex-1 px-3 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition text-sm">
+                                    View Details
+                                  </button>
+                                  <button onClick={() => handleDeleteListing(listing.id)} className="p-2 border border-red-600 text-red-600 hover:bg-red-50 rounded-lg transition">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+          
+                        {listings.length === 0 && (
+                          <div className="text-center py-12">
+                            <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-600 mb-4">No listings yet. Create your first listing to attract tenants!</p>
+                            <button onClick={() => setShowListingModal(true)} className="inline-flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-6 py-3 rounded-lg font-semibold transition">
+                              <Plus className="w-5 h-5" />Add Your First Listing
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+          
 
           {currentView === 'calendar' && (
             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -1314,7 +1528,7 @@ const LandlordDashboard = () => {
           </div>
         </div>
       )}
-
+      
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
@@ -1394,6 +1608,195 @@ const LandlordDashboard = () => {
           </div>
         </div>
       )}
+      {showListingModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">Add New Listing</h3>
+                    <button onClick={() => setShowListingModal(false)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
+                        <select value={newListing.property} onChange={(e) => setNewListing({...newListing, property: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
+                          <option value="">Select Property</option>
+                          {properties.map(prop => (<option key={prop.id} value={prop.name}>{prop.name}</option>))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number *</label>
+                        <input type="text" value={newListing.unit} onChange={(e) => setNewListing({...newListing, unit: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 4A" />
+                      </div>
+                    </div>
+      
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms *</label>
+                        <input type="number" value={newListing.bedrooms} onChange={(e) => setNewListing({...newListing, bedrooms: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="2" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
+                        <input type="number" value={newListing.bathrooms} onChange={(e) => setNewListing({...newListing, bathrooms: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="2" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²)</label>
+                        <input type="number" value={newListing.area} onChange={(e) => setNewListing({...newListing, area: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="85" />
+                      </div>
+                    </div>
+      
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rent (KES) *</label>
+                        <input type="number" value={newListing.rent} onChange={(e) => setNewListing({...newListing, rent: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="45000" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Security Deposit (KES)</label>
+                        <input type="number" value={newListing.deposit} onChange={(e) => setNewListing({...newListing, deposit: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="45000" />
+                      </div>
+                    </div>
+      
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                      <textarea value={newListing.description} onChange={(e) => setNewListing({...newListing, description: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Describe the unit features and highlights..." rows={3} />
+                    </div>
+      
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Amenities (comma-separated)</label>
+                      <input type="text" value={newListing.amenities} onChange={(e) => setNewListing({...newListing, amenities: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Parking, Security, Water, Backup Generator" />
+                    </div>
+      
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
+                      <div className="space-y-2">
+                        {newListing.images.map((img, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                            <img src={img} alt={`Preview ${idx + 1}`} className="w-16 h-16 object-cover rounded" />
+                            <p className="flex-1 text-sm text-gray-600 truncate">{img}</p>
+                            <button onClick={() => handleRemoveImage(idx)} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <button onClick={handleImageUrlAdd} className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#003366] hover:bg-blue-50 transition text-gray-600 hover:text-[#003366] font-semibold">
+                          + Add Image URL
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button onClick={() => setShowListingModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
+                    <button onClick={handleAddListing} className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Publish Listing</button>
+                  </div>
+                </div>
+              </div>
+            )}
+      
+            {selectedListing && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">{selectedListing.property} - Unit {selectedListing.unit}</h3>
+                    <button onClick={() => setSelectedListing(null)}><X className="w-6 h-6 text-gray-500" /></button>
+                  </div>
+      
+                  <div className="mb-6">
+                    <div className="relative h-96 bg-gray-200 rounded-xl overflow-hidden mb-4">
+                      {selectedListing.images && selectedListing.images.length > 0 ? (
+                        <>
+                          <img src={selectedListing.images[currentImageIndex]} alt={`${selectedListing.property}`} className="w-full h-full object-cover" />
+                          {selectedListing.images.length > 1 && (
+                            <>
+                              <button onClick={() => setCurrentImageIndex(currentImageIndex > 0 ? currentImageIndex - 1 : selectedListing.images.length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full flex items-center justify-center transition">
+                                <ChevronLeft className="w-6 h-6" />
+                              </button>
+                              <button onClick={() => setCurrentImageIndex(currentImageIndex < selectedListing.images.length - 1 ? currentImageIndex + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full flex items-center justify-center transition">
+                                <ChevronRight className="w-6 h-6" />
+                              </button>
+                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                                {selectedListing.images.map((_, idx) => (
+                                  <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`w-2 h-2 rounded-full transition ${idx === currentImageIndex ? 'bg-white w-6' : 'bg-white bg-opacity-50'}`} />
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                          <Home className="w-24 h-24 text-[#003366] opacity-50" />
+                        </div>
+                      )}
+                    </div>
+      
+                    <div className="grid grid-cols-4 gap-2 mb-6">
+                      {selectedListing.images && selectedListing.images.slice(0, 4).map((img, idx) => (
+                        <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`h-20 rounded-lg overflow-hidden border-2 ${idx === currentImageIndex ? 'border-[#003366]' : 'border-transparent'}`}>
+                          <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+      
+                    <div className="grid md:grid-cols-3 gap-4 mb-6">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Bed className="w-5 h-5 text-[#003366]" />
+                          <span className="font-semibold text-gray-900">Bedrooms</span>
+                        </div>
+                        <p className="text-2xl font-bold text-[#003366]">{selectedListing.bedrooms}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Bath className="w-5 h-5 text-[#003366]" />
+                          <span className="font-semibold text-gray-900">Bathrooms</span>
+                        </div>
+                        <p className="text-2xl font-bold text-[#003366]">{selectedListing.bathrooms}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Square className="w-5 h-5 text-[#003366]" />
+                          <span className="font-semibold text-gray-900">Area</span>
+                        </div>
+                        <p className="text-2xl font-bold text-[#003366]">{selectedListing.area} m²</p>
+                      </div>
+                    </div>
+      
+                    {selectedListing.description && (
+                      <div className="mb-6">
+                        <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                        <p className="text-gray-700">{selectedListing.description}</p>
+                      </div>
+                    )}
+      
+                    <div className="mb-6">
+                      <h4 className="font-semibold text-gray-900 mb-3">Amenities</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedListing.amenities.map((amenity, idx) => (
+                          <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg">{amenity}</span>
+                        ))}
+                      </div>
+                    </div>
+      
+                    <div className="border-t border-gray-200 pt-6">
+                      <div className="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                          <p className="text-gray-600 mb-1">Monthly Rent</p>
+                          <p className="text-4xl font-bold text-[#003366]">KES {selectedListing.rent.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 mb-1">Security Deposit</p>
+                          <p className="text-2xl font-bold text-gray-900">KES {selectedListing.deposit.toLocaleString()}</p>
+                        </div>
+                      </div>
+      
+                      <div className="flex gap-3">
+                        <button className="flex-1 px-4 py-3 border-2 border-[#003366] text-[#003366] hover:bg-blue-50 rounded-lg font-semibold transition">Edit Listing</button>
+                        <button onClick={() => handleDeleteListing(selectedListing.id)} className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition">Delete Listing</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
     </div>
   );
 };

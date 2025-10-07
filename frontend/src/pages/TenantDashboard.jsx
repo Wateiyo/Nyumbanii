@@ -25,7 +25,9 @@ import {
   Upload,
   Send,
   Camera,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const TenantDashboard = () => {
@@ -39,6 +41,7 @@ const TenantDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedListing, setSelectedListing] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const [passwordData, setPasswordData] = useState({
     current: '',
@@ -113,9 +116,54 @@ const TenantDashboard = () => {
   });
 
   const availableListings = [
-    { id: 1, name: 'Garden View Apartments', location: 'Kilimani, Nairobi', rent: 38000, bedrooms: 2, bathrooms: 2, area: 85, amenities: ['Parking', 'Security', 'Water'] },
-    { id: 2, name: 'Riverside Towers', location: 'Parklands, Nairobi', rent: 52000, bedrooms: 3, bathrooms: 2, area: 110, amenities: ['Gym', 'Swimming Pool', 'Parking'] },
-    { id: 3, name: 'Palm Court', location: 'Karen, Nairobi', rent: 65000, bedrooms: 3, bathrooms: 3, area: 140, amenities: ['Garden', 'Parking', 'Security', 'Backup Generator'] }
+    { 
+      id: 1, 
+      name: 'Garden View Apartments', 
+      location: 'Kilimani, Nairobi', 
+      rent: 38000, 
+      bedrooms: 2, 
+      bathrooms: 2, 
+      area: 85, 
+      amenities: ['Parking', 'Security', 'Water'],
+      images: [
+        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+        'https://images.unsplash.com/photo-1556912173-3bb406ef7e77?w=800'
+      ]
+    },
+    { 
+      id: 2, 
+      name: 'Riverside Towers', 
+      location: 'Parklands, Nairobi', 
+      rent: 52000, 
+      bedrooms: 3, 
+      bathrooms: 2, 
+      area: 110, 
+      amenities: ['Gym', 'Swimming Pool', 'Parking'],
+      images: [
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
+        'https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=800',
+        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800',
+        'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800'
+      ]
+    },
+    { 
+      id: 3, 
+      name: 'Palm Court', 
+      location: 'Karen, Nairobi', 
+      rent: 65000, 
+      bedrooms: 3, 
+      bathrooms: 3, 
+      area: 140, 
+      amenities: ['Garden', 'Parking', 'Security', 'Backup Generator'],
+      images: [
+        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
+        'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+        'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=800',
+        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800'
+      ]
+    }
   ];
 
   const propertyInfo = {
@@ -463,9 +511,15 @@ const TenantDashboard = () => {
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredListings.map((listing) => (
-                  <div key={listing.id} onClick={() => setSelectedListing(listing)} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition cursor-pointer">
-                    <div className="h-48 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                      <Home className="w-16 h-16 text-[#003366] opacity-50" />
+                  <div key={listing.id} onClick={() => { setSelectedListing(listing); setCurrentImageIndex(0); }} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition cursor-pointer">
+                    <div className="relative h-48 bg-gray-200">
+                      {listing.images && listing.images.length > 0 ? (
+                        <img src={listing.images[0]} alt={listing.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                          <Home className="w-16 h-16 text-[#003366] opacity-50" />
+                        </div>
+                      )}
                     </div>
                     <div className="p-6">
                       <h3 className="font-bold text-gray-900 text-lg mb-2">{listing.name}</h3>
@@ -491,7 +545,7 @@ const TenantDashboard = () => {
                           <p className="text-2xl font-bold text-[#003366]">KES {(listing.rent / 1000).toFixed(0)}K</p>
                           <p className="text-xs text-gray-500">per month</p>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); setSelectedListing(listing); }} className="bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedListing(listing); setCurrentImageIndex(0); }} className="bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2">
                           <Eye className="w-4 h-4" />View
                         </button>
                       </div>
@@ -862,8 +916,39 @@ const TenantDashboard = () => {
             </div>
 
             <div className="mb-6">
-              <div className="h-64 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center mb-4">
-                <Home className="w-24 h-24 text-[#003366] opacity-50" />
+              <div className="relative h-96 bg-gray-200 rounded-xl overflow-hidden mb-4">
+                {selectedListing.images && selectedListing.images.length > 0 ? (
+                  <>
+                    <img src={selectedListing.images[currentImageIndex]} alt={selectedListing.name} className="w-full h-full object-cover" />
+                    {selectedListing.images.length > 1 && (
+                      <>
+                        <button onClick={() => setCurrentImageIndex(currentImageIndex > 0 ? currentImageIndex - 1 : selectedListing.images.length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full flex items-center justify-center transition">
+                          <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <button onClick={() => setCurrentImageIndex(currentImageIndex < selectedListing.images.length - 1 ? currentImageIndex + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full flex items-center justify-center transition">
+                          <ChevronRight className="w-6 h-6" />
+                        </button>
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                          {selectedListing.images.map((_, idx) => (
+                            <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`w-2 h-2 rounded-full transition ${idx === currentImageIndex ? 'bg-white w-6' : 'bg-white bg-opacity-50'}`} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                    <Home className="w-24 h-24 text-[#003366] opacity-50" />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 mb-6">
+                {selectedListing.images && selectedListing.images.slice(0, 4).map((img, idx) => (
+                  <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`h-20 rounded-lg overflow-hidden border-2 ${idx === currentImageIndex ? 'border-[#003366]' : 'border-transparent'}`}>
+                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
               
               <div className="flex items-center text-gray-600 mb-4">
