@@ -11,8 +11,73 @@ import {
   Building,
   Users,
   CheckCircle,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+
+const ImageCarousel = ({ images, alt }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const goToPrevious = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prevIndex) => 
+      prevIndex === 0 ? images.length - 1 : prevIndex - 1
+    );
+  };
+
+  const goToNext = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prevIndex) => 
+      prevIndex === images.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  return (
+    <div className="relative h-48 overflow-hidden group">
+      <img 
+        src={images[currentIndex]} 
+        alt={`${alt} - Image ${currentIndex + 1}`}
+        className="w-full h-full object-cover"
+      />
+      
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={goToPrevious}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          <button
+            onClick={goToNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(index);
+                }}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  index === currentIndex 
+                    ? 'bg-white w-6' 
+                    : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const PropertyListings = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,7 +92,6 @@ const PropertyListings = () => {
     time: ''
   });
 
-  // In production, listings will come from API/database via landlord dashboard
   const [listings] = useState([
     {
       id: 1,
@@ -41,7 +105,12 @@ const PropertyListings = () => {
       landlord: 'Tom Doe',
       phone: '+254 712 345 678',
       email: 'tom@nyumbanii.co.ke',
-      image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop'
+      ],
       listed: '2025-10-01'
     },
     {
@@ -56,7 +125,11 @@ const PropertyListings = () => {
       landlord: 'Tom Doe',
       phone: '+254 712 345 678',
       email: 'tom@nyumbanii.co.ke',
-      image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop'
+      ],
       listed: '2025-09-28'
     },
     {
@@ -71,7 +144,12 @@ const PropertyListings = () => {
       landlord: 'Sarah Johnson',
       phone: '+254 723 456 789',
       email: 'sarah@nyumbanii.co.ke',
-      image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=800&h=600&fit=crop'
+      ],
       listed: '2025-10-02'
     },
     {
@@ -86,7 +164,11 @@ const PropertyListings = () => {
       landlord: 'David Kimani',
       phone: '+254 734 567 890',
       email: 'david@nyumbanii.co.ke',
-      image: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=800&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600607687644-c7171b42498b?w=800&h=600&fit=crop'
+      ],
       listed: '2025-09-30'
     },
     {
@@ -101,7 +183,12 @@ const PropertyListings = () => {
       landlord: 'Mary Wanjiru',
       phone: '+254 745 678 901',
       email: 'mary@nyumbanii.co.ke',
-      image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&h=600&fit=crop'
+      ],
       listed: '2025-10-03'
     },
     {
@@ -116,12 +203,128 @@ const PropertyListings = () => {
       landlord: 'John Omondi',
       phone: '+254 756 789 012',
       email: 'john@nyumbanii.co.ke',
-      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&h=600&fit=crop'
+      ],
       listed: '2025-09-27'
+    },
+    {
+      id: 7,
+      propertyName: 'Nyali Beach Villas',
+      location: 'Nyali, Mombasa',
+      availableUnits: 3,
+      bedrooms: '3-4',
+      rent: '85000-110000',
+      amenities: ['Beach Access', 'Pool', 'Security', 'Parking', 'Ocean View'],
+      description: 'Stunning beachfront villas with direct beach access and breathtaking ocean views.',
+      landlord: 'Ahmed Hassan',
+      phone: '+254 720 123 456',
+      email: 'ahmed@nyumbanii.co.ke',
+      images: [
+        'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1615874959474-d609969a20ed?w=800&h=600&fit=crop'
+      ],
+      listed: '2025-10-04'
+    },
+    {
+      id: 8,
+      propertyName: 'Eldoret Heights',
+      location: 'Pioneer, Eldoret',
+      availableUnits: 6,
+      bedrooms: '2',
+      rent: '25000',
+      amenities: ['Parking', 'Security', 'Water Supply'],
+      description: 'Comfortable and affordable apartments in the growing town of Eldoret.',
+      landlord: 'Grace Chebet',
+      phone: '+254 732 456 789',
+      email: 'grace@nyumbanii.co.ke',
+      images: [
+        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop'
+      ],
+      listed: '2025-10-05'
+    },
+    {
+      id: 9,
+      propertyName: 'Kisumu Lakeside Apartments',
+      location: 'Milimani, Kisumu',
+      availableUnits: 4,
+      bedrooms: '1-2',
+      rent: '30000-45000',
+      amenities: ['Lake View', 'Parking', 'Security', 'Gym'],
+      description: 'Modern apartments with stunning views of Lake Victoria and excellent facilities.',
+      landlord: 'Peter Ochieng',
+      phone: '+254 743 567 890',
+      email: 'peter@nyumbanii.co.ke',
+      images: [
+        'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop'
+      ],
+      listed: '2025-09-29'
+    },
+    {
+      id: 10,
+      propertyName: 'Nakuru Garden Estate',
+      location: 'Milimani, Nakuru',
+      availableUnits: 2,
+      bedrooms: '3',
+      rent: '40000',
+      amenities: ['Garden', 'Parking', 'Security', 'Playground'],
+      description: 'Family-friendly apartments with beautiful gardens in peaceful Nakuru.',
+      landlord: 'Jane Wambui',
+      phone: '+254 754 678 901',
+      email: 'jane@nyumbanii.co.ke',
+      images: [
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop'
+      ],
+      listed: '2025-10-06'
+    },
+    {
+      id: 11,
+      propertyName: 'Thika Road Mall Residences',
+      location: 'Thika Road, Nairobi',
+      availableUnits: 8,
+      bedrooms: 'Studio-1',
+      rent: '22000-32000',
+      amenities: ['Mall Access', 'Security', 'Parking', 'WiFi'],
+      description: 'Convenient apartments with direct access to shopping mall and major highways.',
+      landlord: 'Michael Kariuki',
+      phone: '+254 765 789 012',
+      email: 'michael@nyumbanii.co.ke',
+      images: [
+        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&h=600&fit=crop'
+      ],
+      listed: '2025-10-07'
+    },
+    {
+      id: 12,
+      propertyName: 'Diani Beach Cottages',
+      location: 'Diani Beach, Kwale',
+      availableUnits: 2,
+      bedrooms: '2-3',
+      rent: '70000-95000',
+      amenities: ['Beach Access', 'Pool', 'Garden', 'Security', 'Ocean View'],
+      description: 'Tropical paradise cottages steps away from the pristine Diani Beach.',
+      landlord: 'Susan Mwende',
+      phone: '+254 776 890 123',
+      email: 'susan@nyumbanii.co.ke',
+      images: [
+        'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1615874959474-d609969a20ed?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop'
+      ],
+      listed: '2025-10-03'
     }
   ]);
 
-  const locations = ['all', 'Westlands', 'Kilimani', 'Parklands', 'Karen', 'CBD'];
+  const locations = ['all', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Kwale'];
 
   const filteredListings = listings.filter(listing => {
     const matchesSearch = listing.propertyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -168,7 +371,7 @@ const PropertyListings = () => {
       <div className="bg-[#003366] text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Find Your Perfect Home</h1>
-          <p className="text-xl text-blue-100 mb-8">Browse available properties across Nairobi</p>
+          <p className="text-xl text-blue-100 mb-8">Browse available properties across Kenya</p>
           
           {/* Search and Filter */}
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
@@ -217,13 +420,7 @@ const PropertyListings = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredListings.map(listing => (
               <div key={listing.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition overflow-hidden">
-                <div className="h-48 overflow-hidden">
-                  <img 
-                    src={listing.image} 
-                    alt={listing.propertyName}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
+                <ImageCarousel images={listing.images} alt={listing.propertyName} />
                 
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-3">
@@ -303,11 +500,7 @@ const PropertyListings = () => {
 
             <div className="p-6">
               <div className="h-64 rounded-lg overflow-hidden mb-6">
-                <img 
-                  src={selectedProperty.image} 
-                  alt={selectedProperty.propertyName}
-                  className="w-full h-full object-cover"
-                />
+                <ImageCarousel images={selectedProperty.images} alt={selectedProperty.propertyName} />
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mb-6">

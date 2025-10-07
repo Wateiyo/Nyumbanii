@@ -88,34 +88,47 @@ const LandingPage = () => {
         )}
       </nav>
 
-      <section id="home" className="pt-32 pb-20 px-4 relative">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="flex justify-center mb-8">
-              <img src="/images/hero.png" alt="Hero" className="w-24 h-24 md:w-32 md:h-32" />
-            </div>
+      <section id="home" className="pt-32 pb-20 px-4 relative overflow-hidden">
+  {/* Left decorative image */}
+  <div className="absolute left-0 top-1/3 -translate-y-1/2 w-48 md:w-64 lg:w-80 opacity-80 hidden lg:block">
+    <img src="/images/hero-left.png" alt="Decorative" className="w-full h-auto" />
+  </div>
+  
+  {/* Right decorative image */}
+  <div className="absolute right-0 top-1/3 -translate-y-1/2 w-48 md:w-64 lg:w-80 opacity-80 hidden lg:block">
+    <img src="/images/hero-right.png" alt="Decorative" className="w-full h-auto" />
+  </div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4">
-              Karibu <span className="text-blue-900">Nyumbanii</span>
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-gray-600 italic mb-8">Relax, we'll take it from here.</p>
+  <div className="max-w-7xl mx-auto relative z-10">
+    <div className="text-center max-w-4xl mx-auto">
+      <div className="flex justify-center mb-8">
+        <img src="/images/hero.png" alt="Hero" className="w-24 h-24 md:w-32 md:h-32" />
+      </div>
 
-            <p className="text-lg md:text-xl text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Bridging the gap between Landlords and Tenants, saving time, reducing costs, and keeping properties in tip-top condition.
-            </p>
+      <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4">
+        Karibu <br></br> <span className="text-blue-900">Nyumbanii</span>
+      </h1>
+      
+      <p className="text-xl md:text-2xl text-gray-600 italic mb-8">Relax, we'll take it from here.</p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-              <button onClick={() => navigate('/register')} className="bg-blue-900 hover:bg-blue-800 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all hover:shadow-lg hover:scale-105 w-full sm:w-auto">Register</button>
-              <button onClick={() => navigate('/login')} className="bg-white border-2 border-blue-900 text-blue-900 hover:bg-blue-50 px-8 py-4 rounded-lg text-lg font-semibold transition-all hover:shadow-lg w-full sm:w-auto">Login</button>
-            </div>
-          </div>
-        </div>
+      <p className="text-lg md:text-l text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
+        Bridging the gap between Landlords and Tenants, saving time, reducing costs, and keeping properties in tip-top condition.
+      </p>
 
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <ChevronDown className="w-12 h-12 text-blue-900" strokeWidth={3} />
-        </div>
-      </section>
+      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+        <button onClick={() => navigate('/register')} className="bg-blue-900 hover:bg-blue-800 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all hover:shadow-lg hover:scale-105 w-full sm:w-auto">Register</button>
+        <button onClick={() => navigate('/login')} className="bg-white border-2 border-blue-900 text-blue-900 hover:bg-blue-50 px-8 py-4 rounded-lg text-lg font-semibold transition-all hover:shadow-lg w-full sm:w-auto">Login</button>
+      </div>
+    </div>
+  </div>
+
+  <div 
+    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-10 cursor-pointer hover:scale-110 transition-transform"
+    onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+  >
+    <ChevronDown className="w-12 h-12 text-blue-900" strokeWidth={3} />
+  </div>
+</section>
 
       <section className="py-16 bg-blue-900 text-white">
         <div className="max-w-7xl mx-auto px-4">
