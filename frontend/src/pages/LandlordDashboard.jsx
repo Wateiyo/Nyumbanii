@@ -466,16 +466,9 @@ const LandlordDashboard = () => {
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[#003366] text-white transition-all duration-300 flex flex-col`}>
         <div className="p-6">
           <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
-            <svg width="40" height="40" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" fill="#ffffff"/>
-              <g transform="translate(50, 50)">
-                <path d="M -12 -5 L 0 -15 L 12 -5 L 12 0 L 10 0 L 0 -8 L -10 0 L -12 0 Z" fill="#003366"/>
-                <rect x="-10" y="0" width="20" height="15" fill="#003366" rx="1"/>
-                <rect x="-3" y="6" width="6" height="9" fill="white" rx="0.5"/>
-                <rect x="-8" y="3" width="3" height="3" fill="white" rx="0.3"/>
-                <rect x="5" y="3" width="3" height="3" fill="white" rx="0.3"/>
-              </g>
-            </svg>
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
+            </div>
             {sidebarOpen && <span className="text-xl font-bold">Nyumbanii</span>}
           </a>
         </div>
