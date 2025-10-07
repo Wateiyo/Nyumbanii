@@ -1,3 +1,6 @@
+# frontend/netlify.toml
+# Replace your existing netlify.toml with this
+
 [build]
   command = "npm run build"
   publish = "dist"
@@ -8,4 +11,8 @@
   status = 200
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "22.12.0"
+  NPM_VERSION = "10"
+
+# Since you're using Vite 7, you need Node 22.12+
+# Vite 7 requires Node.js version 22.12+ or 23.5+
