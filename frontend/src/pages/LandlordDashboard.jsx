@@ -26,12 +26,13 @@ import {
   ChevronRight,
   Bed,
   Bath,
-  Square
+  Square, 
+  Menu
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [sidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedViewing, setSelectedViewing] = useState(null);
   const [showMemoModal, setShowMemoModal] = useState(false);
@@ -463,15 +464,20 @@ const LandlordDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[#003366] text-white transition-all duration-300 flex flex-col`}>
-        <div className="p-6">
-          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
-            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-              <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
-            </div>
-            {sidebarOpen && <span className="text-xl font-bold">Nyumbanii</span>}
-          </a>
+      {/* Mobile overlay */}
+{sidebarOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
+)}
+
+<aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
+      <div className="p-6">
+        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+        <div className="flex items-center cursor-pointer">
+        <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
         </div>
+    <span className="text-xl font-bold">Nyumbanii</span>
+  </a>
+</div>
 
         <nav className="flex-1 px-4 space-y-2">
           {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'memos', 'settings'].map((view) => {
@@ -493,9 +499,9 @@ const LandlordDashboard = () => {
               memos: 'Updates & Memos'
             };
             return (
-              <button key={view} onClick={() => setCurrentView(view)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}>
+              <button key={view} onClick={() => { setCurrentView(view); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}>
                 <Icon className="w-5 h-5" />
-                {sidebarOpen && <span className="capitalize">{labels[view] || view}</span>}
+                <span className="capitalize text-sm">{labels[view] || view}</span>
               </button>
             );
           })}
@@ -504,24 +510,29 @@ const LandlordDashboard = () => {
         <div className="p-4 border-t border-[#002244]">
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#002244] transition text-red-300">
             <LogOut className="w-5 h-5" />
-            {sidebarOpen && <span>Logout</span>}
+            <span className="text-sm">Logout</span>
           </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col">
-        <header className="bg-white shadow-sm p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 capitalize">{currentView}</h1>
-              <p className="text-gray-600">Welcome back, {profileSettings.name.split(' ')[0]}!</p>
-            </div>
-            <div className="flex items-center gap-4">
+      <div className="flex-1 flex flex-col min-w-0">
+    <header className="bg-white shadow-sm p-4 lg:p-6">
+        <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+        <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
+        <Menu className="w-6 h-6 text-gray-600" />
+        </button>
+        <div>
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-900 capitalize">{currentView}</h1>
+        <p className="text-sm lg:text-base text-gray-600 hidden sm:block">Welcome back, {profileSettings.name.split(' ')[0]}!</p>
+        </div>
+         </div>
+            <div className="flex items-center gap-2 lg:gap-4">
               <div className="relative">
                 <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
-                  <Bell className="w-6 h-6 text-gray-600" />
+                  <Bell className="w-5 h-5 lg:w-6 lg:h-6 text-gray-600" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">{unreadCount}</span>
+                    <span className="absolute top-1 right-1 w-4 h-4 lg:w-5 lg:h-5 bg-red-500 rounded-full text-white text-[10px] lg:text-xs flex items-center justify-center">{unreadCount}</span>
                   )}
                 </button>
                 
@@ -549,16 +560,16 @@ const LandlordDashboard = () => {
           </div>
         </header>
 
-        <div className="p-6 flex-1 overflow-y-auto">
+        <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
           {currentView === 'dashboard' && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
                 {stats.map((stat, index) => (
                   <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-600 text-sm mb-1">{stat.label}</p>
-                        <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                        <p className="text-gray-600 text-xs sm:text-sm mb-1">{stat.label}</p>
+                        <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
                       </div>
                       <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
                         <stat.icon className="w-6 h-6" />
