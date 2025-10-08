@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Home, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
-const Register = ({ onNavigateHome, onRegisterSuccess }) => {
+const Register = () => {
+  const navigate = useNavigate();
+  const { register, signInWithGoogle } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('landlord');
@@ -17,11 +21,7 @@ const Register = ({ onNavigateHome, onRegisterSuccess }) => {
   });
 
   const handleNavigateHome = () => {
-    if (onNavigateHome) {
-      onNavigateHome();
-    } else {
-      window.location.href = '/';
-    }
+    navigate('/');
   };
 
   const handleSubmit = async (e) => {
@@ -68,39 +68,32 @@ const Register = ({ onNavigateHome, onRegisterSuccess }) => {
     }
 
     try {
-      // Replace this URL with your actual API endpoint
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-          password: formData.password,
-          role: selectedRole
-        }),
-      });
+      await register(
+        formData.email,
+        formData.password,
+        formData.fullName,
+        formData.phone,
+        selectedRole
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      // Success - call callback or redirect
-      if (onRegisterSuccess) {
-        onRegisterSuccess(data);
-      } else {
-        // Default success handling
-        alert(`Account created successfully! Welcome, ${formData.fullName}`);
-        // Redirect to login or dashboard
-        window.location.href = '/login';
+      // Redirect based on role
+      if (selectedRole === 'landlord') {
+        navigate('/landlord/dashboard');
+      } else if (selectedRole === 'tenant') {
+        navigate('/tenant/dashboard');
       }
     } catch (err) {
-      setError(err.message || 'An error occurred during registration. Please try again.');
-    } finally {
+      let errorMessage = 'An error occurred during registration. Please try again.';
+      
+      if (err.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address.';
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please use a stronger password.';
+      }
+      
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -116,11 +109,16 @@ const Register = ({ onNavigateHome, onRegisterSuccess }) => {
     }
 
     try {
-      // Replace with your actual Google OAuth endpoint
-      // This typically redirects to Google's OAuth page
-      window.location.href = `/api/auth/google?role=${selectedRole}`;
+      const { role } = await signInWithGoogle(selectedRole);
+      
+      // Redirect based on role
+      if (role === 'landlord') {
+        navigate('/landlord/dashboard');
+      } else if (role === 'tenant') {
+        navigate('/tenant/dashboard');
+      }
     } catch (err) {
-      setError('Failed to initiate Google sign-in. Please try again.');
+      setError('Failed to sign in with Google. Please try again.');
       setLoading(false);
     }
   };
@@ -385,7 +383,7 @@ const Register = ({ onNavigateHome, onRegisterSuccess }) => {
                 <p className="text-white">
                   Already have an account?{' '}
                   <button 
-                    onClick={() => !loading && (window.location.href = '/login')}
+                    onClick={() => !loading && navigate('/login')}
                     className={`text-blue-200 hover:text-white font-bold transition-colors ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:underline'}`}
                     disabled={loading}
                     type="button"
@@ -415,10 +413,6 @@ const Register = ({ onNavigateHome, onRegisterSuccess }) => {
                 alt="Property Management" 
                 className="w-full h-auto rounded-3xl shadow-2xl"
               />
-              <div className="mt-8 text-center">
-                <h2 className="text-3xl font-bold text-transparent mb-4">Manage Properties Easily</h2>
-                <p className="text-blue-100 text-lg">Access your dashboard, track rent payments, and communicate with tenants all in one place.</p>
-              </div>
             </div>
           </div>
         </div>
