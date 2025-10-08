@@ -1,16 +1,14 @@
 // src/App.jsx
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 
-// Import your pages
-import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import LandlordDashboard from './pages/LandlordDashboard';
-import TenantDashboard from './pages/TenantDashboard';
-import PropertyListings from './pages/PropertyListings';
+// Import pages
+import LandingPage from './pages/LandingPage'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import LandlordDashboard from './pages/LandlordDashboard'
+import TenantDashboard from './pages/TenantDashboard'
 
 function App() {
   return (
@@ -21,7 +19,6 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/listings" element={<PropertyListings />} />
           
           {/* Protected Landlord Routes */}
           <Route 
@@ -43,12 +40,12 @@ function App() {
             } 
           />
           
-          {/* Catch all - redirect to home */}
+          {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </Router>
-  );
+  )
 }
 
-export default App;
+export default App
