@@ -27,12 +27,13 @@ import {
   Camera,
   Clock,
   ChevronLeft,
-  ChevronRight
+  ChevronRight, 
+  Menu
 } from 'lucide-react';
 
 const TenantDashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [sidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -289,7 +290,12 @@ const TenantDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[#003366] text-white transition-all duration-300 flex flex-col`}>
+      {/* Mobile overlay */}
+{sidebarOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
+)}
+
+<aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
         <div className="p-6">
           <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
             <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
@@ -301,36 +307,41 @@ const TenantDashboard = () => {
 
         <nav className="flex-1 px-4 space-y-2">
           {[
-            { id: 'dashboard', icon: Home, label: 'Dashboard' },
-            { id: 'listings', icon: Search, label: 'Browse Listings' },
-            { id: 'payments', icon: DollarSign, label: 'Payments' },
-            { id: 'maintenance', icon: Wrench, label: 'Maintenance' },
-            { id: 'documents', icon: FileText, label: 'Documents' },
-            { id: 'messages', icon: MessageSquare, label: 'Messages' },
-            { id: 'settings', icon: Settings, label: 'Settings' }
-          ].map((item) => (
-            <button key={item.id} onClick={() => setCurrentView(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === item.id ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}>
-              <item.icon className="w-5 h-5" />
-              {sidebarOpen && <span>{item.label}</span>}
-            </button>
-          ))}
+  { id: 'dashboard', icon: Home, label: 'Dashboard' },
+  { id: 'listings', icon: Search, label: 'Browse Listings' },
+  { id: 'payments', icon: DollarSign, label: 'Payments' },
+  { id: 'maintenance', icon: Wrench, label: 'Maintenance' },
+  { id: 'documents', icon: FileText, label: 'Documents' },
+  { id: 'messages', icon: MessageSquare, label: 'Messages' },
+  { id: 'settings', icon: Settings, label: 'Settings' }
+].map((item) => (
+  <button key={item.id} onClick={() => { setCurrentView(item.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === item.id ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}>
+    <item.icon className="w-5 h-5" />
+    <span className="text-sm">{item.label}</span>
+  </button>
+))}
         </nav>
 
         <div className="p-4 border-t border-[#002244]">
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#002244] transition text-red-300">
-            <LogOut className="w-5 h-5" />
-            {sidebarOpen && <span>Logout</span>}
+           <LogOut className="w-5 h-5" />
+           <span className="text-sm">Logout</span>
           </button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col">
-        <header className="bg-white shadow-sm p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 capitalize">{currentView}</h1>
-              <p className="text-gray-600">Welcome back, {profileSettings.name.split(' ')[0]}!</p>
-            </div>
+        <header className="bg-white shadow-sm p-4 lg:p-6">
+  <div className="flex justify-between items-center">
+    <div className="flex items-center gap-3">
+      <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
+        <Menu className="w-6 h-6 text-gray-600" />
+      </button>
+      <div>
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-900 capitalize">{currentView}</h1>
+        <p className="text-sm lg:text-base text-gray-600 hidden sm:block">Welcome back, {profileSettings.name.split(' ')[0]}!</p>
+      </div>
+    </div>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
@@ -364,13 +375,13 @@ const TenantDashboard = () => {
           </div>
         </header>
 
-        <div className="p-6 flex-1 overflow-y-auto">
+        <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
           {currentView === 'dashboard' && (
             <>
-              <div className="bg-[#003366] text-white rounded-xl p-6 mb-6 shadow-lg">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">{propertyInfo.name}</h2>
+              <div className="bg-[#003366] text-white rounded-xl p-4 lg:p-6 mb-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                  <h2 className="text-xl lg:text-2xl font-bold mb-2">{propertyInfo.name}</h2>
                     <p className="text-blue-100 mb-4">{propertyInfo.unit} • {propertyInfo.address}</p>
                     <div className="flex items-center gap-4">
                       <div>
@@ -384,7 +395,7 @@ const TenantDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => setShowPaymentModal(true)} className="bg-white text-[#003366] px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition flex items-center gap-2">
+                  <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto bg-white text-[#003366] px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition flex items-center justify-center gap-2">
                     <CreditCard className="w-5 h-5" />Pay Now
                   </button>
                 </div>

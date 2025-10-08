@@ -45,6 +45,8 @@ const LandlordDashboard = () => {
   const [editingProfile, setEditingProfile] = useState(false);
   const [selectedListing, setSelectedListing] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [tenantFilter, setTenantFilter] = useState('all');
+  const [tenantSearchQuery, setTenantSearchQuery] = useState('');
   
   const [passwordData, setPasswordData] = useState({
     current: '',
@@ -621,85 +623,93 @@ const LandlordDashboard = () => {
 
           {currentView === 'viewings' && (
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Property Viewing Bookings</h2>
-                <button className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold transition">
-                  <Download className="w-5 h-5" />Export
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+                <h2 className="text-lg lg:text-xl font-bold text-gray-900">Property Viewing Bookings</h2>
+                <button className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold transition text-sm">
+                <Download className="w-4 h-4 lg:w-5 lg:h-5" />Export
                 </button>
               </div>
 
               <div className="grid gap-4">
                 {viewingBookings.map(viewing => (
-                  <div key={viewing.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold">
-                          {viewing.prospectName.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 text-lg">{viewing.prospectName}</h3>
-                          <p className="text-gray-600">{viewing.property}</p>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                            <div className="flex items-center gap-1"><Mail className="w-4 h-4" />{viewing.email}</div>
-                            <div className="flex items-center gap-1"><Phone className="w-4 h-4" />{viewing.phone}</div>
-                          </div>
-                        </div>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                        viewing.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                        viewing.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {viewing.status}
-                      </span>
-                    </div>
+                  // Find the viewing card div and update it:
+<div key={viewing.id} className="border border-gray-200 rounded-lg p-4 lg:p-6 hover:shadow-md transition">
+  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
+    <div className="flex items-start gap-3 lg:gap-4 flex-1 min-w-0">
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-[#003366] rounded-full flex items-center justify-center text-white text-sm lg:text-base font-semibold flex-shrink-0">
+        {viewing.prospectName.split(' ').map(n => n[0]).join('')}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-gray-900 text-base lg:text-lg truncate">{viewing.prospectName}</h3>
+        <p className="text-sm lg:text-base text-gray-600 truncate">{viewing.property}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs lg:text-sm text-gray-600">
+          <div className="flex items-center gap-1 min-w-0">
+            <Mail className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
+            <span className="truncate">{viewing.email}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Phone className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
+            <span>{viewing.phone}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span className={`px-2 lg:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+      viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+      viewing.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+      viewing.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+      'bg-yellow-100 text-yellow-800'
+    }`}>
+      {viewing.status}
+    </span>
+  </div>
 
-                    <div className="grid md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Scheduled Date & Time</p>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-[#003366]" />
-                          <p className="font-semibold text-gray-900">{viewing.date} at {viewing.time}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Booked At</p>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-[#003366]" />
-                          <p className="text-gray-700">{viewing.bookedAt}</p>
-                        </div>
-                      </div>
-                    </div>
+  <div className="grid sm:grid-cols-2 gap-3 lg:gap-4 mb-4 p-3 lg:p-4 bg-gray-50 rounded-lg">
+    <div>
+      <p className="text-xs lg:text-sm text-gray-600 mb-1">Scheduled Date & Time</p>
+      <div className="flex items-center gap-2">
+        <Calendar className="w-3 h-3 lg:w-4 lg:h-4 text-[#003366] flex-shrink-0" />
+        <p className="font-semibold text-gray-900 text-sm lg:text-base">{viewing.date} at {viewing.time}</p>
+      </div>
+    </div>
+    <div>
+      <p className="text-xs lg:text-sm text-gray-600 mb-1">Booked At</p>
+      <div className="flex items-center gap-2">
+        <Clock className="w-3 h-3 lg:w-4 lg:h-4 text-[#003366] flex-shrink-0" />
+        <p className="text-gray-700 text-sm lg:text-base">{viewing.bookedAt}</p>
+      </div>
+    </div>
+  </div>
 
-                    {viewing.notes && (
-                      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-gray-600 mb-1">Notes:</p>
-                        <p className="text-gray-900">{viewing.notes}</p>
-                      </div>
-                    )}
+  {viewing.notes && (
+    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+      <p className="text-xs lg:text-sm text-gray-600 mb-1">Notes:</p>
+      <p className="text-sm lg:text-base text-gray-900">{viewing.notes}</p>
+    </div>
+  )}
 
-                    <div className="flex gap-2">
-                      {viewing.status === 'pending' && (
-                        <>
-                          <button onClick={() => handleUpdateViewingStatus(viewing.id, 'confirmed')} className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition">
-                            <CheckCircle className="w-4 h-4" />Confirm
-                          </button>
-                          <button onClick={() => handleUpdateViewingStatus(viewing.id, 'cancelled')} className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-semibold transition">
-                            <X className="w-4 h-4" />Cancel
-                          </button>
-                        </>
-                      )}
-                      {viewing.status === 'confirmed' && (
-                        <button onClick={() => handleUpdateViewingStatus(viewing.id, 'completed')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition">
-                          <CheckCircle className="w-4 h-4" />Mark Completed
-                        </button>
-                      )}
-                      <button onClick={() => setSelectedViewing(viewing)} className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition">
-                        <Eye className="w-4 h-4" />View Details
-                      </button>
-                    </div>
-                  </div>
+  <div className="flex flex-col sm:flex-row gap-2">
+    {viewing.status === 'pending' && (
+      <>
+        <button onClick={() => handleUpdateViewingStatus(viewing.id, 'confirmed')} className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm">
+          <CheckCircle className="w-4 h-4" />Confirm
+        </button>
+        <button onClick={() => handleUpdateViewingStatus(viewing.id, 'cancelled')} className="flex items-center justify-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-semibold transition text-sm">
+          <X className="w-4 h-4" />Cancel
+        </button>
+      </>
+    )}
+    {viewing.status === 'confirmed' && (
+      <button onClick={() => handleUpdateViewingStatus(viewing.id, 'completed')} className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm">
+        <CheckCircle className="w-4 h-4" />Mark Completed
+      </button>
+    )}
+    <button onClick={() => setSelectedViewing(viewing)} className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition text-sm">
+      <Eye className="w-4 h-4" />View Details
+    </button>
+  </div>
+</div>
+                    
                 ))}
               </div>
             </div>
@@ -875,12 +885,12 @@ const LandlordDashboard = () => {
 
           {currentView === 'properties' && (
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Your Properties</h2>
-                <button onClick={() => setShowPropertyModal(true)} className="flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition">
-                  <Building className="w-5 h-5" />Add Property
-                </button>
-              </div>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+             <h2 className="text-xl font-bold text-gray-900">Your Properties</h2>
+              <button onClick={() => setShowPropertyModal(true)} className="flex items-center justify-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition whitespace-nowrap">
+                 <Building className="w-5 h-5" />Add Property
+              </button>
+            </div>
 
               <div className="grid gap-4">
                 {properties.map(property => (
@@ -977,127 +987,262 @@ const LandlordDashboard = () => {
           )}
 
           {currentView === 'tenants' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Tenant Directory</h2>
-                <button onClick={() => setShowTenantModal(true)} className="flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition">
-                  <Users className="w-5 h-5" />Add Tenant
-                </button>
-              </div>
+  <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+      <h2 className="text-xl font-bold text-gray-900">Tenant Directory</h2>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          placeholder="Search tenants..."
+          value={tenantSearchQuery}
+          onChange={(e) => setTenantSearchQuery(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
+        />
+        <select
+          value={tenantFilter}
+          onChange={(e) => setTenantFilter(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
+        >
+          <option value="all">All Properties</option>
+          {properties.map(prop => (
+            <option key={prop.id} value={prop.name}>{prop.name}</option>
+          ))}
+        </select>
+        <button onClick={() => setShowTenantModal(true)} className="flex items-center justify-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition whitespace-nowrap">
+          <Users className="w-5 h-5" />Add Tenant
+        </button>
+      </div>
+    </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                {tenants.map(tenant => (
-                  <div key={tenant.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold">
-                        {tenant.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-lg">{tenant.name}</h3>
-                        <p className="text-sm text-gray-600">{tenant.property} - Unit {tenant.unit}</p>
-                        <span className="inline-block mt-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Active</span>
-                      </div>
-                    </div>
+    {/* Group tenants by property */}
+    {(() => {
+      // Filter tenants based on search query and property filter
+      const filteredTenants = tenants.filter(tenant => {
+        const matchesSearch = tenant.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
+                            tenant.email.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
+                            tenant.phone.includes(tenantSearchQuery);
+        const matchesProperty = tenantFilter === 'all' || tenant.property === tenantFilter;
+        return matchesSearch && matchesProperty;
+      });
 
-                    <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center text-sm text-gray-700"><Mail className="w-4 h-4 mr-2 text-[#003366]" />{tenant.email}</div>
-                      <div className="flex items-center text-sm text-gray-700"><Phone className="w-4 h-4 mr-2 text-[#003366]" />{tenant.phone}</div>
-                      <div className="flex items-center text-sm text-gray-700"><DollarSign className="w-4 h-4 mr-2 text-[#003366]" />KES {tenant.rent.toLocaleString()}/month</div>
-                      <div className="flex items-center text-sm text-gray-700"><Calendar className="w-4 h-4 mr-2 text-[#003366]" />Lease: {tenant.leaseStart} to {tenant.leaseEnd}</div>
-                    </div>
+      // Group tenants by property
+      const tenantsByProperty = filteredTenants.reduce((acc, tenant) => {
+        if (!acc[tenant.property]) {
+          acc[tenant.property] = [];
+        }
+        acc[tenant.property].push(tenant);
+        return acc;
+      }, {});
 
-                    <div className="flex gap-2">
-                      <button className="flex-1 px-3 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition text-sm">View Details</button>
-                      <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition text-sm">Message</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      // Get properties to display based on filter
+      const propertiesToShow = tenantFilter === 'all' 
+        ? properties.filter(prop => tenantsByProperty[prop.name]?.length > 0)
+        : properties.filter(prop => prop.name === tenantFilter && tenantsByProperty[prop.name]?.length > 0);
+
+      if (filteredTenants.length === 0) {
+        return (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 mb-2">No tenants found</p>
+            <p className="text-sm text-gray-500">Try adjusting your search or filter criteria</p>
+          </div>
+        );
+      }
+
+      return propertiesToShow.map(property => (
+        <div key={property.id} className="mb-8">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-200">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">{property.name}</h3>
+              <p className="text-sm text-gray-600 flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                {property.location}
+              </p>
             </div>
-          )}
+            <div className="text-right">
+              <p className="text-2xl font-bold text-[#003366]">{tenantsByProperty[property.name]?.length || 0}</p>
+              <p className="text-sm text-gray-600">Tenant{(tenantsByProperty[property.name]?.length || 0) !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {tenantsByProperty[property.name]?.map(tenant => (
+              <div key={tenant.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                    {tenant.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 text-lg truncate">{tenant.name}</h4>
+                    <p className="text-sm text-gray-600">Unit {tenant.unit}</p>
+                    <span className="inline-block mt-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Active</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center text-sm text-gray-700">
+                    <Mail className="w-4 h-4 mr-2 text-[#003366] flex-shrink-0" />
+                    <span className="truncate">{tenant.email}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-700">
+                    <Phone className="w-4 h-4 mr-2 text-[#003366] flex-shrink-0" />
+                    {tenant.phone}
+                  </div>
+                  <div className="flex items-center text-sm text-gray-700">
+                    <DollarSign className="w-4 h-4 mr-2 text-[#003366] flex-shrink-0" />
+                    KES {tenant.rent.toLocaleString()}/month
+                  </div>
+                  <div className="flex items-center text-sm text-gray-700">
+                    <Calendar className="w-4 h-4 mr-2 text-[#003366] flex-shrink-0" />
+                    <span className="truncate">Lease: {tenant.leaseStart} to {tenant.leaseEnd}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button className="flex-1 px-3 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition text-sm">View Details</button>
+                  <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition text-sm">Message</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ));
+    })()}
+  </div>
+)}
 
           {currentView === 'payments' && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-4 gap-4">
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <p className="text-gray-600 text-sm mb-1">Total Expected</p>
-                  <p className="text-2xl font-bold text-gray-900">KES {(paymentStats.expected / 1000).toFixed(0)}K</p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <p className="text-gray-600 text-sm mb-1">Received</p>
-                  <p className="text-2xl font-bold text-green-600">KES {(paymentStats.received / 1000).toFixed(0)}K</p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <p className="text-gray-600 text-sm mb-1">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-600">KES {(paymentStats.pending / 1000).toFixed(0)}K</p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <p className="text-gray-600 text-sm mb-1">Overdue</p>
-                  <p className="text-2xl font-bold text-red-600">KES {(paymentStats.overdue / 1000).toFixed(0)}K</p>
-                </div>
-              </div>
+  <div className="space-y-6">
+    {/* Payment Stats - Make responsive */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
+        <p className="text-gray-600 text-xs lg:text-sm mb-1">Total Expected</p>
+        <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">KES {(paymentStats.expected / 1000).toFixed(0)}K</p>
+      </div>
+      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
+        <p className="text-gray-600 text-xs lg:text-sm mb-1">Received</p>
+        <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">KES {(paymentStats.received / 1000).toFixed(0)}K</p>
+      </div>
+      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
+        <p className="text-gray-600 text-xs lg:text-sm mb-1">Pending</p>
+        <p className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600">KES {(paymentStats.pending / 1000).toFixed(0)}K</p>
+      </div>
+      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
+        <p className="text-gray-600 text-xs lg:text-sm mb-1">Overdue</p>
+        <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">KES {(paymentStats.overdue / 1000).toFixed(0)}K</p>
+      </div>
+    </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
-                  <div className="flex gap-2">
-                    <button onClick={() => setShowPaymentModal(true)} className="flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition">
-                      <DollarSign className="w-5 h-5" />Record Payment
-                    </button>
-                    <button className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold transition">
-                      <Download className="w-5 h-5" />Export
-                    </button>
-                  </div>
-                </div>
+    {/* Payment Table */}
+    <div className="bg-white rounded-xl shadow-sm p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+        <h2 className="text-lg lg:text-xl font-bold text-gray-900">Payment Tracking</h2>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button onClick={() => setShowPaymentModal(true)} className="flex items-center justify-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition text-sm">
+            <DollarSign className="w-4 h-4 lg:w-5 lg:h-5" />Record Payment
+          </button>
+          <button className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold transition text-sm">
+            <Download className="w-4 h-4 lg:w-5 lg:h-5" />Export
+          </button>
+        </div>
+      </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="text-left p-4 font-semibold text-gray-700">Tenant</th>
-                        <th className="text-left p-4 font-semibold text-gray-700">Property/Unit</th>
-                        <th className="text-left p-4 font-semibold text-gray-700">Amount</th>
-                        <th className="text-left p-4 font-semibold text-gray-700">Due Date</th>
-                        <th className="text-left p-4 font-semibold text-gray-700">Status</th>
-                        <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payments.map(payment => (
-                        <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="p-4 font-semibold text-gray-900">{payment.tenant}</td>
-                          <td className="p-4 text-gray-600">{payment.property} - {payment.unit}</td>
-                          <td className="p-4 text-gray-900 font-semibold">KES {payment.amount.toLocaleString()}</td>
-                          <td className="p-4 text-gray-600">{payment.dueDate}</td>
-                          <td className="p-4">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              payment.status === 'paid' ? 'bg-green-100 text-green-800' :
-                              payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>{payment.status}</span>
-                          </td>
-                          <td className="p-4">
-                            {payment.status === 'paid' ? (
-                              <span className="text-sm text-gray-500">Paid on {payment.paidDate}</span>
-                            ) : (
-                              <div className="flex gap-2">
-                                <button onClick={() => handleRecordPayment(payment.id)} className="p-2 bg-green-50 text-green-600 rounded hover:bg-green-100 transition" title="Record Payment">
-                                  <CheckCircle className="w-4 h-4" />
-                                </button>
-                                <button className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition" title="Send Reminder">
-                                  <Send className="w-4 h-4" />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+      {/* Mobile Card View */}
+      <div className="block lg:hidden space-y-4">
+        {payments.map(payment => (
+          <div key={payment.id} className="border border-gray-200 rounded-lg p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <p className="font-semibold text-gray-900">{payment.tenant}</p>
+                <p className="text-sm text-gray-600">{payment.property} - {payment.unit}</p>
               </div>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                payment.status === 'paid' ? 'bg-green-100 text-green-800' :
+                payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>{payment.status}</span>
             </div>
-          )}
+            <div className="space-y-2 mb-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Amount:</span>
+                <span className="font-semibold text-gray-900">KES {payment.amount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Due Date:</span>
+                <span className="text-gray-900">{payment.dueDate}</span>
+              </div>
+              {payment.status === 'paid' && payment.paidDate && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Paid Date:</span>
+                  <span className="text-gray-900">{payment.paidDate}</span>
+                </div>
+              )}
+            </div>
+            {payment.status === 'paid' ? (
+              <p className="text-xs text-gray-500">Paid on {payment.paidDate}</p>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => handleRecordPayment(payment.id)} className="flex-1 p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition text-sm font-medium">
+                  <CheckCircle className="w-4 h-4 inline mr-1" />Record
+                </button>
+                <button className="flex-1 p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium">
+                  <Send className="w-4 h-4 inline mr-1" />Remind
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left p-4 font-semibold text-gray-700">Tenant</th>
+              <th className="text-left p-4 font-semibold text-gray-700">Property/Unit</th>
+              <th className="text-left p-4 font-semibold text-gray-700">Amount</th>
+              <th className="text-left p-4 font-semibold text-gray-700">Due Date</th>
+              <th className="text-left p-4 font-semibold text-gray-700">Status</th>
+              <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map(payment => (
+              <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="p-4 font-semibold text-gray-900">{payment.tenant}</td>
+                <td className="p-4 text-gray-600">{payment.property} - {payment.unit}</td>
+                <td className="p-4 text-gray-900 font-semibold">KES {payment.amount.toLocaleString()}</td>
+                <td className="p-4 text-gray-600">{payment.dueDate}</td>
+                <td className="p-4">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    payment.status === 'paid' ? 'bg-green-100 text-green-800' :
+                    payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>{payment.status}</span>
+                </td>
+                <td className="p-4">
+                  {payment.status === 'paid' ? (
+                    <span className="text-sm text-gray-500">Paid on {payment.paidDate}</span>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button onClick={() => handleRecordPayment(payment.id)} className="p-2 bg-green-50 text-green-600 rounded hover:bg-green-100 transition" title="Record Payment">
+                        <CheckCircle className="w-4 h-4" />
+                      </button>
+                      <button className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition" title="Send Reminder">
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
 
           {currentView === 'memos' && (
             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -1806,3 +1951,6 @@ const LandlordDashboard = () => {
 };
 
 export default LandlordDashboard;
+
+
+
