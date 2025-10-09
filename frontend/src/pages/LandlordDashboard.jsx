@@ -68,7 +68,19 @@ const LandlordDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [viewingFilter, setViewingFilter] = useState('all');
-  
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showAssignTeamModal, setShowAssignTeamModal] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedProperty, setSelectedProperty] = useState(null);
+
+  const [newTeamMember, setNewTeamMember] = useState({
+  name: '',
+  email: '',
+  phone: '',
+  role: 'property_manager', // or 'maintenance'
+  assignedProperties: []
+});
+
   const [passwordData, setPasswordData] = useState({
     current: '',
     new: '',
@@ -306,6 +318,26 @@ const LandlordDashboard = () => {
     return unsubscribe;
   }, [currentUser]);
 
+  // Fetch Team Members
+useEffect(() => {
+  if (!currentUser) return;
+
+  const q = query(
+    collection(db, 'teamMembers'),
+    where('landlordId', '==', currentUser.uid)
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const teamData = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    setTeamMembers(teamData);
+  });
+
+  return unsubscribe;
+}, [currentUser]);
+
   // Image upload handler
   const handleImageUpload = async (files, type = 'property') => {
     if (!files || files.length === 0) return [];
@@ -429,6 +461,7 @@ const LandlordDashboard = () => {
       alert('Please fill in all required fields');
     }
   };
+
 
   // RECORD PAYMENT
   const handleRecordPayment = async (paymentId) => {
@@ -626,6 +659,86 @@ const LandlordDashboard = () => {
     ));
   };
 
+  // Add team member handler
+const handleAddTeamMember = async () => {
+  if (!newTeamMember.name || !newTeamMember.email || !newTeamMember.phone) {
+    alert('Please fill in all required fields');
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, 'teamMembers'), {
+      name: newTeamMember.name,
+      email: newTeamMember.email,
+      phone: newTeamMember.phone,
+      role: newTeamMember.role,
+      assignedProperties: newTeamMember.assignedProperties,
+      landlordId: currentUser.uid,
+      status: 'pending', // pending, active, inactive
+      invitedAt: serverTimestamp(),
+      createdAt: serverTimestamp()
+    });
+
+    alert(`Invitation sent to ${newTeamMember.email}! They will receive an email to create their account.`);
+    
+    setNewTeamMember({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'property_manager',
+      assignedProperties: []
+    });
+    setShowTeamModal(false);
+  } catch (error) {
+    console.error('Error adding team member:', error);
+    alert('Error adding team member. Please try again.');
+  }
+};
+
+// Update team member
+const handleUpdateTeamMember = async (memberId, updates) => {
+  try {
+    const memberRef = doc(db, 'teamMembers', memberId);
+    await updateDoc(memberRef, updates);
+    alert('Team member updated successfully!');
+  } catch (error) {
+    console.error('Error updating team member:', error);
+    alert('Error updating team member. Please try again.');
+  }
+};
+
+// Delete team member
+const handleDeleteTeamMember = async (memberId) => {
+  if (window.confirm('Are you sure you want to remove this team member?')) {
+    try {
+      await deleteDoc(doc(db, 'teamMembers', memberId));
+      alert('Team member removed successfully!');
+    } catch (error) {
+      console.error('Error deleting team member:', error);
+      alert('Error removing team member. Please try again.');
+    }
+  }
+};
+
+// Assign team member to property
+const handleAssignToProperty = async (memberId, propertyId) => {
+  try {
+    const memberRef = doc(db, 'teamMembers', memberId);
+    const member = teamMembers.find(m => m.id === memberId);
+    
+    const updatedProperties = member.assignedProperties.includes(propertyId)
+      ? member.assignedProperties.filter(id => id !== propertyId)
+      : [...member.assignedProperties, propertyId];
+    
+    await updateDoc(memberRef, {
+      assignedProperties: updatedProperties
+    });
+  } catch (error) {
+    console.error('Error assigning property:', error);
+    alert('Error assigning property. Please try again.');
+  }
+};
+
   // Stats calculations
   const stats = [
     { 
@@ -697,7 +810,7 @@ const LandlordDashboard = () => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'memos', 'settings'].map((view) => {
+          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'team', 'memos', 'settings'].map((view) => {
             const icons = { 
               dashboard: Home, 
               properties: Building, 
@@ -706,14 +819,16 @@ const LandlordDashboard = () => {
               calendar: Calendar, 
               maintenance: Wrench, 
               tenants: Users, 
-              payments: DollarSign, 
+              payments: DollarSign,
+              team: Users, 
               memos: Mail, 
               settings: Settings 
             };
             const Icon = icons[view];
             const labels = {
               listings: 'Browse Listings',
-              memos: 'Updates & Memos'
+              memos: 'Updates & Memos',
+              team: 'Team Management'
             };
             return (
               <button 
@@ -1591,6 +1706,128 @@ const LandlordDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* Team View */}
+{currentView === 'team' && (
+  <>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <h2 className="text-xl font-bold text-gray-900">Team Management</h2>
+      <button onClick={() => setShowTeamModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+        <Users className="w-5 h-5" />
+        Add Team Member
+      </button>
+    </div>
+
+    {/* Team Stats */}
+    <div className="grid md:grid-cols-3 gap-4 mb-6">
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <p className="text-sm text-gray-600 mb-1">Total Team Members</p>
+        <p className="text-2xl font-bold text-gray-900">{teamMembers.length}</p>
+      </div>
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <p className="text-sm text-gray-600 mb-1">Property Managers</p>
+        <p className="text-2xl font-bold text-blue-600">
+          {teamMembers.filter(m => m.role === 'property_manager').length}
+        </p>
+      </div>
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <p className="text-sm text-gray-600 mb-1">Maintenance Staff</p>
+        <p className="text-2xl font-bold text-orange-600">
+          {teamMembers.filter(m => m.role === 'maintenance').length}
+        </p>
+      </div>
+    </div>
+
+    {/* Team Members List */}
+    {teamMembers.length === 0 ? (
+      <div className="bg-white p-12 rounded-xl shadow-sm text-center">
+        <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <p className="text-gray-500 mb-4">No team members yet</p>
+        <button onClick={() => setShowTeamModal(true)} className="px-6 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+          Add First Team Member
+        </button>
+      </div>
+    ) : (
+      <div className="grid gap-4">
+        {teamMembers.map(member => (
+          <div key={member.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                  {member.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold text-gray-900 text-lg">{member.name}</h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      member.role === 'property_manager' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {member.role === 'property_manager' ? 'Property Manager' : 'Maintenance'}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      member.status === 'active' ? 'bg-green-100 text-green-800' :
+                      member.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {member.status}
+                    </span>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
+                    <span className="flex items-center gap-1">
+                      <Mail className="w-4 h-4" />
+                      {member.email}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Phone className="w-4 h-4" />
+                      {member.phone}
+                    </span>
+                  </div>
+                  
+                  {/* Assigned Properties */}
+                  <div>
+                    <p className="text-xs text-gray-600 mb-2">Assigned Properties ({member.assignedProperties?.length || 0})</p>
+                    {member.assignedProperties && member.assignedProperties.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {member.assignedProperties.map(propId => {
+                          const property = properties.find(p => p.id === propId);
+                          return property ? (
+                            <span key={propId} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                              {property.name}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500 italic">No properties assigned</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    setSelectedTeamMember(member);
+                    setShowAssignTeamModal(true);
+                  }}
+                  className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm"
+                >
+                  Assign Properties
+                </button>
+                <button 
+                  onClick={() => handleDeleteTeamMember(member.id)}
+                  className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </>
+)}
 
           {/* Settings View */}
           {currentView === 'settings' && (
@@ -2706,6 +2943,156 @@ const LandlordDashboard = () => {
           </div>
         </div>
       )}
+      {/* Add Team Member Modal */}
+{showTeamModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+        <h2 className="text-xl font-bold text-gray-900">Add Team Member</h2>
+        <button onClick={() => setShowTeamModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+      </div>
+      <div className="p-6 space-y-4">
+        <div className="bg-blue-50 p-4 rounded-lg mb-4">
+          <p className="text-sm text-gray-700">
+            <strong>Note:</strong> The team member will receive an email invitation to create their account and access the platform.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+          <input
+            type="text"
+            value={newTeamMember.name}
+            onChange={(e) => setNewTeamMember({...newTeamMember, name: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+            placeholder="John Doe"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+          <input
+            type="email"
+            value={newTeamMember.email}
+            onChange={(e) => setNewTeamMember({...newTeamMember, email: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+            placeholder="john@example.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+          <input
+            type="tel"
+            value={newTeamMember.phone}
+            onChange={(e) => setNewTeamMember({...newTeamMember, phone: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+            placeholder="+254 712 345 678"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+          <select
+            value={newTeamMember.role}
+            onChange={(e) => setNewTeamMember({...newTeamMember, role: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+          >
+            <option value="property_manager">Property Manager</option>
+            <option value="maintenance">Maintenance Staff</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            {newTeamMember.role === 'property_manager' 
+              ? 'Can manage properties, tenants, and view reports' 
+              : 'Can view and update maintenance requests'}
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Assign to Properties (Optional)</label>
+          <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+            {properties.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">No properties available</p>
+            ) : (
+              properties.map(property => (
+                <label key={property.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newTeamMember.assignedProperties.includes(property.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setNewTeamMember({
+                          ...newTeamMember,
+                          assignedProperties: [...newTeamMember.assignedProperties, property.id]
+                        });
+                      } else {
+                        setNewTeamMember({
+                          ...newTeamMember,
+                          assignedProperties: newTeamMember.assignedProperties.filter(id => id !== property.id)
+                        });
+                      }
+                    }}
+                    className="w-4 h-4 text-[#003366] border-gray-300 rounded focus:ring-[#003366]"
+                  />
+                  <span className="text-sm text-gray-700">{property.name} - {property.location}</span>
+                </label>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="p-6 border-t border-gray-200 flex gap-3">
+        <button onClick={() => setShowTeamModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+          Cancel
+        </button>
+        <button onClick={handleAddTeamMember} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+          Send Invitation
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Assign Properties Modal */}
+{showAssignTeamModal && selectedTeamMember && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+        <h2 className="text-xl font-bold text-gray-900">Assign Properties to {selectedTeamMember.name}</h2>
+        <button onClick={() => setShowAssignTeamModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+      </div>
+      <div className="p-6">
+        <p className="text-sm text-gray-600 mb-4">Select which properties this team member can access:</p>
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {properties.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-8">No properties available</p>
+          ) : (
+            properties.map(property => (
+              <label key={property.id} className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                <input
+                  type="checkbox"
+                  checked={selectedTeamMember.assignedProperties?.includes(property.id) || false}
+                  onChange={() => handleAssignToProperty(selectedTeamMember.id, property.id)}
+                  className="w-5 h-5 text-[#003366] border-gray-300 rounded focus:ring-[#003366] mt-0.5"
+                />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{property.name}</p>
+                  <p className="text-sm text-gray-600">{property.location}</p>
+                  <p className="text-xs text-gray-500 mt-1">{property.units} units • {property.occupied} occupied</p>
+                </div>
+              </label>
+            ))
+          )}
+        </div>
+      </div>
+      <div className="p-6 border-t border-gray-200">
+        <button onClick={() => setShowAssignTeamModal(false)} className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
