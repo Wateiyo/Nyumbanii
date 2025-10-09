@@ -1,4 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth, db, storage } from '../firebase/config';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  onSnapshot,
+  query, 
+  where,
+  serverTimestamp 
+} from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   Home, 
   Users, 
@@ -27,7 +40,11 @@ import {
   Bed,
   Bath,
   Square, 
-  Menu
+  Menu,
+  Upload,
+  Image as ImageIcon,
+  Filter,
+  Search
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -47,6 +64,10 @@ const LandlordDashboard = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [tenantFilter, setTenantFilter] = useState('all');
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [viewingFilter, setViewingFilter] = useState('all');
   
   const [passwordData, setPasswordData] = useState({
     current: '',
@@ -59,7 +80,8 @@ const LandlordDashboard = () => {
     location: '',
     units: '',
     occupied: '',
-    revenue: ''
+    revenue: '',
+    images: []
   });
   
   const [newTenant, setNewTenant] = useState({
@@ -110,90 +132,14 @@ const LandlordDashboard = () => {
     targetAudience: 'all'
   });
   
-  const [properties, setProperties] = useState([
-    { id: 1, name: 'Sunset Apartments', location: 'Westlands, Nairobi', units: 12, occupied: 10, revenue: 120000 },
-    { id: 2, name: 'Garden View', location: 'Kilimani, Nairobi', units: 8, occupied: 8, revenue: 96000 },
-    { id: 3, name: 'Riverside Towers', location: 'Parklands, Nairobi', units: 16, occupied: 14, revenue: 168000 },
-  ]);
-
-  const [tenants, setTenants] = useState([
-    { id: 1, name: 'John Doe', email: 'john@email.com', phone: '+254 712 345 678', property: 'Sunset Apartments', unit: '4A', rent: 45000, leaseStart: '2024-01-15', leaseEnd: '2025-01-14', status: 'active', lastPayment: '2025-10-01' },
-    { id: 2, name: 'Jane Smith', email: 'jane@email.com', phone: '+254 723 456 789', property: 'Garden View', unit: '2B', rent: 38000, leaseStart: '2024-03-01', leaseEnd: '2025-02-28', status: 'active', lastPayment: '2025-10-01' },
-    { id: 3, name: 'Peter Kamau', email: 'peter@email.com', phone: '+254 734 567 890', property: 'Riverside Towers', unit: '8C', rent: 52000, leaseStart: '2024-06-01', leaseEnd: '2025-05-31', status: 'active', lastPayment: '2025-09-28' },
-    { id: 4, name: 'Grace Njeri', email: 'grace@email.com', phone: '+254 745 678 901', property: 'Sunset Apartments', unit: '2A', rent: 42000, leaseStart: '2023-11-01', leaseEnd: '2024-10-31', status: 'active', lastPayment: '2025-10-02' }
-  ]);
-
-  const [payments, setPayments] = useState([
-    { id: 1, tenant: 'John Doe', property: 'Sunset Apartments', unit: '4A', amount: 45000, dueDate: '2025-10-01', paidDate: '2025-10-01', status: 'paid', method: 'M-Pesa' },
-    { id: 2, tenant: 'Jane Smith', property: 'Garden View', unit: '2B', amount: 38000, dueDate: '2025-10-01', paidDate: null, status: 'overdue', method: null },
-    { id: 3, tenant: 'Peter Kamau', property: 'Riverside Towers', unit: '8C', amount: 52000, dueDate: '2025-10-01', paidDate: '2025-09-28', status: 'paid', method: 'Bank Transfer' },
-    { id: 4, tenant: 'Grace Njeri', property: 'Sunset Apartments', unit: '2A', amount: 42000, dueDate: '2025-10-01', paidDate: '2025-10-02', status: 'paid', method: 'M-Pesa' }
-  ]);
-
-  const [viewingBookings, setViewingBookings] = useState([
-    { id: 1, prospectName: 'Sarah Johnson', email: 'sarah.j@email.com', phone: '+254 734 567 890', property: 'Sunset Apartments', date: '2025-10-07', time: '10:00', status: 'pending', notes: 'Interested in 2-bedroom unit', bookedAt: '2025-10-03 14:30' },
-    { id: 2, prospectName: 'Michael Ochieng', email: 'mochieng@email.com', phone: '+254 745 678 901', property: 'Sunset Apartments', date: '2025-10-08', time: '14:00', status: 'confirmed', notes: 'Looking for studio apartment', bookedAt: '2025-10-02 09:15' },
-  ]);
-
-  const [maintenanceRequests, setMaintenanceRequests] = useState([
-    { id: 1, property: 'Sunset Apartments', unit: '2B', issue: 'Leaking faucet', status: 'pending', date: '2025-10-07', scheduledTime: '09:00', priority: 'medium', tenant: 'John Doe' },
-    { id: 2, property: 'Garden View', unit: '4A', issue: 'Broken AC', status: 'in-progress', date: '2025-10-08', scheduledTime: '14:00', priority: 'high', tenant: 'Jane Smith' },
-    { id: 3, property: 'Riverside Towers', unit: '8C', issue: 'Faulty door lock', status: 'pending', date: '2025-10-09', scheduledTime: '10:00', priority: 'high', tenant: 'Peter Kamau' },
-    { id: 4, property: 'Sunset Apartments', unit: '5D', issue: 'Water heater not working', status: 'completed', date: '2025-10-02', scheduledTime: '11:00', priority: 'medium', tenant: 'Grace Njeri' }
-  ]);
-
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'New viewing request from Sarah Johnson', time: '1 hour ago', read: false, type: 'viewing' },
-    { id: 2, message: 'Maintenance request completed for Unit 5D', time: '3 hours ago', read: false, type: 'maintenance' }
-  ]);
-
-  const [memos, setMemos] = useState([
-    { id: 1, title: 'Water Maintenance Notice', message: 'Water will be shut off on Sunday, October 13th from 8 AM to 2 PM for routine maintenance. Please plan accordingly.', priority: 'high', targetAudience: 'all', sentBy: 'Tom Doe', sentAt: '2025-10-04 10:30', recipients: 18 },
-    { id: 2, title: 'Rent Payment Reminder', message: 'Friendly reminder that rent for October is due by the 5th. Please ensure timely payment to avoid late fees.', priority: 'normal', targetAudience: 'all', sentBy: 'Tom Doe', sentAt: '2025-10-01 09:00', recipients: 18 }
-  ]);
-
-  const [listings, setListings] = useState([
-    { 
-      id: 1, 
-      property: 'Sunset Apartments', 
-      unit: '3B',
-      bedrooms: 2, 
-      bathrooms: 2, 
-      area: 85, 
-      rent: 45000,
-      deposit: 45000,
-      description: 'Beautiful 2-bedroom apartment with modern finishes and great natural light.',
-      amenities: ['Parking', 'Security', 'Water', 'Backup Generator'],
-      images: [
-        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
-        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
-        'https://images.unsplash.com/photo-1556912173-3bb406ef7e77?w=800'
-      ],
-      status: 'available',
-      postedDate: '2025-10-01'
-    },
-    { 
-      id: 2, 
-      property: 'Garden View', 
-      unit: '5A',
-      bedrooms: 3, 
-      bathrooms: 2, 
-      area: 110, 
-      rent: 52000,
-      deposit: 52000,
-      description: 'Spacious 3-bedroom unit with garden view and modern kitchen.',
-      amenities: ['Gym', 'Swimming Pool', 'Parking', 'Security'],
-      images: [
-        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
-        'https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=800',
-        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800',
-        'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800'
-      ],
-      status: 'available',
-      postedDate: '2025-09-28'
-    }
-  ]);
+  const [properties, setProperties] = useState([]);
+  const [tenants, setTenants] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [viewingBookings, setViewingBookings] = useState([]);
+  const [maintenanceRequests, setMaintenanceRequests] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [memos, setMemos] = useState([]);
+  const [listings, setListings] = useState([]);
 
   const [profileSettings, setProfileSettings] = useState({
     name: 'Tom Doe',
@@ -211,74 +157,437 @@ const LandlordDashboard = () => {
     }
   });
 
-  const stats = [
-    { label: 'Total Properties', value: properties.length, icon: Home, color: 'bg-blue-100 text-blue-900' },
-    { label: 'Active Tenants', value: tenants.filter(t => t.status === 'active').length, icon: Users, color: 'bg-green-100 text-green-900' },
-    { label: 'Monthly Revenue', value: `KES ${Math.round(properties.reduce((sum, p) => sum + p.revenue, 0) / 1000)}K`, icon: DollarSign, color: 'bg-purple-100 text-purple-900' },
-    { label: 'Pending Viewings', value: viewingBookings.filter(v => v.status === 'pending').length, icon: CalendarCheck, color: 'bg-orange-100 text-orange-900' }
-  ];
+  // Get current user
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setCurrentUser(user);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
-  const handleUpdateViewingStatus = (id, status) => {
-    setViewingBookings(viewingBookings.map(booking => 
-      booking.id === id ? { ...booking, status } : booking
-    ));
-    if (status === 'confirmed') {
-      alert('Viewing confirmed! Notification sent to prospect.');
+  // Fetch Properties with real-time updates
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'properties'),
+      where('landlordId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const propertiesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setProperties(propertiesData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Fetch Tenants
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'tenants'),
+      where('landlordId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const tenantsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setTenants(tenantsData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Fetch Payments
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'payments'),
+      where('landlordId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const paymentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPayments(paymentsData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Fetch Viewing Bookings
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'viewingBookings'),
+      where('landlordId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const viewingsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setViewingBookings(viewingsData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Fetch Maintenance Requests
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'maintenanceRequests'),
+      where('landlordId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const requestsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMaintenanceRequests(requestsData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Fetch Listings
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'listings'),
+      where('landlordId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const listingsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setListings(listingsData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Fetch Memos
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'memos'),
+      where('landlordId', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const memosData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMemos(memosData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Image upload handler
+  const handleImageUpload = async (files, type = 'property') => {
+    if (!files || files.length === 0) return [];
+    
+    setUploadingImages(true);
+    const imageUrls = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        const storageRef = ref(storage, `${type}Images/${currentUser.uid}/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        imageUrls.push(url);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Error uploading images. Please try again.');
+    } finally {
+      setUploadingImages(false);
+    }
+
+    return imageUrls;
+  };
+
+  // ADD PROPERTY with images
+  const handleAddProperty = async () => {
+    if (newProperty.name && newProperty.location && newProperty.units) {
+      try {
+        await addDoc(collection(db, 'properties'), {
+          name: newProperty.name,
+          location: newProperty.location,
+          units: parseInt(newProperty.units),
+          occupied: parseInt(newProperty.occupied) || 0,
+          revenue: parseInt(newProperty.revenue) || 0,
+          images: newProperty.images || [],
+          landlordId: currentUser.uid,
+          createdAt: serverTimestamp()
+        });
+        
+        setNewProperty({ name: '', location: '', units: '', occupied: '', revenue: '', images: [] });
+        setShowPropertyModal(false);
+        alert('Property added successfully!');
+      } catch (error) {
+        console.error('Error adding property:', error);
+        alert('Error adding property. Please try again.');
+      }
+    } else {
+      alert('Please fill in all required fields');
     }
   };
 
-  const calendarEvents = [
-    ...viewingBookings.map(v => ({ id: `viewing-${v.id}`, title: `Viewing: ${v.prospectName}`, date: v.date, time: v.time, type: 'viewing', details: v })),
-    ...maintenanceRequests.filter(m => m.status !== 'completed').map(m => ({ id: `maintenance-${m.id}`, title: `Maintenance: ${m.issue}`, date: m.date, time: m.scheduledTime, type: 'maintenance', details: m }))
-  ];
-
-  const getDaysInMonth = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-    return { daysInMonth, startingDayOfWeek, month, year };
+  // DELETE PROPERTY
+  const handleDeleteProperty = async (id) => {
+    if (window.confirm('Are you sure you want to delete this property?')) {
+      try {
+        await deleteDoc(doc(db, 'properties', id));
+        alert('Property deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting property:', error);
+        alert('Error deleting property. Please try again.');
+      }
+    }
   };
 
-  const getEventsForDate = (day) => {
-    const { month, year } = getDaysInMonth();
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return calendarEvents.filter(event => event.date === dateStr);
+  // ADD TENANT
+  const handleAddTenant = async () => {
+    if (newTenant.name && newTenant.email && newTenant.property && newTenant.unit && newTenant.rent) {
+      try {
+        await addDoc(collection(db, 'tenants'), {
+          name: newTenant.name,
+          email: newTenant.email,
+          phone: newTenant.phone,
+          property: newTenant.property,
+          unit: newTenant.unit,
+          rent: parseInt(newTenant.rent),
+          leaseStart: newTenant.leaseStart,
+          leaseEnd: newTenant.leaseEnd,
+          status: 'active',
+          lastPayment: null,
+          landlordId: currentUser.uid,
+          createdAt: serverTimestamp()
+        });
+        
+        setNewTenant({ name: '', email: '', phone: '', property: '', unit: '', rent: '', leaseStart: '', leaseEnd: '' });
+        setShowTenantModal(false);
+        alert('Tenant added successfully!');
+      } catch (error) {
+        console.error('Error adding tenant:', error);
+        alert('Error adding tenant. Please try again.');
+      }
+    } else {
+      alert('Please fill in all required fields');
+    }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const markNotificationRead = (id) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === id ? { ...notif, read: true } : notif
-    ));
+  // ADD PAYMENT
+  const handleAddPayment = async () => {
+    if (newPayment.tenant && newPayment.amount && newPayment.dueDate) {
+      try {
+        await addDoc(collection(db, 'payments'), {
+          tenant: newPayment.tenant,
+          property: newPayment.property,
+          unit: newPayment.unit,
+          amount: parseInt(newPayment.amount),
+          dueDate: newPayment.dueDate,
+          paidDate: null,
+          status: 'pending',
+          method: newPayment.method || null,
+          landlordId: currentUser.uid,
+          createdAt: serverTimestamp()
+        });
+        
+        setNewPayment({ tenant: '', property: '', unit: '', amount: '', dueDate: '', method: '' });
+        setShowPaymentModal(false);
+        alert('Payment record added successfully!');
+      } catch (error) {
+        console.error('Error adding payment:', error);
+        alert('Error adding payment. Please try again.');
+      }
+    } else {
+      alert('Please fill in all required fields');
+    }
   };
 
-  const handleSendMemo = () => {
+  // RECORD PAYMENT
+  const handleRecordPayment = async (paymentId) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const paymentRef = doc(db, 'payments', paymentId);
+      
+      await updateDoc(paymentRef, {
+        status: 'paid',
+        paidDate: today,
+        method: 'M-Pesa'
+      });
+      
+      alert('Payment recorded successfully!');
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      alert('Error recording payment. Please try again.');
+    }
+  };
+
+  // ADD MAINTENANCE REQUEST
+  const handleAddMaintenance = async () => {
+    if (newMaintenance.property && newMaintenance.unit && newMaintenance.issue && newMaintenance.tenant) {
+      try {
+        await addDoc(collection(db, 'maintenanceRequests'), {
+          property: newMaintenance.property,
+          unit: newMaintenance.unit,
+          issue: newMaintenance.issue,
+          priority: newMaintenance.priority,
+          tenant: newMaintenance.tenant,
+          status: 'pending',
+          date: new Date().toISOString().split('T')[0],
+          scheduledTime: '09:00',
+          landlordId: currentUser.uid,
+          createdAt: serverTimestamp()
+        });
+        
+        setNewMaintenance({ property: '', unit: '', issue: '', priority: 'medium', tenant: '' });
+        setShowMaintenanceModal(false);
+        alert('Maintenance request added successfully!');
+      } catch (error) {
+        console.error('Error adding maintenance request:', error);
+        alert('Error adding maintenance request. Please try again.');
+      }
+    } else {
+      alert('Please fill in all required fields');
+    }
+  };
+
+  // UPDATE MAINTENANCE STATUS
+  const handleUpdateMaintenanceStatus = async (id, status) => {
+    try {
+      const requestRef = doc(db, 'maintenanceRequests', id);
+      await updateDoc(requestRef, { status });
+      alert(`Maintenance request ${status === 'in-progress' ? 'started' : 'marked as ' + status}!`);
+    } catch (error) {
+      console.error('Error updating maintenance status:', error);
+      alert('Error updating status. Please try again.');
+    }
+  };
+
+  // ADD LISTING with images
+  const handleAddListing = async () => {
+    if (newListing.property && newListing.unit && newListing.bedrooms && newListing.rent) {
+      try {
+        await addDoc(collection(db, 'listings'), {
+          property: newListing.property,
+          unit: newListing.unit,
+          bedrooms: parseInt(newListing.bedrooms),
+          bathrooms: parseInt(newListing.bathrooms) || 1,
+          area: parseInt(newListing.area) || 0,
+          rent: parseInt(newListing.rent),
+          deposit: parseInt(newListing.deposit) || parseInt(newListing.rent),
+          description: newListing.description,
+          amenities: newListing.amenities.split(',').map(a => a.trim()).filter(a => a),
+          images: newListing.images.length > 0 ? newListing.images : [
+            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'
+          ],
+          status: 'available',
+          postedDate: new Date().toISOString().split('T')[0],
+          landlordId: currentUser.uid,
+          createdAt: serverTimestamp()
+        });
+        
+        setNewListing({ property: '', unit: '', bedrooms: '', bathrooms: '', area: '', rent: '', deposit: '', description: '', amenities: '', images: [] });
+        setShowListingModal(false);
+        alert('Listing published successfully!');
+      } catch (error) {
+        console.error('Error adding listing:', error);
+        alert('Error publishing listing. Please try again.');
+      }
+    } else {
+      alert('Please fill in all required fields');
+    }
+  };
+
+  // DELETE LISTING
+  const handleDeleteListing = async (id) => {
+    if (window.confirm('Are you sure you want to delete this listing?')) {
+      try {
+        await deleteDoc(doc(db, 'listings', id));
+        alert('Listing deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting listing:', error);
+        alert('Error deleting listing. Please try again.');
+      }
+    }
+  };
+
+  // SEND MEMO
+  const handleSendMemo = async () => {
     if (newMemo.title && newMemo.message) {
-      const memo = {
-        id: memos.length + 1,
-        title: newMemo.title,
-        message: newMemo.message,
-        priority: newMemo.priority,
-        targetAudience: newMemo.targetAudience,
-        sentBy: profileSettings.name,
-        sentAt: new Date().toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-        recipients: newMemo.targetAudience === 'all' ? tenants.length : properties.find(p => p.name === newMemo.targetAudience)?.occupied || 0
-      };
-      setMemos([memo, ...memos]);
-      setNewMemo({ title: '', message: '', priority: 'normal', targetAudience: 'all' });
-      setShowMemoModal(false);
-      alert('Memo sent successfully to all recipients!');
+      try {
+        await addDoc(collection(db, 'memos'), {
+          title: newMemo.title,
+          message: newMemo.message,
+          priority: newMemo.priority,
+          targetAudience: newMemo.targetAudience,
+          sentBy: profileSettings.name,
+          sentAt: new Date().toISOString(),
+          recipients: newMemo.targetAudience === 'all' ? tenants.length : properties.find(p => p.name === newMemo.targetAudience)?.occupied || 0,
+          landlordId: currentUser.uid,
+          createdAt: serverTimestamp()
+        });
+        
+        setNewMemo({ title: '', message: '', priority: 'normal', targetAudience: 'all' });
+        setShowMemoModal(false);
+        alert('Memo sent successfully to all recipients!');
+      } catch (error) {
+        console.error('Error sending memo:', error);
+        alert('Error sending memo. Please try again.');
+      }
     }
   };
 
-  const handleDeleteMemo = (id) => {
+  // DELETE MEMO
+  const handleDeleteMemo = async (id) => {
     if (window.confirm('Are you sure you want to delete this memo?')) {
-      setMemos(memos.filter(m => m.id !== id));
+      try {
+        await deleteDoc(doc(db, 'memos', id));
+      } catch (error) {
+        console.error('Error deleting memo:', error);
+        alert('Error deleting memo. Please try again.');
+      }
+    }
+  };
+
+  // UPDATE VIEWING STATUS
+  const handleUpdateViewingStatus = async (id, status) => {
+    try {
+      const viewingRef = doc(db, 'viewingBookings', id);
+      await updateDoc(viewingRef, { status });
+      
+      if (status === 'confirmed') {
+        alert('Viewing confirmed! Notification sent to prospect.');
+      }
+    } catch (error) {
+      console.error('Error updating viewing status:', error);
+      alert('Error updating viewing status. Please try again.');
     }
   };
 
@@ -311,177 +620,83 @@ const LandlordDashboard = () => {
     setPasswordData({ current: '', new: '', confirm: '' });
   };
 
-  const handleAddProperty = () => {
-    if (newProperty.name && newProperty.location && newProperty.units) {
-      const property = {
-        id: properties.length + 1,
-        name: newProperty.name,
-        location: newProperty.location,
-        units: parseInt(newProperty.units),
-        occupied: parseInt(newProperty.occupied) || 0,
-        revenue: parseInt(newProperty.revenue) || 0
-      };
-      setProperties([...properties, property]);
-      setNewProperty({ name: '', location: '', units: '', occupied: '', revenue: '' });
-      setShowPropertyModal(false);
-      alert('Property added successfully!');
-    } else {
-      alert('Please fill in all required fields');
-    }
-  };
-
-  const handleDeleteProperty = (id) => {
-    if (window.confirm('Are you sure you want to delete this property?')) {
-      setProperties(properties.filter(p => p.id !== id));
-      alert('Property deleted successfully!');
-    }
-  };
-
-  const handleAddTenant = () => {
-    if (newTenant.name && newTenant.email && newTenant.property && newTenant.unit && newTenant.rent) {
-      const tenant = {
-        id: tenants.length + 1,
-        ...newTenant,
-        rent: parseInt(newTenant.rent),
-        status: 'active',
-        lastPayment: null
-      };
-      setTenants([...tenants, tenant]);
-      setNewTenant({ name: '', email: '', phone: '', property: '', unit: '', rent: '', leaseStart: '', leaseEnd: '' });
-      setShowTenantModal(false);
-      alert('Tenant added successfully!');
-    } else {
-      alert('Please fill in all required fields');
-    }
-  };
-
-  const handleAddMaintenance = () => {
-    if (newMaintenance.property && newMaintenance.unit && newMaintenance.issue && newMaintenance.tenant) {
-      const request = {
-        id: maintenanceRequests.length + 1,
-        ...newMaintenance,
-        status: 'pending',
-        date: new Date().toISOString().split('T')[0],
-        scheduledTime: '09:00'
-      };
-      setMaintenanceRequests([...maintenanceRequests, request]);
-      setNewMaintenance({ property: '', unit: '', issue: '', priority: 'medium', tenant: '' });
-      setShowMaintenanceModal(false);
-      alert('Maintenance request added successfully!');
-    } else {
-      alert('Please fill in all required fields');
-    }
-  };
-
-  const handleAddPayment = () => {
-    if (newPayment.tenant && newPayment.amount && newPayment.dueDate) {
-      const payment = {
-        id: payments.length + 1,
-        tenant: newPayment.tenant,
-        property: newPayment.property,
-        unit: newPayment.unit,
-        amount: parseInt(newPayment.amount),
-        dueDate: newPayment.dueDate,
-        paidDate: null,
-        status: 'pending',
-        method: newPayment.method || null
-      };
-      setPayments([...payments, payment]);
-      setNewPayment({ tenant: '', property: '', unit: '', amount: '', dueDate: '', method: '' });
-      setShowPaymentModal(false);
-      alert('Payment record added successfully!');
-    } else {
-      alert('Please fill in all required fields');
-    }
-  };
-
-  const handleAddListing = () => {
-    if (newListing.property && newListing.unit && newListing.bedrooms && newListing.rent) {
-      const listing = {
-        id: listings.length + 1,
-        property: newListing.property,
-        unit: newListing.unit,
-        bedrooms: parseInt(newListing.bedrooms),
-        bathrooms: parseInt(newListing.bathrooms) || 1,
-        area: parseInt(newListing.area) || 0,
-        rent: parseInt(newListing.rent),
-        deposit: parseInt(newListing.deposit) || parseInt(newListing.rent),
-        description: newListing.description,
-        amenities: newListing.amenities.split(',').map(a => a.trim()).filter(a => a),
-        images: newListing.images.length > 0 ? newListing.images : [
-          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800'
-        ],
-        status: 'available',
-        postedDate: new Date().toISOString().split('T')[0]
-      };
-      setListings([...listings, listing]);
-      setNewListing({ property: '', unit: '', bedrooms: '', bathrooms: '', area: '', rent: '', deposit: '', description: '', amenities: '', images: [] });
-      setShowListingModal(false);
-      alert('Listing published successfully!');
-    } else {
-      alert('Please fill in all required fields');
-    }
-  };
-
-  const handleDeleteListing = (id) => {
-    if (window.confirm('Are you sure you want to delete this listing?')) {
-      setListings(listings.filter(l => l.id !== id));
-      alert('Listing deleted successfully!');
-    }
-  };
-
-  const handleImageUrlAdd = () => {
-    const url = prompt('Enter image URL:');
-    if (url) {
-      setNewListing({...newListing, images: [...newListing.images, url]});
-    }
-  };
-
-  const handleRemoveImage = (index) => {
-    setNewListing({...newListing, images: newListing.images.filter((_, i) => i !== index)});
-  };
-
-  const handleRecordPayment = (paymentId) => {
-    const today = new Date().toISOString().split('T')[0];
-    setPayments(payments.map(payment => 
-      payment.id === paymentId ? { ...payment, status: 'paid', paidDate: today, method: payment.method || 'M-Pesa' } : payment
+  const markNotificationRead = (id) => {
+    setNotifications(notifications.map(notif => 
+      notif.id === id ? { ...notif, read: true } : notif
     ));
-    alert('Payment recorded successfully!');
   };
 
-  const handleUpdateMaintenanceStatus = (id, status) => {
-    setMaintenanceRequests(maintenanceRequests.map(req => 
-      req.id === id ? { ...req, status } : req
-    ));
-    alert(`Maintenance request ${status === 'in-progress' ? 'started' : 'marked as ' + status}!`);
-  };
+  // Stats calculations
+  const stats = [
+    { 
+      label: 'Total Properties', 
+      value: properties.length, 
+      icon: Home, 
+      color: 'bg-blue-100 text-blue-900' 
+    },
+    { 
+      label: 'Active Tenants', 
+      value: tenants.filter(t => t.status === 'active').length, 
+      icon: Users, 
+      color: 'bg-green-100 text-green-900' 
+    },
+    { 
+      label: 'Monthly Revenue', 
+      value: `KES ${Math.round(properties.reduce((sum, p) => sum + (p.revenue || 0), 0) / 1000)}K`, 
+      icon: DollarSign, 
+      color: 'bg-purple-100 text-purple-900' 
+    },
+    { 
+      label: 'Pending Viewings', 
+      value: viewingBookings.filter(v => v.status === 'pending').length, 
+      icon: CalendarCheck, 
+      color: 'bg-orange-100 text-orange-900' 
+    }
+  ];
 
   const paymentStats = {
-    expected: payments.reduce((sum, p) => sum + p.amount, 0),
-    received: payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0),
-    pending: payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0),
-    overdue: payments.filter(p => p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0)
+    expected: payments.reduce((sum, p) => sum + (p.amount || 0), 0),
+    received: payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.amount || 0), 0),
+    pending: payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + (p.amount || 0), 0),
+    overdue: payments.filter(p => p.status === 'overdue').reduce((sum, p) => sum + (p.amount || 0), 0)
   };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Filter viewings
+  const filteredViewings = viewingBookings.filter(viewing => {
+    if (viewingFilter === 'all') return true;
+    return viewing.status === viewingFilter;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile overlay */}
-{sidebarOpen && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
-)}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
+      )}
 
-<aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
-      <div className="p-6">
-        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
-        <div className="flex items-center cursor-pointer">
-        <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
+      {/* Sidebar */}
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
+        <div className="p-6">
+          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+            <Home className="w-8 h-8" />
+            <span className="text-xl font-bold">Nyumbanii</span>
+          </a>
         </div>
-    <span className="text-xl font-bold">Nyumbanii</span>
-  </a>
-</div>
 
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'memos', 'settings'].map((view) => {
             const icons = { 
               dashboard: Home, 
@@ -501,7 +716,11 @@ const LandlordDashboard = () => {
               memos: 'Updates & Memos'
             };
             return (
-              <button key={view} onClick={() => { setCurrentView(view); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}>
+              <button 
+                key={view} 
+                onClick={() => { setCurrentView(view); setSidebarOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}
+              >
                 <Icon className="w-5 h-5" />
                 <span className="capitalize text-sm">{labels[view] || view}</span>
               </button>
@@ -517,18 +736,20 @@ const LandlordDashboard = () => {
         </div>
       </aside>
 
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-    <header className="bg-white shadow-sm p-4 lg:p-6">
-        <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-        <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
-        <Menu className="w-6 h-6 text-gray-600" />
-        </button>
-        <div>
-        <h1 className="text-xl lg:text-2xl font-bold text-gray-900 capitalize">{currentView}</h1>
-        <p className="text-sm lg:text-base text-gray-600 hidden sm:block">Welcome back, {profileSettings.name.split(' ')[0]}!</p>
-        </div>
-         </div>
+        {/* Header */}
+        <header className="bg-white shadow-sm p-4 lg:p-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
+                <Menu className="w-6 h-6 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 capitalize">{currentView}</h1>
+                <p className="text-sm lg:text-base text-gray-600 hidden sm:block">Welcome back, {profileSettings.name.split(' ')[0]}!</p>
+              </div>
+            </div>
             <div className="flex items-center gap-2 lg:gap-4">
               <div className="relative">
                 <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
@@ -545,12 +766,19 @@ const LandlordDashboard = () => {
                       <button onClick={() => setShowNotifications(false)}><X className="w-5 h-5 text-gray-500" /></button>
                     </div>
                     <div className="max-h-96 overflow-y-auto">
-                      {notifications.map(notif => (
-                        <div key={notif.id} onClick={() => markNotificationRead(notif.id)} className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notif.read ? 'bg-blue-50' : ''}`}>
-                          <p className="text-sm text-gray-900">{notif.message}</p>
-                          <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">
+                          <Bell className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p>No notifications yet</p>
                         </div>
-                      ))}
+                      ) : (
+                        notifications.map(notif => (
+                          <div key={notif.id} onClick={() => markNotificationRead(notif.id)} className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notif.read ? 'bg-blue-50' : ''}`}>
+                            <p className="text-sm text-gray-900">{notif.message}</p>
+                            <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -562,7 +790,9 @@ const LandlordDashboard = () => {
           </div>
         </header>
 
+        {/* Content Area */}
         <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
+          {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
@@ -582,855 +812,960 @@ const LandlordDashboard = () => {
               </div>
 
               <div className="grid lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Upcoming Viewings</h2>
-                  <div className="space-y-3">
-                    {viewingBookings.slice(0, 3).map((viewing) => (
-                      <div key={viewing.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-semibold text-gray-900">{viewing.prospectName}</p>
-                          <p className="text-sm text-gray-600">{viewing.property}</p>
-                          <p className="text-xs text-gray-500">{viewing.date} at {viewing.time}</p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                          {viewing.status}
-                        </span>
+                {/* Recent Viewings */}
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <CalendarCheck className="w-5 h-5 text-[#003366]" />
+                    Recent Viewing Requests
+                  </h3>
+                  {viewingBookings.slice(0, 5).map(viewing => (
+                    <div key={viewing.id} className="flex items-center justify-between py-3 border-b last:border-0">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 text-sm">{viewing.prospectName}</p>
+                        <p className="text-xs text-gray-600">{viewing.property} - {viewing.date}</p>
                       </div>
-                    ))}
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                        viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {viewing.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Payment Summary */}
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-[#003366]" />
+                    Payment Summary
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Expected This Month</span>
+                      <span className="font-semibold text-gray-900">KES {paymentStats.expected.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Received</span>
+                      <span className="font-semibold text-green-600">KES {paymentStats.received.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Pending</span>
+                      <span className="font-semibold text-yellow-600">KES {paymentStats.pending.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Overdue</span>
+                      <span className="font-semibold text-red-600">KES {paymentStats.overdue.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-900">Collection Rate</span>
+                      <span className="font-bold text-[#003366]">
+                        {paymentStats.expected > 0 ? Math.round((paymentStats.received / paymentStats.expected) * 100) : 0}%
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Maintenance Overview</h2>
-                  <div className="space-y-3">
-                    {maintenanceRequests.filter(r => r.status !== 'completed').slice(0, 3).map(request => (
-                      <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-semibold text-gray-900">{request.property} - {request.unit}</p>
-                          <p className="text-sm text-gray-600">{request.issue}</p>
-                          <p className="text-xs text-gray-500">{request.date} at {request.scheduledTime}</p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                          {request.status}
-                        </span>
+                {/* Maintenance Overview */}
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Wrench className="w-5 h-5 text-[#003366]" />
+                    Maintenance Requests
+                  </h3>
+                  {maintenanceRequests.slice(0, 5).map(request => (
+                    <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-0">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 text-sm">{request.issue}</p>
+                        <p className="text-xs text-gray-600">{request.property} - Unit {request.unit}</p>
                       </div>
-                    ))}
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        request.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {request.priority}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => setShowPropertyModal(true)} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-center">
+                      <Building className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                      <span className="text-xs font-medium text-gray-900">Add Property</span>
+                    </button>
+                    <button onClick={() => setShowTenantModal(true)} className="p-4 bg-green-50 hover:bg-green-100 rounded-lg transition text-center">
+                      <Users className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                      <span className="text-xs font-medium text-gray-900">Add Tenant</span>
+                    </button>
+                    <button onClick={() => setShowListingModal(true)} className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-center">
+                      <Eye className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                      <span className="text-xs font-medium text-gray-900">Create Listing</span>
+                    </button>
+                    <button onClick={() => setShowMemoModal(true)} className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition text-center">
+                      <Mail className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+                      <span className="text-xs font-medium text-gray-900">Send Memo</span>
+                    </button>
                   </div>
                 </div>
               </div>
             </>
           )}
 
-          {currentView === 'viewings' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-                <h2 className="text-lg lg:text-xl font-bold text-gray-900">Property Viewing Bookings</h2>
-                <button className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold transition text-sm">
-                <Download className="w-4 h-4 lg:w-5 lg:h-5" />Export
+          {/* Properties View */}
+          {currentView === 'properties' && (
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900">My Properties</h2>
+                <button onClick={() => setShowPropertyModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Add Property
                 </button>
               </div>
-
-              <div className="grid gap-4">
-                {viewingBookings.map(viewing => (
-                  // Find the viewing card div and update it:
-<div key={viewing.id} className="border border-gray-200 rounded-lg p-4 lg:p-6 hover:shadow-md transition">
-  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
-    <div className="flex items-start gap-3 lg:gap-4 flex-1 min-w-0">
-      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-[#003366] rounded-full flex items-center justify-center text-white text-sm lg:text-base font-semibold flex-shrink-0">
-        {viewing.prospectName.split(' ').map(n => n[0]).join('')}
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-gray-900 text-base lg:text-lg truncate">{viewing.prospectName}</h3>
-        <p className="text-sm lg:text-base text-gray-600 truncate">{viewing.property}</p>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs lg:text-sm text-gray-600">
-          <div className="flex items-center gap-1 min-w-0">
-            <Mail className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
-            <span className="truncate">{viewing.email}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Phone className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
-            <span>{viewing.phone}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <span className={`px-2 lg:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-      viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-      viewing.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-      viewing.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-      'bg-yellow-100 text-yellow-800'
-    }`}>
-      {viewing.status}
-    </span>
-  </div>
-
-  <div className="grid sm:grid-cols-2 gap-3 lg:gap-4 mb-4 p-3 lg:p-4 bg-gray-50 rounded-lg">
-    <div>
-      <p className="text-xs lg:text-sm text-gray-600 mb-1">Scheduled Date & Time</p>
-      <div className="flex items-center gap-2">
-        <Calendar className="w-3 h-3 lg:w-4 lg:h-4 text-[#003366] flex-shrink-0" />
-        <p className="font-semibold text-gray-900 text-sm lg:text-base">{viewing.date} at {viewing.time}</p>
-      </div>
-    </div>
-    <div>
-      <p className="text-xs lg:text-sm text-gray-600 mb-1">Booked At</p>
-      <div className="flex items-center gap-2">
-        <Clock className="w-3 h-3 lg:w-4 lg:h-4 text-[#003366] flex-shrink-0" />
-        <p className="text-gray-700 text-sm lg:text-base">{viewing.bookedAt}</p>
-      </div>
-    </div>
-  </div>
-
-  {viewing.notes && (
-    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-      <p className="text-xs lg:text-sm text-gray-600 mb-1">Notes:</p>
-      <p className="text-sm lg:text-base text-gray-900">{viewing.notes}</p>
-    </div>
-  )}
-
-  <div className="flex flex-col sm:flex-row gap-2">
-    {viewing.status === 'pending' && (
-      <>
-        <button onClick={() => handleUpdateViewingStatus(viewing.id, 'confirmed')} className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm">
-          <CheckCircle className="w-4 h-4" />Confirm
-        </button>
-        <button onClick={() => handleUpdateViewingStatus(viewing.id, 'cancelled')} className="flex items-center justify-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-semibold transition text-sm">
-          <X className="w-4 h-4" />Cancel
-        </button>
-      </>
-    )}
-    {viewing.status === 'confirmed' && (
-      <button onClick={() => handleUpdateViewingStatus(viewing.id, 'completed')} className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm">
-        <CheckCircle className="w-4 h-4" />Mark Completed
-      </button>
-    )}
-    <button onClick={() => setSelectedViewing(viewing)} className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition text-sm">
-      <Eye className="w-4 h-4" />View Details
-    </button>
-  </div>
-</div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {properties.map(property => (
+                  <div key={property.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
+                    {/* Property Image */}
+                    <div className="relative h-48 bg-gray-200">
+                      {property.images && property.images.length > 0 ? (
+                        <img 
+                          src={property.images[0]} 
+                          alt={property.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#003366] to-[#002244]">
+                          <Building className="w-16 h-16 text-white opacity-50" />
+                        </div>
+                      )}
+                      {property.images && property.images.length > 1 && (
+                        <div className="absolute bottom-2 right-2 px-2 py-1 bg-black bg-opacity-70 text-white text-xs rounded-full">
+                          +{property.images.length - 1} photos
+                        </div>
+                      )}
+                    </div>
                     
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-lg">{property.name}</h3>
+                          <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                            <MapPin className="w-4 h-4" />
+                            {property.location}
+                          </p>
+                        </div>
+                        <button onClick={() => handleDeleteProperty(property.id)} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-600">Total Units</p>
+                          <p className="text-lg font-semibold text-gray-900">{property.units}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Occupied</p>
+                          <p className="text-lg font-semibold text-green-600">{property.occupied}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-4">
+                        <p className="text-xs text-gray-600 mb-1">Occupancy Rate</p>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-[#003366] h-2 rounded-full transition-all" 
+                            style={{ width: `${(property.occupied / property.units) * 100}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">{Math.round((property.occupied / property.units) * 100)}% occupied</p>
+                      </div>
+                      
+                      <div className="pt-4 border-t">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Monthly Revenue</span>
+                          <span className="font-semibold text-[#003366]">KES {property.revenue?.toLocaleString() || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
 
+          {/* Listings View */}
           {currentView === 'listings' && (
-                      <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex justify-between items-center mb-6">
-                          <div>
-                            <h2 className="text-xl font-bold text-gray-900">Property Listings</h2>
-                            <p className="text-sm text-gray-600">Manage your available units for rent</p>
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Property Listings</h2>
+                <button onClick={() => setShowListingModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Create Listing
+                </button>
+              </div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {listings.map(listing => (
+                  <div key={listing.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
+                    {/* Listing Images Carousel */}
+                    <div className="relative h-56 bg-gray-200">
+                      {listing.images && listing.images.length > 0 ? (
+                        <>
+                          <img 
+                            src={listing.images[0]} 
+                            alt={`${listing.property} - Unit ${listing.unit}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-2 left-2 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
+                            {listing.status === 'available' ? 'Available' : 'Occupied'}
                           </div>
-                          <button onClick={() => setShowListingModal(true)} className="flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition">
-                            <Plus className="w-5 h-5" />Add Listing
-                          </button>
-                        </div>
-          
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {listings.map(listing => (
-                            <div key={listing.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition">
-                              <div className="relative h-48 bg-gray-200">
-                                {listing.images && listing.images.length > 0 ? (
-                                  <img src={listing.images[0]} alt={`${listing.property} - ${listing.unit}`} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                                    <Home className="w-16 h-16 text-[#003366] opacity-50" />
-                                  </div>
-                                )}
-                                <div className="absolute top-3 right-3">
-                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${listing.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                    {listing.status}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="p-5">
-                                <h3 className="font-bold text-gray-900 text-lg mb-1">{listing.property}</h3>
-                                <p className="text-sm text-gray-600 mb-3">Unit {listing.unit}</p>
-                                
-                                <div className="flex items-center gap-4 mb-3 text-sm text-gray-600">
-                                  <div className="flex items-center gap-1">
-                                    <Bed className="w-4 h-4" /><span>{listing.bedrooms} bed</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Bath className="w-4 h-4" /><span>{listing.bathrooms} bath</span>
-                                  </div>
-                                  {listing.area > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Square className="w-4 h-4" /><span>{listing.area} m²</span>
-                                    </div>
-                                  )}
-                                </div>
-          
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                  {listing.amenities.slice(0, 3).map((amenity, idx) => (
-                                    <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">{amenity}</span>
-                                  ))}
-                                  {listing.amenities.length > 3 && (
-                                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">+{listing.amenities.length - 3} more</span>
-                                  )}
-                                </div>
-          
-                                <div className="mb-4">
-                                  <p className="text-sm text-gray-600">Monthly Rent</p>
-                                  <p className="text-2xl font-bold text-[#003366]">KES {listing.rent.toLocaleString()}</p>
-                                </div>
-          
-                                <div className="flex gap-2">
-                                  <button onClick={() => { setSelectedListing(listing); setCurrentImageIndex(0); }} className="flex-1 px-3 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition text-sm">
-                                    View Details
-                                  </button>
-                                  <button onClick={() => handleDeleteListing(listing.id)} className="p-2 border border-red-600 text-red-600 hover:bg-red-50 rounded-lg transition">
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-          
-                        {listings.length === 0 && (
-                          <div className="text-center py-12">
-                            <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-600 mb-4">No listings yet. Create your first listing to attract tenants!</p>
-                            <button onClick={() => setShowListingModal(true)} className="inline-flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-6 py-3 rounded-lg font-semibold transition">
-                              <Plus className="w-5 h-5" />Add Your First Listing
+                          {listing.images.length > 1 && (
+                            <button 
+                              onClick={() => setSelectedListing(listing)}
+                              className="absolute bottom-2 right-2 px-3 py-1 bg-black bg-opacity-70 text-white text-xs rounded-full hover:bg-opacity-90"
+                            >
+                              View all {listing.images.length} photos
                             </button>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
+                          <Home className="w-16 h-16 text-white opacity-50" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{listing.property}</h3>
+                          <p className="text-sm text-gray-600">Unit {listing.unit}</p>
+                        </div>
+                        <button onClick={() => handleDeleteListing(listing.id)} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                      
+                      <div className="flex gap-4 mb-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <Bed className="w-4 h-4" />
+                          <span>{listing.bedrooms} bed</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Bath className="w-4 h-4" />
+                          <span>{listing.bathrooms} bath</span>
+                        </div>
+                        {listing.area && (
+                          <div className="flex items-center gap-1">
+                            <Square className="w-4 h-4" />
+                            <span>{listing.area} m²</span>
                           </div>
                         )}
                       </div>
-                    )}
-          
-
-          {currentView === 'calendar' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Schedule Calendar</h2>
-                <div className="flex gap-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                    <span>Viewings</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-4 h-4 bg-orange-500 rounded"></div>
-                    <span>Maintenance</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="p-3 text-center font-semibold text-gray-700 border-r border-gray-200 last:border-r-0">{day}</div>
-                  ))}
-                </div>
-                
-                <div className="grid grid-cols-7">
-                  {(() => {
-                    const { daysInMonth, startingDayOfWeek } = getDaysInMonth();
-                    const cells = [];
-                    
-                    for (let i = 0; i < startingDayOfWeek; i++) {
-                      cells.push(<div key={`empty-${i}`} className="min-h-24 p-2 border-r border-b border-gray-200 bg-gray-50"></div>);
-                    }
-                    
-                    for (let day = 1; day <= daysInMonth; day++) {
-                      const events = getEventsForDate(day);
-                      const today = new Date().getDate();
-                      const isToday = day === today;
                       
-                      cells.push(
-                        <div key={day} className={`min-h-24 p-2 border-r border-b border-gray-200 ${isToday ? 'bg-blue-50' : ''}`}>
-                          <div className={`text-sm font-semibold mb-1 ${isToday ? 'text-blue-900' : 'text-gray-700'}`}>{day}</div>
-                          <div className="space-y-1">
-                            {events.map(event => (
-                              <div key={event.id} className={`text-xs p-1 rounded ${event.type === 'viewing' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
-                                <div className="font-medium truncate">{event.time}</div>
-                                <div className="truncate">{event.title}</div>
-                              </div>
+                      {listing.amenities && listing.amenities.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-xs text-gray-600 mb-2">Amenities</p>
+                          <div className="flex flex-wrap gap-2">
+                            {listing.amenities.slice(0, 3).map((amenity, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                                {amenity}
+                              </span>
                             ))}
+                            {listing.amenities.length > 3 && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                                +{listing.amenities.length - 3} more
+                              </span>
+                            )}
                           </div>
                         </div>
-                      );
-                    }
-                    
-                    return cells;
-                  })()}
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Upcoming Events</h3>
-                <div className="space-y-3">
-                  {calendarEvents.slice(0, 5).map(event => (
-                    <div key={event.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${event.type === 'viewing' ? 'bg-blue-100 text-blue-900' : 'bg-orange-100 text-orange-900'}`}>
-                          {event.type === 'viewing' ? <Eye className="w-6 h-6" /> : <Wrench className="w-6 h-6" />}
+                      )}
+                      
+                      <div className="pt-4 border-t space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Rent</span>
+                          <span className="font-bold text-[#003366]">KES {listing.rent?.toLocaleString()}/mo</span>
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{event.title}</p>
-                          <p className="text-sm text-gray-600">{event.date} at {event.time}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Deposit</span>
+                          <span className="font-semibold text-gray-900">KES {listing.deposit?.toLocaleString()}</span>
                         </div>
+                        <p className="text-xs text-gray-500 mt-2">Posted: {listing.postedDate}</p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${event.type === 'viewing' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
-                        {event.type}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentView === 'properties' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-             <h2 className="text-xl font-bold text-gray-900">Your Properties</h2>
-              <button onClick={() => setShowPropertyModal(true)} className="flex items-center justify-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition whitespace-nowrap">
-                 <Building className="w-5 h-5" />Add Property
-              </button>
-            </div>
-
-              <div className="grid gap-4">
-                {properties.map(property => (
-                  <div key={property.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{property.name}</h3>
-                        <div className="flex items-center text-gray-600 mb-2">
-                          <MapPin className="w-4 h-4 mr-1" />{property.location}
-                        </div>
-                      </div>
-                      <button onClick={() => handleDeleteProperty(property.id)} className="p-2 hover:bg-red-50 rounded-lg transition text-red-600">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    <div className="grid md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Total Units</p>
-                        <p className="text-2xl font-bold text-gray-900">{property.units}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Occupied</p>
-                        <p className="text-2xl font-bold text-green-600">{property.occupied}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Vacant</p>
-                        <p className="text-2xl font-bold text-orange-600">{property.units - property.occupied}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Monthly Revenue</p>
-                        <p className="text-2xl font-bold text-[#003366]">KES {(property.revenue / 1000).toFixed(0)}K</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 mt-4">
-                      <button className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">View Units</button>
-                      <button className="px-4 py-2 border-2 border-[#003366] text-[#003366] hover:bg-blue-50 rounded-lg font-semibold transition">Edit</button>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
 
-          {currentView === 'maintenance' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Maintenance Requests</h2>
-                <button onClick={() => setShowMaintenanceModal(true)} className="flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition">
-                  <Wrench className="w-5 h-5" />Add Request
-                </button>
+          {/* Viewings View */}
+          {currentView === 'viewings' && (
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Viewing Requests</h2>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setViewingFilter('all')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                      viewingFilter === 'all' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button 
+                    onClick={() => setViewingFilter('pending')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                      viewingFilter === 'pending' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Pending
+                  </button>
+                  <button 
+                    onClick={() => setViewingFilter('confirmed')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                      viewingFilter === 'confirmed' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Confirmed
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid gap-4">
+                {filteredViewings.map(viewing => (
+                  <div key={viewing.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-lg">{viewing.prospectName}</h3>
+                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-4 h-4" />
+                                {viewing.phone}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Mail className="w-4 h-4" />
+                                {viewing.email}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                            viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            viewing.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {viewing.status}
+                          </span>
+                        </div>
+                        
+                        <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">Property</p>
+                            <p className="font-medium text-gray-900">{viewing.property}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">Viewing Date & Time</p>
+                            <p className="font-medium text-gray-900">{viewing.date} at {viewing.time}</p>
+                          </div>
+                        </div>
+                        
+                        {viewing.credibilityScore && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-600 mb-2">Credibility Score</p>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full transition-all ${
+                                    viewing.credibilityScore >= 80 ? 'bg-green-500' :
+                                    viewing.credibilityScore >= 60 ? 'bg-yellow-500' :
+                                    'bg-red-500'
+                                  }`}
+                                  style={{ width: `${viewing.credibilityScore}%` }}
+                                ></div>
+                              </div>
+                              <span className="font-semibold text-gray-900 text-sm">{viewing.credibilityScore}/100</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <button 
+                          onClick={() => setSelectedViewing(viewing)}
+                          className="text-[#003366] hover:text-[#002244] text-sm font-medium"
+                        >
+                          View Full Details →
+                        </button>
+                      </div>
+                      
+                      {viewing.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleUpdateViewingStatus(viewing.id, 'confirmed')}
+                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-2"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => handleUpdateViewingStatus(viewing.id, 'declined')}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Tenants View */}
+          {currentView === 'tenants' && (
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900">My Tenants</h2>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:flex-initial">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search tenants..."
+                      value={tenantSearchQuery}
+                      onChange={(e) => setTenantSearchQuery(e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent w-full"
+                    />
+                  </div>
+                  <button onClick={() => setShowTenantModal(true)} className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition whitespace-nowrap">
+                    Add Tenant
+                  </button>
+                </div>
               </div>
 
+              <div className="flex gap-2 mb-6 overflow-x-auto">
+                {['all', 'active', 'pending', 'moved-out'].map(filter => (
+                  <button
+                    key={filter}
+                    onClick={() => setTenantFilter(filter)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
+                      tenantFilter === filter ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {filter.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="grid gap-4">
+                {tenants
+                  .filter(tenant => tenantFilter === 'all' || tenant.status === tenantFilter)
+                  .filter(tenant => tenant.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) || 
+                                   tenant.email.toLowerCase().includes(tenantSearchQuery.toLowerCase()))
+                  .map(tenant => (
+                  <div key={tenant.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="flex items-start gap-4 flex-1">
+                        <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                          {tenant.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-gray-900 text-lg">{tenant.name}</h3>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              tenant.status === 'active' ? 'bg-green-100 text-green-800' :
+                              tenant.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {tenant.status}
+                            </span>
+                          </div>
+                          <div className="grid sm:grid-cols-2 gap-2 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <Mail className="w-4 h-4" />
+                              {tenant.email}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-4 h-4" />
+                              {tenant.phone}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Building className="w-4 h-4" />
+                              {tenant.property} - Unit {tenant.unit}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4" />
+                              KES {tenant.rent?.toLocaleString()}/mo
+                            </span>
+                          </div>
+                          {tenant.leaseEnd && (
+                            <p className="text-xs text-gray-500 mt-2">Lease ends: {tenant.leaseEnd}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm">
+                          View Details
+                        </button>
+                        <button className="px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition text-sm">
+                          Message
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Payments View */}
+          {currentView === 'payments' && (
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
+                <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                  Record Payment
+                </button>
+              </div>
+              
+              <div className="grid md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white p-4 rounded-xl shadow-sm">
+                  <p className="text-sm text-gray-600 mb-1">Total Expected</p>
+                  <p className="text-2xl font-bold text-gray-900">KES {paymentStats.expected.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm">
+                  <p className="text-sm text-gray-600 mb-1">Received</p>
+                  <p className="text-2xl font-bold text-green-600">KES {paymentStats.received.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm">
+                  <p className="text-sm text-gray-600 mb-1">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-600">KES {paymentStats.pending.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm">
+                  <p className="text-sm text-gray-600 mb-1">Overdue</p>
+                  <p className="text-2xl font-bold text-red-600">KES {paymentStats.overdue.toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"></th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tenant</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {payments.map(payment => (
+                        <tr key={payment.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{payment.tenant}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-600">{payment.property}</div>
+                            <div className="text-xs text-gray-500">Unit {payment.unit}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-semibold text-gray-900">KES {payment.amount?.toLocaleString()}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-600">{payment.dueDate}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              payment.status === 'paid' ? 'bg-green-100 text-green-800' :
+                              payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {payment.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {payment.status === 'pending' && (
+                              <button 
+                                onClick={() => handleRecordPayment(payment.id)}
+                                className="text-[#003366] hover:text-[#002244] font-medium"
+                              >
+                                Mark Paid
+                              </button>
+                            )}
+                            {payment.status === 'paid' && (
+                              <button className="text-gray-400 cursor-not-allowed">
+                                <Download className="w-5 h-5" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Maintenance View */}
+          {currentView === 'maintenance' && (
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Maintenance Requests</h2>
+                <button onClick={() => setShowMaintenanceModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                  Add Request
+                </button>
+              </div>
+              
               <div className="grid gap-4">
                 {maintenanceRequests.map(request => (
-                  <div key={request.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-                    <div className="flex justify-between items-start mb-4">
+                  <div key={request.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-gray-900 text-lg">{request.issue}</h3>
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-lg">{request.issue}</h3>
+                            <p className="text-sm text-gray-600 mt-1">{request.property} - Unit {request.unit}</p>
+                            <p className="text-sm text-gray-600">Tenant: {request.tenant}</p>
+                          </div>
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             request.priority === 'high' ? 'bg-red-100 text-red-800' :
                             request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                             'bg-green-100 text-green-800'
-                          }`}>{request.priority}</span>
+                          }`}>
+                            {request.priority} priority
+                          </span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                          <div className="flex items-center gap-1"><Building className="w-4 h-4" />{request.property} - Unit {request.unit}</div>
-                          <div className="flex items-center gap-1"><Users className="w-4 h-4" />{request.tenant}</div>
-                          <div className="flex items-center gap-1"><Calendar className="w-4 h-4" />{request.date} at {request.scheduledTime}</div>
+                        
+                        <div className="flex gap-4 text-sm text-gray-600 mb-3">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {request.date}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {request.scheduledTime}
+                          </span>
                         </div>
+                        
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                          request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {request.status}
+                        </span>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        request.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>{request.status}</span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      {request.status === 'pending' && (
-                        <button onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition">Start Work</button>
-                      )}
-                      {request.status === 'in-progress' && (
-                        <button onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition">Mark Complete</button>
-                      )}
-                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Contact Tenant</button>
+                      
+                      <div className="flex gap-2">
+                        {request.status === 'pending' && (
+                          <button 
+                            onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                          >
+                            Start Work
+                          </button>
+                        )}
+                        {request.status === 'in-progress' && (
+                          <button 
+                            onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')}
+                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                          >
+                            Mark Complete
+                          </button>
+                        )}
+                        {request.status === 'completed' && (
+                          <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg">
+                            Completed ✓
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
 
-          {currentView === 'tenants' && (
-  <div className="bg-white rounded-xl shadow-sm p-6">
-    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-      <h2 className="text-xl font-bold text-gray-900">Tenant Directory</h2>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          placeholder="Search tenants..."
-          value={tenantSearchQuery}
-          onChange={(e) => setTenantSearchQuery(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
-        />
-        <select
-          value={tenantFilter}
-          onChange={(e) => setTenantFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
-        >
-          <option value="all">All Properties</option>
-          {properties.map(prop => (
-            <option key={prop.id} value={prop.name}>{prop.name}</option>
-          ))}
-        </select>
-        <button onClick={() => setShowTenantModal(true)} className="flex items-center justify-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition whitespace-nowrap">
-          <Users className="w-5 h-5" />Add Tenant
-        </button>
-      </div>
-    </div>
-
-    {/* Group tenants by property */}
-    {(() => {
-      // Filter tenants based on search query and property filter
-      const filteredTenants = tenants.filter(tenant => {
-        const matchesSearch = tenant.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
-                            tenant.email.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
-                            tenant.phone.includes(tenantSearchQuery);
-        const matchesProperty = tenantFilter === 'all' || tenant.property === tenantFilter;
-        return matchesSearch && matchesProperty;
-      });
-
-      // Group tenants by property
-      const tenantsByProperty = filteredTenants.reduce((acc, tenant) => {
-        if (!acc[tenant.property]) {
-          acc[tenant.property] = [];
-        }
-        acc[tenant.property].push(tenant);
-        return acc;
-      }, {});
-
-      // Get properties to display based on filter
-      const propertiesToShow = tenantFilter === 'all' 
-        ? properties.filter(prop => tenantsByProperty[prop.name]?.length > 0)
-        : properties.filter(prop => prop.name === tenantFilter && tenantsByProperty[prop.name]?.length > 0);
-
-      if (filteredTenants.length === 0) {
-        return (
-          <div className="text-center py-12">
-            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 mb-2">No tenants found</p>
-            <p className="text-sm text-gray-500">Try adjusting your search or filter criteria</p>
-          </div>
-        );
-      }
-
-      return propertiesToShow.map(property => (
-        <div key={property.id} className="mb-8">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-200">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">{property.name}</h3>
-              <p className="text-sm text-gray-600 flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                {property.location}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-[#003366]">{tenantsByProperty[property.name]?.length || 0}</p>
-              <p className="text-sm text-gray-600">Tenant{(tenantsByProperty[property.name]?.length || 0) !== 1 ? 's' : ''}</p>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {tenantsByProperty[property.name]?.map(tenant => (
-              <div key={tenant.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                    {tenant.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 text-lg truncate">{tenant.name}</h4>
-                    <p className="text-sm text-gray-600">Unit {tenant.unit}</p>
-                    <span className="inline-block mt-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Active</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center text-sm text-gray-700">
-                    <Mail className="w-4 h-4 mr-2 text-[#003366] flex-shrink-0" />
-                    <span className="truncate">{tenant.email}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-700">
-                    <Phone className="w-4 h-4 mr-2 text-[#003366] flex-shrink-0" />
-                    {tenant.phone}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-700">
-                    <DollarSign className="w-4 h-4 mr-2 text-[#003366] flex-shrink-0" />
-                    KES {tenant.rent.toLocaleString()}/month
-                  </div>
-                  <div className="flex items-center text-sm text-gray-700">
-                    <Calendar className="w-4 h-4 mr-2 text-[#003366] flex-shrink-0" />
-                    <span className="truncate">Lease: {tenant.leaseStart} to {tenant.leaseEnd}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button className="flex-1 px-3 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition text-sm">View Details</button>
-                  <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition text-sm">Message</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ));
-    })()}
-  </div>
-)}
-
-          {currentView === 'payments' && (
-  <div className="space-y-6">
-    {/* Payment Stats - Make responsive */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
-        <p className="text-gray-600 text-xs lg:text-sm mb-1">Total Expected</p>
-        <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">KES {(paymentStats.expected / 1000).toFixed(0)}K</p>
-      </div>
-      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
-        <p className="text-gray-600 text-xs lg:text-sm mb-1">Received</p>
-        <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">KES {(paymentStats.received / 1000).toFixed(0)}K</p>
-      </div>
-      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
-        <p className="text-gray-600 text-xs lg:text-sm mb-1">Pending</p>
-        <p className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600">KES {(paymentStats.pending / 1000).toFixed(0)}K</p>
-      </div>
-      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
-        <p className="text-gray-600 text-xs lg:text-sm mb-1">Overdue</p>
-        <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">KES {(paymentStats.overdue / 1000).toFixed(0)}K</p>
-      </div>
-    </div>
-
-    {/* Payment Table */}
-    <div className="bg-white rounded-xl shadow-sm p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-        <h2 className="text-lg lg:text-xl font-bold text-gray-900">Payment Tracking</h2>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <button onClick={() => setShowPaymentModal(true)} className="flex items-center justify-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition text-sm">
-            <DollarSign className="w-4 h-4 lg:w-5 lg:h-5" />Record Payment
-          </button>
-          <button className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold transition text-sm">
-            <Download className="w-4 h-4 lg:w-5 lg:h-5" />Export
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="block lg:hidden space-y-4">
-        {payments.map(payment => (
-          <div key={payment.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <p className="font-semibold text-gray-900">{payment.tenant}</p>
-                <p className="text-sm text-gray-600">{payment.property} - {payment.unit}</p>
-              </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                payment.status === 'paid' ? 'bg-green-100 text-green-800' :
-                payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
-              }`}>{payment.status}</span>
-            </div>
-            <div className="space-y-2 mb-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Amount:</span>
-                <span className="font-semibold text-gray-900">KES {payment.amount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Due Date:</span>
-                <span className="text-gray-900">{payment.dueDate}</span>
-              </div>
-              {payment.status === 'paid' && payment.paidDate && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Paid Date:</span>
-                  <span className="text-gray-900">{payment.paidDate}</span>
-                </div>
-              )}
-            </div>
-            {payment.status === 'paid' ? (
-              <p className="text-xs text-gray-500">Paid on {payment.paidDate}</p>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => handleRecordPayment(payment.id)} className="flex-1 p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition text-sm font-medium">
-                  <CheckCircle className="w-4 h-4 inline mr-1" />Record
-                </button>
-                <button className="flex-1 p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm font-medium">
-                  <Send className="w-4 h-4 inline mr-1" />Remind
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Desktop Table View */}
-      <div className="hidden lg:block overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left p-4 font-semibold text-gray-700">Tenant</th>
-              <th className="text-left p-4 font-semibold text-gray-700">Property/Unit</th>
-              <th className="text-left p-4 font-semibold text-gray-700">Amount</th>
-              <th className="text-left p-4 font-semibold text-gray-700">Due Date</th>
-              <th className="text-left p-4 font-semibold text-gray-700">Status</th>
-              <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map(payment => (
-              <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="p-4 font-semibold text-gray-900">{payment.tenant}</td>
-                <td className="p-4 text-gray-600">{payment.property} - {payment.unit}</td>
-                <td className="p-4 text-gray-900 font-semibold">KES {payment.amount.toLocaleString()}</td>
-                <td className="p-4 text-gray-600">{payment.dueDate}</td>
-                <td className="p-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    payment.status === 'paid' ? 'bg-green-100 text-green-800' :
-                    payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>{payment.status}</span>
-                </td>
-                <td className="p-4">
-                  {payment.status === 'paid' ? (
-                    <span className="text-sm text-gray-500">Paid on {payment.paidDate}</span>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button onClick={() => handleRecordPayment(payment.id)} className="p-2 bg-green-50 text-green-600 rounded hover:bg-green-100 transition" title="Record Payment">
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition" title="Send Reminder">
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-)}
-
+          {/* Memos View */}
           {currentView === 'memos' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Updates & Memos</h2>
-                  <p className="text-sm text-gray-600">Broadcast messages to your tenants</p>
-                </div>
-                <button onClick={() => setShowMemoModal(true)} className="flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition">
-                  <Mail className="w-5 h-5" />New Memo
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Updates & Memos</h2>
+                <button onClick={() => setShowMemoModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+                  <Send className="w-5 h-5" />
+                  Send Memo
                 </button>
               </div>
-
+              
               <div className="grid gap-4">
                 {memos.map(memo => (
-                  <div key={memo.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-                    <div className="flex justify-between items-start mb-4">
+                  <div key={memo.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-gray-900 text-lg">{memo.title}</h3>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            memo.priority === 'high' ? 'bg-red-100 text-red-800' :
-                            memo.priority === 'urgent' ? 'bg-orange-100 text-orange-800' :
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            memo.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                            memo.priority === 'high' ? 'bg-orange-100 text-orange-800' :
                             'bg-blue-100 text-blue-800'
-                          }`}>{memo.priority}</span>
+                          }`}>
+                            {memo.priority}
+                          </span>
                         </div>
-                        <p className="text-gray-700 mb-3">{memo.message}</p>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1"><Users className="w-4 h-4" /><span>{memo.recipients} recipients</span></div>
-                          <div className="flex items-center gap-1"><Clock className="w-4 h-4" /><span>Sent: {memo.sentAt}</span></div>
-                          <div className="flex items-center gap-1"><Building className="w-4 h-4" /><span>{memo.targetAudience === 'all' ? 'All Properties' : memo.targetAudience}</span></div>
+                        <p className="text-sm text-gray-600 mb-3">{memo.message}</p>
+                        <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                          <span>Sent by: {memo.sentBy}</span>
+                          <span>Date: {new Date(memo.sentAt).toLocaleDateString()}</span>
+                          <span>Recipients: {memo.recipients} tenant{memo.recipients !== 1 ? 's' : ''}</span>
+                          <span>Target: {memo.targetAudience === 'all' ? 'All Properties' : memo.targetAudience}</span>
                         </div>
                       </div>
-                      <button onClick={() => handleDeleteMemo(memo.id)} className="p-2 hover:bg-red-50 rounded-lg transition text-red-600">
+                      <button onClick={() => handleDeleteMemo(memo.id)} className="text-red-500 hover:text-red-700 ml-4">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
+            </>
+          )}
+
+          {/* Calendar View */}
+          {currentView === 'calendar' && (
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Schedule</h2>
+              
+              <div className="space-y-4">
+                {viewingBookings.filter(v => v.status === 'confirmed').map(viewing => (
+                  <div key={viewing.id} className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="w-16 h-16 bg-blue-100 rounded-lg flex flex-col items-center justify-center">
+                      <span className="text-xs text-blue-600 font-medium">
+                        {new Date(viewing.date).toLocaleDateString('en-US', { month: 'short' })}
+                      </span>
+                      <span className="text-2xl font-bold text-blue-900">
+                        {new Date(viewing.date).getDate()}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">Property Viewing</h3>
+                      <p className="text-sm text-gray-600">{viewing.prospectName} - {viewing.property}</p>
+                      <p className="text-xs text-gray-500">{viewing.time}</p>
+                    </div>
+                    <CalendarCheck className="w-6 h-6 text-blue-600" />
+                  </div>
+                ))}
+                
+                {maintenanceRequests.filter(m => m.status !== 'completed').map(request => (
+                  <div key={request.id} className="flex items-center gap-4 p-4 bg-orange-50 rounded-lg">
+                    <div className="w-16 h-16 bg-orange-100 rounded-lg flex flex-col items-center justify-center">
+                      <span className="text-xs text-orange-600 font-medium">
+                        {new Date(request.date).toLocaleDateString('en-US', { month: 'short' })}
+                      </span>
+                      <span className="text-2xl font-bold text-orange-900">
+                        {new Date(request.date).getDate()}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">Maintenance</h3>
+                      <p className="text-sm text-gray-600">{request.issue} - {request.property}</p>
+                      <p className="text-xs text-gray-500">{request.scheduledTime}</p>
+                    </div>
+                    <Wrench className="w-6 h-6 text-orange-600" />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
+          {/* Settings View */}
           {currentView === 'settings' && (
-            <div className="max-w-4xl space-y-6">
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">Profile Settings</h2>
-                  {!editingProfile ? (
-                    <button onClick={() => setEditingProfile(true)} className="px-4 py-2 border border-[#003366] text-[#003366] hover:bg-blue-50 rounded-lg font-semibold transition">Edit Profile</button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditingProfile(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
-                      <button onClick={handleUpdateProfile} className="px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Save Changes</button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-6 mb-6 pb-6 border-b">
-                  <div className="w-24 h-24 bg-[#003366] rounded-full flex items-center justify-center text-white text-3xl font-semibold">
-                    {profileSettings.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">{profileSettings.name}</h3>
-                    <p className="text-gray-600">{profileSettings.email}</p>
-                    <button className="mt-2 flex items-center gap-2 text-[#003366] hover:text-[#002244] font-semibold transition">
-                      <Camera className="w-4 h-4" />Change Photo
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Profile Settings */}
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-4">Profile Information</h3>
+                <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" value={profileSettings.name} onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})} disabled={!editingProfile} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600" />
+                    <input
+                      type="text"
+                      value={profileSettings.name}
+                      onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
+                      disabled={!editingProfile}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" value={profileSettings.email} onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})} disabled={!editingProfile} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600" />
+                    <input
+                      type="email"
+                      value={profileSettings.email}
+                      onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
+                      disabled={!editingProfile}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                    <input type="tel" value={profileSettings.phone} onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})} disabled={!editingProfile} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={profileSettings.phone}
+                      onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})}
+                      disabled={!editingProfile}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                    <input type="text" value={profileSettings.company} onChange={(e) => setProfileSettings({...profileSettings, company: e.target.value})} disabled={!editingProfile} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600" />
+                    <input
+                      type="text"
+                      value={profileSettings.company}
+                      onChange={(e) => setProfileSettings({...profileSettings, company: e.target.value})}
+                      disabled={!editingProfile}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
+                    />
                   </div>
-                  <div className="md:col-span-2">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input type="text" value={profileSettings.address} onChange={(e) => setProfileSettings({...profileSettings, address: e.target.value})} disabled={!editingProfile} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none disabled:bg-gray-50 disabled:text-gray-600" />
+                    <input
+                      type="text"
+                      value={profileSettings.address}
+                      onChange={(e) => setProfileSettings({...profileSettings, address: e.target.value})}
+                      disabled={!editingProfile}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    {editingProfile ? (
+                      <>
+                        <button onClick={handleUpdateProfile} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                          Save Changes
+                        </button>
+                        <button onClick={() => setEditingProfile(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => setEditingProfile(true)} className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                        Edit Profile
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Security</h2>
+              {/* Notification Settings */}
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-4">Notification Preferences</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900">Password</h3>
-                      <p className="text-sm text-gray-600">Last changed 3 months ago</p>
-                    </div>
-                    <button onClick={() => setShowPasswordModal(true)} className="px-4 py-2 border border-[#003366] text-[#003366] hover:bg-blue-50 rounded-lg font-semibold transition">Change Password</button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Two-Factor Authentication</h3>
-                      <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
-                    </div>
-                    <button className="px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Enable</button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Notification Preferences</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Email Notifications</h3>
+                      <p className="font-medium text-gray-900">Email Notifications</p>
                       <p className="text-sm text-gray-600">Receive updates via email</p>
                     </div>
-                    <button onClick={() => handleUpdateNotifications('email')} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profileSettings.notifications.email ? 'bg-[#003366]' : 'bg-gray-300'}`}>
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${profileSettings.notifications.email ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <button
+                      onClick={() => handleUpdateNotifications('email')}
+                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.email ? 'bg-[#003366]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.email ? 'translate-x-6' : 'translate-x-0'}`}></span>
                     </button>
                   </div>
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900">SMS Notifications</h3>
-                      <p className="text-sm text-gray-600">Receive updates via text message</p>
+                      <p className="font-medium text-gray-900">SMS Notifications</p>
+                      <p className="text-sm text-gray-600">Receive updates via SMS</p>
                     </div>
-                    <button onClick={() => handleUpdateNotifications('sms')} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profileSettings.notifications.sms ? 'bg-[#003366]' : 'bg-gray-300'}`}>
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${profileSettings.notifications.sms ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <button
+                      onClick={() => handleUpdateNotifications('sms')}
+                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.sms ? 'bg-[#003366]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.sms ? 'translate-x-6' : 'translate-x-0'}`}></span>
                     </button>
                   </div>
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900">Push Notifications</h3>
-                      <p className="text-sm text-gray-600">Receive browser push notifications</p>
+                      <p className="font-medium text-gray-900">Push Notifications</p>
+                      <p className="text-sm text-gray-600">Browser notifications</p>
                     </div>
-                    <button onClick={() => handleUpdateNotifications('push')} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profileSettings.notifications.push ? 'bg-[#003366]' : 'bg-gray-300'}`}>
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${profileSettings.notifications.push ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <button
+                      onClick={() => handleUpdateNotifications('push')}
+                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.push ? 'bg-[#003366]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.push ? 'translate-x-6' : 'translate-x-0'}`}></span>
                     </button>
                   </div>
-                  <div className="border-t border-gray-200 pt-4 mt-4">
-                    <h3 className="font-semibold text-gray-900 mb-4">Alert Types</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Payment Alerts</span>
-                        <button onClick={() => handleUpdateNotifications('paymentAlerts')} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profileSettings.notifications.paymentAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}>
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${profileSettings.notifications.paymentAlerts ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Maintenance Requests</span>
-                        <button onClick={() => handleUpdateNotifications('maintenanceAlerts')} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profileSettings.notifications.maintenanceAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}>
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${profileSettings.notifications.maintenanceAlerts ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Viewing Bookings</span>
-                        <button onClick={() => handleUpdateNotifications('viewingAlerts')} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profileSettings.notifications.viewingAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}>
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${profileSettings.notifications.viewingAlerts ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Payment Alerts</p>
+                      <p className="text-sm text-gray-600">Payment reminders</p>
                     </div>
+                    <button
+                      onClick={() => handleUpdateNotifications('paymentAlerts')}
+                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.paymentAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.paymentAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Maintenance Alerts</p>
+                      <p className="text-sm text-gray-600">New maintenance requests</p>
+                    </div>
+                    <button
+                      onClick={() => handleUpdateNotifications('maintenanceAlerts')}
+                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.maintenanceAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.maintenanceAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">Viewing Alerts</p>
+                      <p className="text-sm text-gray-600">New viewing requests</p>
+                    </div>
+                    <button
+                      onClick={() => handleUpdateNotifications('viewingAlerts')}
+                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.viewingAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.viewingAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-red-200">
-                <h2 className="text-xl font-bold text-red-600 mb-6">Danger Zone</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Deactivate Account</h3>
-                      <p className="text-sm text-gray-600">Temporarily disable your account</p>
-                    </div>
-                    <button className="px-4 py-2 border border-red-600 text-red-600 hover:bg-red-50 rounded-lg font-semibold transition">Deactivate</button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Delete Account</h3>
-                      <p className="text-sm text-gray-600">Permanently delete your account and all data</p>
-                    </div>
-                    <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition">Delete Account</button>
-                  </div>
+              {/* Security Settings */}
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-4">Security</h3>
+                <button onClick={() => setShowPasswordModal(true)} className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                  Change Password
+                </button>
+              </div>
+
+              {/* Privacy & Data */}
+              <div className="bg-white p-6 rounded-xl shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-4">Privacy & Data</h3>
+                <div className="space-y-3">
+                  <button className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-left flex items-center gap-2">
+                    <Download className="w-5 h-5" />
+                    Download My Data
+                  </button>
+                  <button className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-left">
+                    Delete Account
+                  </button>
                 </div>
               </div>
             </div>
@@ -1438,194 +1773,637 @@ const LandlordDashboard = () => {
         </div>
       </div>
 
+      {/* Add Property Modal */}
+      {showPropertyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Add New Property</h2>
+              <button onClick={() => setShowPropertyModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name *</label>
+                <input
+                  type="text"
+                  value={newProperty.name}
+                  onChange={(e) => setNewProperty({...newProperty, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="e.g., Sunset Apartments"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+                <input
+                  type="text"
+                  value={newProperty.location}
+                  onChange={(e) => setNewProperty({...newProperty, location: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="e.g., Westlands, Nairobi"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Units *</label>
+                  <input
+                    type="number"
+                    value={newProperty.units}
+                    onChange={(e) => setNewProperty({...newProperty, units: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="12"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Occupied Units</label>
+                  <input
+                    type="number"
+                    value={newProperty.occupied}
+                    onChange={(e) => setNewProperty({...newProperty, occupied: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="8"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Revenue</label>
+                <input
+                  type="number"
+                  value={newProperty.revenue}
+                  onChange={(e) => setNewProperty({...newProperty, revenue: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="240000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Property Images</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#003366] transition cursor-pointer">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const urls = await handleImageUpload(e.target.files, 'property');
+                      setNewProperty({...newProperty, images: [...newProperty.images, ...urls]});
+                    }}
+                    className="hidden"
+                    id="property-images"
+                  />
+                  <label htmlFor="property-images" className="cursor-pointer">
+                    {uploadingImages ? (
+                      <div className="text-[#003366]">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003366] mx-auto mb-2"></div>
+                        <p>Uploading...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">Click to upload property images</p>
+                        <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB each</p>
+                      </>
+                    )}
+                  </label>
+                </div>
+                {newProperty.images.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mt-4">
+                    {newProperty.images.map((img, idx) => (
+                      <div key={idx} className="relative aspect-square">
+                        <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                        <button
+                          onClick={() => setNewProperty({...newProperty, images: newProperty.images.filter((_, i) => i !== idx)})}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button onClick={() => setShowPropertyModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+              </button>
+              <button onClick={handleAddProperty} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                Add Property
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Tenant Modal */}
+      {showTenantModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Add New Tenant</h2>
+              <button onClick={() => setShowTenantModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  value={newTenant.name}
+                  onChange={(e) => setNewTenant({...newTenant, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="John Doe"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    value={newTenant.email}
+                    onChange={(e) => setNewTenant({...newTenant, email: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="john@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={newTenant.phone}
+                    onChange={(e) => setNewTenant({...newTenant, phone: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="+254 712 345 678"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
+                  <select
+                    value={newTenant.property}
+                    onChange={(e) => setNewTenant({...newTenant, property: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  >
+                    <option value="">Select Property</option>
+                    {properties.map(prop => (
+                      <option key={prop.id} value={prop.name}>{prop.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number *</label>
+                  <input
+                    type="text"
+                    value={newTenant.unit}
+                    onChange={(e) => setNewTenant({...newTenant, unit: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="A12"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rent (KES) *</label>
+                <input
+                  type="number"
+                  value={newTenant.rent}
+                  onChange={(e) => setNewTenant({...newTenant, rent: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="30000"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Lease Start Date</label>
+                  <input
+                    type="date"
+                    value={newTenant.leaseStart}
+                    onChange={(e) => setNewTenant({...newTenant, leaseStart: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Lease End Date</label>
+                  <input
+                    type="date"
+                    value={newTenant.leaseEnd}
+                    onChange={(e) => setNewTenant({...newTenant, leaseEnd: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button onClick={() => setShowTenantModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+              </button>
+              <button onClick={handleAddTenant} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                Add Tenant
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Listing Modal */}
+      {showListingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Create Property Listing</h2>
+              <button onClick={() => setShowListingModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
+                  <select
+                    value={newListing.property}
+                    onChange={(e) => setNewListing({...newListing, property: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  >
+                    <option value="">Select Property</option>
+                    {properties.map(prop => (
+                      <option key={prop.id} value={prop.name}>{prop.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number *</label>
+                  <input
+                    type="text"
+                    value={newListing.unit}
+                    onChange={(e) => setNewListing({...newListing, unit: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="A12"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms *</label>
+                  <input
+                    type="number"
+                    value={newListing.bedrooms}
+                    onChange={(e) => setNewListing({...newListing, bedrooms: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
+                  <input
+                    type="number"
+                    value={newListing.bathrooms}
+                    onChange={(e) => setNewListing({...newListing, bathrooms: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²)</label>
+                  <input
+                    type="number"
+                    value={newListing.area}
+                    onChange={(e) => setNewListing({...newListing, area: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="80"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rent (KES) *</label>
+                  <input
+                    type="number"
+                    value={newListing.rent}
+                    onChange={(e) => setNewListing({...newListing, rent: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="30000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Deposit (KES)</label>
+                  <input
+                    type="number"
+                    value={newListing.deposit}
+                    onChange={(e) => setNewListing({...newListing, deposit: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="30000"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={newListing.description}
+                  onChange={(e) => setNewListing({...newListing, description: e.target.value})}
+                  rows="3"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="Describe the property..."
+                ></textarea>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amenities (comma-separated)</label>
+                <input
+                  type="text"
+                  value={newListing.amenities}
+                  onChange={(e) => setNewListing({...newListing, amenities: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="WiFi, Parking, Security, Swimming Pool"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Property Images</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#003366] transition cursor-pointer">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const urls = await handleImageUpload(e.target.files, 'listing');
+                      setNewListing({...newListing, images: [...newListing.images, ...urls]});
+                    }}
+                    className="hidden"
+                    id="listing-images"
+                  />
+                  <label htmlFor="listing-images" className="cursor-pointer">
+                    {uploadingImages ? (
+                      <div className="text-[#003366]">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003366] mx-auto mb-2"></div>
+                        <p>Uploading...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">Click to upload listing images</p>
+                        <p className="text-xs text-gray-500 mt-1">Add multiple photos to showcase the property</p>
+                      </>
+                    )}
+                  </label>
+                </div>
+                {newListing.images.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mt-4">
+                    {newListing.images.map((img, idx) => (
+                      <div key={idx} className="relative aspect-square">
+                        <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                        <button
+                          onClick={() => setNewListing({...newListing, images: newListing.images.filter((_, i) => i !== idx)})}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button onClick={() => setShowListingModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+              </button>
+              <button onClick={handleAddListing} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                Publish Listing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Memo Modal */}
       {showMemoModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Send New Memo</h3>
-              <button onClick={() => setShowMemoModal(false)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Send Memo to Tenants</h2>
+              <button onClick={() => setShowMemoModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
             </div>
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Memo Title</label>
-                <input type="text" value={newMemo.title} onChange={(e) => setNewMemo({...newMemo, title: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., Water Maintenance Notice" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={newMemo.title}
+                  onChange={(e) => setNewMemo({...newMemo, title: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="e.g., Water Maintenance Notice"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                <textarea value={newMemo.message} onChange={(e) => setNewMemo({...newMemo, message: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Enter your message to tenants..." rows={6} />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                <textarea
+                  value={newMemo.message}
+                  onChange={(e) => setNewMemo({...newMemo, message: e.target.value})}
+                  rows="5"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="Type your message here..."
+                ></textarea>
               </div>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                  <select value={newMemo.priority} onChange={(e) => setNewMemo({...newMemo, priority: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
+                  <select
+                    value={newMemo.priority}
+                    onChange={(e) => setNewMemo({...newMemo, priority: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  >
                     <option value="normal">Normal</option>
                     <option value="high">High</option>
                     <option value="urgent">Urgent</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
-                  <select value={newMemo.targetAudience} onChange={(e) => setNewMemo({...newMemo, targetAudience: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Send To</label>
+                  <select
+                    value={newMemo.targetAudience}
+                    onChange={(e) => setNewMemo({...newMemo, targetAudience: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  >
                     <option value="all">All Tenants</option>
                     {properties.map(prop => (
-                      <option key={prop.id} value={prop.name}>{prop.name} ({prop.occupied} tenants)</option>
+                      <option key={prop.id} value={prop.name}>{prop.name} Only</option>
                     ))}
                   </select>
                 </div>
               </div>
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-900"><strong>Note:</strong> This memo will be sent to {newMemo.targetAudience === 'all' ? `all ${tenants.length} tenants` : `${properties.find(p => p.name === newMemo.targetAudience)?.occupied || 0} tenants at ${newMemo.targetAudience}`} via email and will appear in their tenant dashboard.</p>
-              </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowMemoModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
-              <button onClick={handleSendMemo} className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition flex items-center justify-center gap-2">
-                <Send className="w-5 h-5" />Send Memo
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button onClick={() => setShowMemoModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+              </button>
+              <button onClick={handleSendMemo} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+                <Send className="w-5 h-5" />
+                Send Memo
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {showTenantModal && (
+      {/* Add Maintenance Modal */}
+      {showMaintenanceModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Add New Tenant</h3>
-              <button onClick={() => setShowTenantModal(false)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Add Maintenance Request</h2>
+              <button onClick={() => setShowMaintenanceModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                <input type="text" value={newTenant.name} onChange={(e) => setNewTenant({...newTenant, name: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="John Doe" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input type="email" value={newTenant.email} onChange={(e) => setNewTenant({...newTenant, email: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="john@email.com" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input type="tel" value={newTenant.phone} onChange={(e) => setNewTenant({...newTenant, phone: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="+254 712 345 678" />
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
-                  <select value={newTenant.property} onChange={(e) => setNewTenant({...newTenant, property: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
+                  <select
+                    value={newMaintenance.property}
+                    onChange={(e) => setNewMaintenance({...newMaintenance, property: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  >
                     <option value="">Select Property</option>
-                    {properties.map(prop => (<option key={prop.id} value={prop.name}>{prop.name}</option>))}
+                    {properties.map(prop => (
+                      <option key={prop.id} value={prop.name}>{prop.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number *</label>
-                  <input type="text" value={newTenant.unit} onChange={(e) => setNewTenant({...newTenant, unit: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 4A" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+                  <input
+                    type="text"
+                    value={newMaintenance.unit}
+                    onChange={(e) => setNewMaintenance({...newMaintenance, unit: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="A12"
+                  />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rent (KES) *</label>
-                <input type="number" value={newTenant.rent} onChange={(e) => setNewTenant({...newTenant, rent: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 45000" />
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lease Start Date</label>
-                  <input type="date" value={newTenant.leaseStart} onChange={(e) => setNewTenant({...newTenant, leaseStart: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lease End Date</label>
-                  <input type="date" value={newTenant.leaseEnd} onChange={(e) => setNewTenant({...newTenant, leaseEnd: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" />
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowTenantModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
-              <button onClick={handleAddTenant} className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Add Tenant</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMaintenanceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Add Maintenance Request</h3>
-              <button onClick={() => setShowMaintenanceModal(false)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
-                <select value={newMaintenance.property} onChange={(e) => setNewMaintenance({...newMaintenance, property: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
-                  <option value="">Select Property</option>
-                  {properties.map(prop => (<option key={prop.id} value={prop.name}>{prop.name}</option>))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number *</label>
-                <input type="text" value={newMaintenance.unit} onChange={(e) => setNewMaintenance({...newMaintenance, unit: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 2B" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tenant Name *</label>
-                <select value={newMaintenance.tenant} onChange={(e) => setNewMaintenance({...newMaintenance, tenant: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tenant *</label>
+                <select
+                  value={newMaintenance.tenant}
+                  onChange={(e) => setNewMaintenance({...newMaintenance, tenant: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                >
                   <option value="">Select Tenant</option>
-                  {tenants.map(tenant => (<option key={tenant.id} value={tenant.name}>{tenant.name}</option>))}
+                  {tenants.map(tenant => (
+                    <option key={tenant.id} value={tenant.name}>{tenant.name}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Issue Description *</label>
-                <textarea value={newMaintenance.issue} onChange={(e) => setNewMaintenance({...newMaintenance, issue: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Describe the maintenance issue..." rows={3} />
+                <textarea
+                  value={newMaintenance.issue}
+                  onChange={(e) => setNewMaintenance({...newMaintenance, issue: e.target.value})}
+                  rows="3"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="Describe the maintenance issue..."
+                ></textarea>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                <select value={newMaintenance.priority} onChange={(e) => setNewMaintenance({...newMaintenance, priority: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
+                <select
+                  value={newMaintenance.priority}
+                  onChange={(e) => setNewMaintenance({...newMaintenance, priority: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowMaintenanceModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
-              <button onClick={handleAddMaintenance} className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Add Request</button>
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button onClick={() => setShowMaintenanceModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+              </button>
+              <button onClick={handleAddMaintenance} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                Add Request
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Add Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Record Payment</h3>
-              <button onClick={() => setShowPaymentModal(false)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Record Payment</h2>
+              <button onClick={() => setShowPaymentModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
             </div>
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tenant *</label>
-                <select value={newPayment.tenant} onChange={(e) => {
-                  const tenant = tenants.find(t => t.name === e.target.value);
-                  if (tenant) {
-                    setNewPayment({...newPayment, tenant: tenant.name, property: tenant.property, unit: tenant.unit, amount: tenant.rent.toString()});
-                  }
-                }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
+                <select
+                  value={newPayment.tenant}
+                  onChange={(e) => {
+                    const selectedTenant = tenants.find(t => t.name === e.target.value);
+                    setNewPayment({
+                      ...newPayment,
+                      tenant: e.target.value,
+                      property: selectedTenant?.property || '',
+                      unit: selectedTenant?.unit || '',
+                      amount: selectedTenant?.rent || ''
+                    });
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                >
                   <option value="">Select Tenant</option>
-                  {tenants.map(tenant => (<option key={tenant.id} value={tenant.name}>{tenant.name}</option>))}
+                  {tenants.map(tenant => (
+                    <option key={tenant.id} value={tenant.name}>{tenant.name} - {tenant.property}</option>
+                  ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property/Unit</label>
-                <input type="text" value={newPayment.property && newPayment.unit ? `${newPayment.property} - ${newPayment.unit}` : ''} disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600" placeholder="Auto-filled from tenant" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Property</label>
+                  <input
+                    type="text"
+                    value={newPayment.property}
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                  <input
+                    type="text"
+                    value={newPayment.unit}
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (KES) *</label>
-                <input type="number" value={newPayment.amount} onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 45000" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
-                <input type="date" value={newPayment.dueDate} onChange={(e) => setNewPayment({...newPayment, dueDate: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (KES) *</label>
+                  <input
+                    type="number"
+                    value={newPayment.amount}
+                    onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="30000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                  <input
+                    type="date"
+                    value={newPayment.dueDate}
+                    onChange={(e) => setNewPayment({...newPayment, dueDate: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                <select value={newPayment.method} onChange={(e) => setNewPayment({...newPayment, method: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
-                  <option value="">Not specified</option>
+                <select
+                  value={newPayment.method}
+                  onChange={(e) => setNewPayment({...newPayment, method: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                >
+                  <option value="">Not paid yet</option>
                   <option value="M-Pesa">M-Pesa</option>
                   <option value="Bank Transfer">Bank Transfer</option>
                   <option value="Cash">Cash</option>
@@ -1633,324 +2411,305 @@ const LandlordDashboard = () => {
                 </select>
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowPaymentModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
-              <button onClick={handleAddPayment} className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Add Payment</button>
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button onClick={() => setShowPaymentModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+              </button>
+              <button onClick={handleAddPayment} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                Record Payment
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {showPropertyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Add New Property</h3>
-              <button onClick={() => setShowPropertyModal(false)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name *</label>
-                <input type="text" value={newProperty.name} onChange={(e) => setNewProperty({...newProperty, name: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., Sunset Apartments" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
-                <input type="text" value={newProperty.location} onChange={(e) => setNewProperty({...newProperty, location: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., Westlands, Nairobi" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Total Units *</label>
-                <input type="number" value={newProperty.units} onChange={(e) => setNewProperty({...newProperty, units: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 12" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Occupied Units</label>
-                <input type="number" value={newProperty.occupied} onChange={(e) => setNewProperty({...newProperty, occupied: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 10" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Revenue (KES)</label>
-                <input type="number" value={newProperty.revenue} onChange={(e) => setNewProperty({...newProperty, revenue: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 120000" />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowPropertyModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
-              <button onClick={handleAddProperty} className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Add Property</button>
-            </div>
-          </div>
-        </div>
-      )}
-      
+      {/* Change Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Change Password</h3>
-              <button onClick={() => setShowPasswordModal(false)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Change Password</h2>
+              <button onClick={() => setShowPasswordModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
             </div>
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                <input type="password" value={passwordData.current} onChange={(e) => setPasswordData({...passwordData, current: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Enter current password" />
+                <input
+                  type="password"
+                  value={passwordData.current}
+                  onChange={(e) => setPasswordData({...passwordData, current: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                <input type="password" value={passwordData.new} onChange={(e) => setPasswordData({...passwordData, new: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Enter new password" />
-                <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters long</p>
+                <input
+                  type="password"
+                  value={passwordData.new}
+                  onChange={(e) => setPasswordData({...passwordData, new: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                <input type="password" value={passwordData.confirm} onChange={(e) => setPasswordData({...passwordData, confirm: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Confirm new password" />
+                <input
+                  type="password"
+                  value={passwordData.confirm}
+                  onChange={(e) => setPasswordData({...passwordData, confirm: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                />
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowPasswordModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
-              <button onClick={handleChangePassword} className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Change Password</button>
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button onClick={() => setShowPasswordModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+              </button>
+              <button onClick={handleChangePassword} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+                Update Password
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Viewing Details Modal */}
       {selectedViewing && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Viewing Details</h3>
-              <button onClick={() => setSelectedViewing(null)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Viewing Request Details</h2>
+              <button onClick={() => setSelectedViewing(null)}><X className="w-6 h-6 text-gray-500" /></button>
             </div>
-            <div className="flex items-center gap-4 mb-6 pb-6 border-b">
-              <div className="w-16 h-16 bg-[#003366] rounded-full flex items-center justify-center text-white text-2xl font-semibold">
-                {selectedViewing.prospectName.split(' ').map(n => n[0]).join('')}
-              </div>
+            <div className="p-6 space-y-6">
+              {/* Prospect Info */}
               <div>
-                <h4 className="text-xl font-semibold text-gray-900">{selectedViewing.prospectName}</h4>
-                <p className="text-gray-600">{selectedViewing.property}</p>
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h5 className="font-semibold text-gray-900 mb-3">Contact Information</h5>
-                <div className="space-y-2">
-                  <div className="flex items-center text-gray-700"><Mail className="w-5 h-5 mr-2 text-[#003366]" />{selectedViewing.email}</div>
-                  <div className="flex items-center text-gray-700"><Phone className="w-5 h-5 mr-2 text-[#003366]" />{selectedViewing.phone}</div>
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-[#003366]" />
+                  Prospect Information
+                </h3>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-600">Full Name</p>
+                      <p className="font-medium text-gray-900">{selectedViewing.prospectName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Email</p>
+                      <p className="font-medium text-gray-900">{selectedViewing.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Phone</p>
+                      <p className="font-medium text-gray-900">{selectedViewing.phone}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Status</p>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                        selectedViewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                        selectedViewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {selectedViewing.status}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Property & Viewing Info */}
               <div>
-                <h5 className="font-semibold text-gray-900 mb-3">Appointment Details</h5>
-                <div className="space-y-2">
-                  <div className="flex items-center text-gray-700"><Calendar className="w-5 h-5 mr-2 text-[#003366]" />{selectedViewing.date} at {selectedViewing.time}</div>
-                  <div className="flex items-center text-gray-700"><Clock className="w-5 h-5 mr-2 text-[#003366]" />Booked: {selectedViewing.bookedAt}</div>
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Building className="w-5 h-5 text-[#003366]" />
+                  Property & Viewing Details
+                </h3>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-600">Property</p>
+                      <p className="font-medium text-gray-900">{selectedViewing.property}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Viewing Date</p>
+                      <p className="font-medium text-gray-900">{selectedViewing.date}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Preferred Time</p>
+                      <p className="font-medium text-gray-900">{selectedViewing.time}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Submitted</p>
+                      <p className="font-medium text-gray-900">{selectedViewing.submittedDate || 'Today'}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            {selectedViewing.notes && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                <h5 className="font-semibold text-gray-900 mb-2">Notes</h5>
-                <p className="text-gray-700">{selectedViewing.notes}</p>
-              </div>
-            )}
-            <div className="flex gap-3">
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">
-                <Mail className="w-5 h-5" />Send Message
-              </button>
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">
-                <Phone className="w-5 h-5" />Call
-              </button>
+
+              {/* Credibility Score */}
+              {selectedViewing.credibilityScore && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Credibility Assessment</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm text-gray-600">Overall Score</span>
+                      <span className={`text-2xl font-bold ${
+                        selectedViewing.credibilityScore >= 80 ? 'text-green-600' :
+                        selectedViewing.credibilityScore >= 60 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {selectedViewing.credibilityScore}/100
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                      <div 
+                        className={`h-3 rounded-full transition-all ${
+                          selectedViewing.credibilityScore >= 80 ? 'bg-green-500' :
+                          selectedViewing.credibilityScore >= 60 ? 'bg-yellow-500' :
+                          'bg-red-500'
+                        }`}
+                        style={{ width: `${selectedViewing.credibilityScore}%` }}
+                      ></div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className="text-gray-700">Email & Phone Verified</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className="text-gray-700">Employment Information Provided</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className="text-gray-700">Detailed Motivation Submitted</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Employment Info */}
+              {selectedViewing.employment && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Employment Information</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-600">Status</p>
+                        <p className="font-medium text-gray-900">{selectedViewing.employment}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600">Income Range</p>
+                        <p className="font-medium text-gray-900">{selectedViewing.incomeRange || 'Not specified'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Motivation */}
+              {selectedViewing.motivation && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Why They're Interested</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-gray-700 text-sm leading-relaxed">{selectedViewing.motivation}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              {selectedViewing.status === 'pending' && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <button 
+                    onClick={() => {
+                      handleUpdateViewingStatus(selectedViewing.id, 'confirmed');
+                      setSelectedViewing(null);
+                    }}
+                    className="flex-1 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    Approve Viewing
+                  </button>
+                  <button 
+                    onClick={() => {
+                      handleUpdateViewingStatus(selectedViewing.id, 'declined');
+                      setSelectedViewing(null);
+                    }}
+                    className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                  >
+                    Decline
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-      {showListingModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-900">Add New Listing</h3>
-                    <button onClick={() => setShowListingModal(false)}><X className="w-6 h-6 text-gray-500 hover:text-gray-700" /></button>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
-                        <select value={newListing.property} onChange={(e) => setNewListing({...newListing, property: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none">
-                          <option value="">Select Property</option>
-                          {properties.map(prop => (<option key={prop.id} value={prop.name}>{prop.name}</option>))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number *</label>
-                        <input type="text" value={newListing.unit} onChange={(e) => setNewListing({...newListing, unit: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="e.g., 4A" />
-                      </div>
+
+      {/* Listing Image Gallery Modal */}
+      {selectedListing && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
+          <div className="max-w-5xl w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-white text-xl font-semibold">
+                {selectedListing.property} - Unit {selectedListing.unit}
+              </h2>
+              <button onClick={() => setSelectedListing(null)} className="text-white hover:text-gray-300">
+                <X className="w-8 h-8" />
+              </button>
+            </div>
+            
+            {selectedListing.images && selectedListing.images.length > 0 && (
+              <div className="relative">
+                <img 
+                  src={selectedListing.images[currentImageIndex]} 
+                  alt={`View ${currentImageIndex + 1}`}
+                  className="w-full h-[70vh] object-contain rounded-lg"
+                />
+                
+                {selectedListing.images.length > 1 && (
+                  <>
+                    <button 
+                      onClick={() => setCurrentImageIndex((currentImageIndex - 1 + selectedListing.images.length) % selectedListing.images.length)}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition"
+                    >
+                      <ChevronLeft className="w-6 h-6 text-gray-900" />
+                    </button>
+                    <button 
+                      onClick={() => setCurrentImageIndex((currentImageIndex + 1) % selectedListing.images.length)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition"
+                    >
+                      <ChevronRight className="w-6 h-6 text-gray-900" />
+                    </button>
+                    
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black bg-opacity-70 text-white rounded-full text-sm">
+                      {currentImageIndex + 1} / {selectedListing.images.length}
                     </div>
-      
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms *</label>
-                        <input type="number" value={newListing.bedrooms} onChange={(e) => setNewListing({...newListing, bedrooms: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="2" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
-                        <input type="number" value={newListing.bathrooms} onChange={(e) => setNewListing({...newListing, bathrooms: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="2" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²)</label>
-                        <input type="number" value={newListing.area} onChange={(e) => setNewListing({...newListing, area: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="85" />
-                      </div>
-                    </div>
-      
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rent (KES) *</label>
-                        <input type="number" value={newListing.rent} onChange={(e) => setNewListing({...newListing, rent: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="45000" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Security Deposit (KES)</label>
-                        <input type="number" value={newListing.deposit} onChange={(e) => setNewListing({...newListing, deposit: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="45000" />
-                      </div>
-                    </div>
-      
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                      <textarea value={newListing.description} onChange={(e) => setNewListing({...newListing, description: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Describe the unit features and highlights..." rows={3} />
-                    </div>
-      
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Amenities (comma-separated)</label>
-                      <input type="text" value={newListing.amenities} onChange={(e) => setNewListing({...newListing, amenities: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none" placeholder="Parking, Security, Water, Backup Generator" />
-                    </div>
-      
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
-                      <div className="space-y-2">
-                        {newListing.images.map((img, idx) => (
-                          <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                            <img src={img} alt={`Preview ${idx + 1}`} className="w-16 h-16 object-cover rounded" />
-                            <p className="flex-1 text-sm text-gray-600 truncate">{img}</p>
-                            <button onClick={() => handleRemoveImage(idx)} className="p-2 text-red-600 hover:bg-red-50 rounded">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                        <button onClick={handleImageUrlAdd} className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#003366] hover:bg-blue-50 transition text-gray-600 hover:text-[#003366] font-semibold">
-                          + Add Image URL
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 mt-6">
-                    <button onClick={() => setShowListingModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition">Cancel</button>
-                    <button onClick={handleAddListing} className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition">Publish Listing</button>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             )}
-      
-            {selectedListing && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900">{selectedListing.property} - Unit {selectedListing.unit}</h3>
-                    <button onClick={() => setSelectedListing(null)}><X className="w-6 h-6 text-gray-500" /></button>
-                  </div>
-      
-                  <div className="mb-6">
-                    <div className="relative h-96 bg-gray-200 rounded-xl overflow-hidden mb-4">
-                      {selectedListing.images && selectedListing.images.length > 0 ? (
-                        <>
-                          <img src={selectedListing.images[currentImageIndex]} alt={`${selectedListing.property}`} className="w-full h-full object-cover" />
-                          {selectedListing.images.length > 1 && (
-                            <>
-                              <button onClick={() => setCurrentImageIndex(currentImageIndex > 0 ? currentImageIndex - 1 : selectedListing.images.length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full flex items-center justify-center transition">
-                                <ChevronLeft className="w-6 h-6" />
-                              </button>
-                              <button onClick={() => setCurrentImageIndex(currentImageIndex < selectedListing.images.length - 1 ? currentImageIndex + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full flex items-center justify-center transition">
-                                <ChevronRight className="w-6 h-6" />
-                              </button>
-                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                                {selectedListing.images.map((_, idx) => (
-                                  <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`w-2 h-2 rounded-full transition ${idx === currentImageIndex ? 'bg-white w-6' : 'bg-white bg-opacity-50'}`} />
-                                ))}
-                              </div>
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                          <Home className="w-24 h-24 text-[#003366] opacity-50" />
-                        </div>
-                      )}
-                    </div>
-      
-                    <div className="grid grid-cols-4 gap-2 mb-6">
-                      {selectedListing.images && selectedListing.images.slice(0, 4).map((img, idx) => (
-                        <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`h-20 rounded-lg overflow-hidden border-2 ${idx === currentImageIndex ? 'border-[#003366]' : 'border-transparent'}`}>
-                          <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-      
-                    <div className="grid md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Bed className="w-5 h-5 text-[#003366]" />
-                          <span className="font-semibold text-gray-900">Bedrooms</span>
-                        </div>
-                        <p className="text-2xl font-bold text-[#003366]">{selectedListing.bedrooms}</p>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Bath className="w-5 h-5 text-[#003366]" />
-                          <span className="font-semibold text-gray-900">Bathrooms</span>
-                        </div>
-                        <p className="text-2xl font-bold text-[#003366]">{selectedListing.bathrooms}</p>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Square className="w-5 h-5 text-[#003366]" />
-                          <span className="font-semibold text-gray-900">Area</span>
-                        </div>
-                        <p className="text-2xl font-bold text-[#003366]">{selectedListing.area} m²</p>
-                      </div>
-                    </div>
-      
-                    {selectedListing.description && (
-                      <div className="mb-6">
-                        <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
-                        <p className="text-gray-700">{selectedListing.description}</p>
-                      </div>
-                    )}
-      
-                    <div className="mb-6">
-                      <h4 className="font-semibold text-gray-900 mb-3">Amenities</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedListing.amenities.map((amenity, idx) => (
-                          <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg">{amenity}</span>
-                        ))}
-                      </div>
-                    </div>
-      
-                    <div className="border-t border-gray-200 pt-6">
-                      <div className="grid md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                          <p className="text-gray-600 mb-1">Monthly Rent</p>
-                          <p className="text-4xl font-bold text-[#003366]">KES {selectedListing.rent.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600 mb-1">Security Deposit</p>
-                          <p className="text-2xl font-bold text-gray-900">KES {selectedListing.deposit.toLocaleString()}</p>
-                        </div>
-                      </div>
-      
-                      <div className="flex gap-3">
-                        <button className="flex-1 px-4 py-3 border-2 border-[#003366] text-[#003366] hover:bg-blue-50 rounded-lg font-semibold transition">Edit Listing</button>
-                        <button onClick={() => handleDeleteListing(selectedListing.id)} className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition">Delete Listing</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            
+            {selectedListing.images && selectedListing.images.length > 1 && (
+              <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                {selectedListing.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
+                      idx === currentImageIndex ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default LandlordDashboard;
-
-
-
+                        
+              
