@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext'; // ADD THIS
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login, signInWithGoogle } = useAuth(); // ADD THIS
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,6 +19,7 @@ const Login = () => {
     setLoading(true);
     setError('');
 
+    // Validation
     if (!formData.email.trim()) {
       setError('Please enter your email');
       setLoading(false);
@@ -30,13 +33,35 @@ const Login = () => {
     }
 
     try {
-      console.log('Login attempt:', formData.email);
-      setTimeout(() => {
+      // REAL Firebase login
+      const { role } = await login(formData.email, formData.password);
+      
+      // Redirect based on role
+      if (role === 'landlord') {
         navigate('/landlord/dashboard');
-      }, 1000);
-    } catch (error) {
-      setError('Invalid email or password. Please try again.');
-      console.error('Login error:', error);
+      } else if (role === 'tenant' || role === 'prospect') {
+        navigate('/tenant/dashboard');
+      } else {
+        navigate('/'); // fallback
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      
+      let errorMessage = 'Invalid email or password. Please try again.';
+      
+      if (err.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email.';
+      } else if (err.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address.';
+      } else if (err.code === 'auth/user-disabled') {
+        errorMessage = 'This account has been disabled.';
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed login attempts. Please try again later.';
+      }
+      
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -46,13 +71,22 @@ const Login = () => {
     setError('');
 
     try {
-      console.log('Google sign-in initiated');
-      setTimeout(() => {
+      // For Google sign-in, we need to determine role first
+      // Option 1: Show role selector modal before Google sign-in
+      // Option 2: Check if user exists, use their role, or show role selector for new users
+      
+      // For now, let's detect from existing account or default to tenant
+      const { role } = await signInWithGoogle('tenant'); // or show modal to select
+      
+      // Redirect based on role
+      if (role === 'landlord') {
         navigate('/landlord/dashboard');
-      }, 1000);
-    } catch (error) {
+      } else if (role === 'tenant' || role === 'prospect') {
+        navigate('/tenant/dashboard');
+      }
+    } catch (err) {
+      console.error('Google sign-in error:', err);
       setError('Failed to sign in with Google. Please try again.');
-      console.error('Google sign-in error:', error);
       setLoading(false);
     }
   };
@@ -91,7 +125,7 @@ const Login = () => {
               <p className="text-blue-200 text-lg">Login to your Nyumbanii account</p>
             </div>
 
-            {/* Login Card with rounded corners like the right card */}
+            {/* Login Card */}
             <div className="bg-white/15 backdrop-blur-md rounded-3xl shadow-2xl p-8 border border-white/20">
               {error && (
                 <div className="mb-6 p-4 bg-red-500/20 border-l-4 border-red-400 rounded-lg backdrop-blur-sm">
@@ -114,6 +148,7 @@ const Login = () => {
                       className="w-full pl-12 pr-4 py-3.5 border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-white/50 focus:border-white/40 outline-none transition-all bg-white/10 backdrop-blur-sm text-white placeholder-blue-200"
                       placeholder="john@example.com"
                       disabled={loading}
+                      required
                     />
                   </div>
                 </div>
@@ -132,6 +167,7 @@ const Login = () => {
                       className="w-full pl-12 pr-12 py-3.5 border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-white/50 focus:border-white/40 outline-none transition-all bg-white/10 backdrop-blur-sm text-white placeholder-blue-200"
                       placeholder="••••••••"
                       disabled={loading}
+                      required
                     />
                     <button
                       type="button"
@@ -214,7 +250,7 @@ const Login = () => {
                   Don't have an account?{' '}
                   <button 
                     onClick={() => !loading && navigate('/register')}
-                    className={`text-blue-900 hover:text-blue-800 font-bold transition-colors ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:underline'}`}
+                    className={`text-blue-200 hover:text-white font-bold transition-colors ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:underline'}`}
                     disabled={loading}
                   >
                     Create Account
@@ -235,7 +271,7 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Right Side - Image placeholder */}
+          {/* Right Side - Image */}
           <div className="hidden lg:block">
             <div className="relative">
               <img 
@@ -243,10 +279,6 @@ const Login = () => {
                 alt="Property Management" 
                 className="w-full h-auto rounded-3xl shadow-2xl"
               />
-              <div className="mt-8 text-center">
-                <h2 className="text-3xl font-bold text-white mb-4"></h2>
-                <p className="text-transparent text-sm">Access your dashboard, track rent payments, and communicate with tenants all in one place.</p>
-              </div>
             </div>
           </div>
         </div>
