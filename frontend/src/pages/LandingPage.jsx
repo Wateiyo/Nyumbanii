@@ -90,12 +90,12 @@ const LandingPage = () => {
 
       <section id="home" className="pt-32 pb-20 px-4 relative overflow-hidden">
   {/* Left decorative image */}
-  <div className="absolute left-0 top-1/3 -translate-y-1/2 w-48 md:w-64 lg:w-80 opacity-80 hidden lg:block">
+  <div className="absolute left-0 top-1/3 -translate-y-1/2 w-48 md:w-64 lg:w-80 opacity-80 hidden lg:block pointer-events-none">
     <img src="/images/hero-left.png" alt="Decorative" className="w-full h-auto" />
   </div>
   
   {/* Right decorative image */}
-  <div className="absolute right-0 top-1/3 -translate-y-1/2 w-48 md:w-64 lg:w-80 opacity-80 hidden lg:block">
+  <div className="absolute right-0 top-1/3 -translate-y-1/2 w-48 md:w-64 lg:w-80 opacity-80 hidden lg:block pointer-events-none">
     <img src="/images/hero-right.png" alt="Decorative" className="w-full h-auto" />
   </div>
 
@@ -122,12 +122,15 @@ const LandingPage = () => {
     </div>
   </div>
 
- <div 
-  className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-10 cursor-pointer hover:scale-110 transition-transform"
-  onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
->
-  <ChevronDown className="w-12 h-12 text-blue-900" strokeWidth={3} />
-</div>
+  {/* Centered Arrow - positioned relative to the section, not the content */}
+  <div className="w-full flex justify-center absolute bottom-8 left-0 right-0 z-10">
+    <div 
+      className="animate-bounce cursor-pointer hover:scale-110 transition-transform"
+      onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+    >
+      <ChevronDown className="w-12 h-12 text-blue-900" strokeWidth={3} />
+    </div>
+  </div>
 </section>
 
       <section className="py-16 bg-blue-900 text-white">
