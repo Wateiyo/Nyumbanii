@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Home,
   MapPin,
@@ -14,6 +15,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight
+  
 } from 'lucide-react';
 
 const ImageCarousel = ({ images, alt }) => {
@@ -91,6 +93,7 @@ const Listings = () => {
     date: '',
     time: ''
   });
+  const navigate = useNavigate();
 
   const [listings] = useState([
     {
@@ -353,15 +356,15 @@ const Listings = () => {
 
             <div className="flex items-center gap-4">
               <button 
-                className="text-gray-900 hover:text-[#003366] font-semibold transition-colors"
-              >
-                Login
+                onClick={() => navigate('/login')}
+                className="text-gray-900 hover:text-[#003366] font-semibold transition-colors">
+                  Login
               </button>
-              <button 
-                className="bg-[#003366] hover:bg-[#002244] text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-              >
-                Register
-              </button>
+                <button 
+                  onClick={() => navigate('/register')}
+                  className="bg-[#003366] hover:bg-[#002244] text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+                  Register
+                </button>
             </div>
           </div>
         </div>
