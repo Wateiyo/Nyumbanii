@@ -669,4 +669,4 @@ const PropertyListings = () => {
   );
 };
 
-export default PropertyListings;
+export default Listings;

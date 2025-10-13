@@ -3099,4 +3099,3 @@ const handleAssignToProperty = async (memberId, propertyId) => {
 
 export default LandlordDashboard;
                         
-              
