@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, storage } from '../config/firebase';
+import { useNavigate } from 'react-router-dom';
 import { 
   collection, 
   addDoc, 
@@ -48,6 +49,7 @@ import {
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -72,6 +74,8 @@ const LandlordDashboard = () => {
   const [showAssignTeamModal, setShowAssignTeamModal] = useState(false);
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
+  const [selectedTeamMember, setSelectedTeamMember] = useState(null);
+  
 
   const [newTeamMember, setNewTeamMember] = useState({
   name: '',
@@ -803,10 +807,10 @@ const handleAssignToProperty = async (memberId, propertyId) => {
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
         <div className="p-6">
-          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
-            <Home className="w-8 h-8" />
+          <div onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+          <Home className="w-8 h-8" />
             <span className="text-xl font-bold">Nyumbanii</span>
-          </a>
+            </div>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
@@ -844,10 +848,15 @@ const handleAssignToProperty = async (memberId, propertyId) => {
         </nav>
 
         <div className="p-4 border-t border-[#002244]">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#002244] transition text-red-300">
-            <LogOut className="w-5 h-5" />
-            <span className="text-sm">Logout</span>
-          </button>
+          <button 
+                onClick={() => {
+                auth.signOut();
+                navigate('/login');
+                                }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#002244] transition text-red-300">
+              <LogOut className="w-5 h-5" />
+              <span className="text-sm">Logout</span>
+            </button>
         </div>
       </aside>
 
@@ -1477,7 +1486,6 @@ const handleAssignToProperty = async (memberId, propertyId) => {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"></th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tenant</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
