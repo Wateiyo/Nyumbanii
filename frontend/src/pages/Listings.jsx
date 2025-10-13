@@ -79,7 +79,7 @@ const ImageCarousel = ({ images, alt }) => {
   );
 };
 
-const PropertyListings = () => {
+const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [filterLocation, setFilterLocation] = useState('all');
