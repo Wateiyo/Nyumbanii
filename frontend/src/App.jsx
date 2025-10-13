@@ -7,9 +7,9 @@ import ProtectedRoute from './components/ProtectedRoute'
 import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Listings from './pages/Listings'  // ADD THIS
 import LandlordDashboard from './pages/LandlordDashboard'
 import TenantDashboard from './pages/TenantDashboard'
-import Listings from './pages/Listings' // ADD THIS IMPORT
 
 function App() {
   return (
@@ -20,7 +20,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/listings" element={<Listings />} /> {/* ADD THIS ROUTE */}
+          <Route path="/listings" element={<Listings />} />  {/* ADD THIS */}
           
           {/* Protected Landlord Routes */}
           <Route 
