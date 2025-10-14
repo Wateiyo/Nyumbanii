@@ -75,6 +75,8 @@ const LandlordDashboard = () => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
+  const [editingProperty, setEditingProperty] = useState(null);
+  const [showEditPropertyModal, setShowEditPropertyModal] = useState(false);
   
 
   const [newTeamMember, setNewTeamMember] = useState({
@@ -405,6 +407,31 @@ useEffect(() => {
       }
     }
   };
+  // EDIT PROPERTY
+const handleEditProperty = async () => {
+  if (editingProperty && editingProperty.name && editingProperty.location && editingProperty.units) {
+    try {
+      const propertyRef = doc(db, 'properties', editingProperty.id);
+      await updateDoc(propertyRef, {
+        name: editingProperty.name,
+        location: editingProperty.location,
+        units: parseInt(editingProperty.units),
+        occupied: parseInt(editingProperty.occupied) || 0,
+        revenue: parseInt(editingProperty.revenue) || 0,
+        images: editingProperty.images || []
+      });
+      
+      setEditingProperty(null);
+      setShowEditPropertyModal(false);
+      alert('Property updated successfully!');
+    } catch (error) {
+      console.error('Error updating property:', error);
+      alert('Error updating property. Please try again.');
+    }
+  } else {
+    alert('Please fill in all required fields');
+  }
+};
 
   // ADD TENANT
   const handleAddTenant = async () => {
@@ -1085,9 +1112,25 @@ const handleAssignToProperty = async (memberId, propertyId) => {
                             {property.location}
                           </p>
                         </div>
-                        <button onClick={() => handleDeleteProperty(property.id)} className="text-red-500 hover:text-red-700">
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        <div className="flex gap-2">
+  <button 
+    onClick={() => {
+      setEditingProperty(property);
+      setShowEditPropertyModal(true);
+    }}
+    className="text-blue-500 hover:text-blue-700"
+    title="Edit Property"
+  >
+    <Settings className="w-5 h-5" />
+  </button>
+  <button 
+    onClick={() => handleDeleteProperty(property.id)} 
+    className="text-red-500 hover:text-red-700"
+    title="Delete Property"
+  >
+    <Trash2 className="w-5 h-5" />
+  </button>
+</div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -1139,93 +1182,125 @@ const handleAssignToProperty = async (memberId, propertyId) => {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {listings.map(listing => (
                   <div key={listing.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
-                    {/* Listing Images Carousel */}
-                    <div className="relative h-56 bg-gray-200">
-                      {listing.images && listing.images.length > 0 ? (
-                        <>
-                          <img 
-                            src={listing.images[0]} 
-                            alt={`${listing.property} - Unit ${listing.unit}`}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute top-2 left-2 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
-                            {listing.status === 'available' ? 'Available' : 'Occupied'}
-                          </div>
-                          {listing.images.length > 1 && (
-                            <button 
-                              onClick={() => setSelectedListing(listing)}
-                              className="absolute bottom-2 right-2 px-3 py-1 bg-black bg-opacity-70 text-white text-xs rounded-full hover:bg-opacity-90"
-                            >
-                              View all {listing.images.length} photos
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
-                          <Home className="w-16 h-16 text-white opacity-50" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{listing.property}</h3>
-                          <p className="text-sm text-gray-600">Unit {listing.unit}</p>
-                        </div>
-                        <button onClick={() => handleDeleteListing(listing.id)} className="text-red-500 hover:text-red-700">
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                      
-                      <div className="flex gap-4 mb-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <Bed className="w-4 h-4" />
-                          <span>{listing.bedrooms} bed</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Bath className="w-4 h-4" />
-                          <span>{listing.bathrooms} bath</span>
-                        </div>
-                        {listing.area && (
-                          <div className="flex items-center gap-1">
-                            <Square className="w-4 h-4" />
-                            <span>{listing.area} m²</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {listing.amenities && listing.amenities.length > 0 && (
-                        <div className="mb-4">
-                          <p className="text-xs text-gray-600 mb-2">Amenities</p>
-                          <div className="flex flex-wrap gap-2">
-                            {listing.amenities.slice(0, 3).map((amenity, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                                {amenity}
-                              </span>
-                            ))}
-                            {listing.amenities.length > 3 && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                                +{listing.amenities.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="pt-4 border-t space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Rent</span>
-                          <span className="font-bold text-[#003366]">KES {listing.rent?.toLocaleString()}/mo</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Deposit</span>
-                          <span className="font-semibold text-gray-900">KES {listing.deposit?.toLocaleString()}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">Posted: {listing.postedDate}</p>
-                      </div>
-                    </div>
-                  </div>
+  {/* Listing Images Carousel */}
+  <div className="relative h-56 bg-gray-200">
+    {listing.images && listing.images.length > 0 ? (
+      <>
+        <img 
+          src={listing.images[0]} 
+          alt={`${listing.property} - Unit ${listing.unit}`}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute top-2 left-2 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
+          {listing.status === 'available' ? 'Available' : 'Occupied'}
+        </div>
+        {listing.images.length > 1 && (
+          <button 
+            onClick={() => setSelectedListing(listing)}
+            className="absolute bottom-2 right-2 px-3 py-1 bg-black bg-opacity-70 text-white text-xs rounded-full hover:bg-opacity-90"
+          >
+            View all {listing.images.length} photos
+          </button>
+        )}
+      </>
+    ) : (
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
+        <Home className="w-16 h-16 text-white opacity-50" />
+      </div>
+    )}
+  </div>
+  
+  <div className="p-6">
+    <div className="flex justify-between items-start mb-3">
+      <div>
+        <h3 className="font-semibold text-gray-900">{listing.property}</h3>
+        <p className="text-sm text-gray-600">Unit {listing.unit}</p>
+      </div>
+      <button onClick={() => handleDeleteListing(listing.id)} className="text-red-500 hover:text-red-700">
+        <Trash2 className="w-5 h-5" />
+      </button>
+    </div>
+    
+    <div className="flex gap-4 mb-4 text-sm text-gray-600">
+      <div className="flex items-center gap-1">
+        <Bed className="w-4 h-4" />
+        <span>{listing.bedrooms} bed</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <Bath className="w-4 h-4" />
+        <span>{listing.bathrooms} bath</span>
+      </div>
+      {listing.area && (
+        <div className="flex items-center gap-1">
+          <Square className="w-4 h-4" />
+          <span>{listing.area} m²</span>
+        </div>
+      )}
+    </div>
+    
+    {/* Viewing Bookings Count */}
+    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Eye className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-gray-700">Viewing Requests</span>
+        </div>
+        <span className="text-lg font-bold text-blue-600">
+          {viewingBookings.filter(v => 
+            v.property === listing.property && 
+            v.unit === listing.unit
+          ).length}
+        </span>
+      </div>
+      <div className="mt-2 flex gap-2 text-xs">
+        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+          {viewingBookings.filter(v => 
+            v.property === listing.property && 
+            v.unit === listing.unit && 
+            v.status === 'pending'
+          ).length} pending
+        </span>
+        <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
+          {viewingBookings.filter(v => 
+            v.property === listing.property && 
+            v.unit === listing.unit && 
+            v.status === 'confirmed'
+          ).length} confirmed
+        </span>
+      </div>
+    </div>
+    
+    {listing.amenities && listing.amenities.length > 0 && (
+      <div className="mb-4">
+        <p className="text-xs text-gray-600 mb-2">Amenities</p>
+        <div className="flex flex-wrap gap-2">
+          {listing.amenities.slice(0, 3).map((amenity, idx) => (
+            <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+              {amenity}
+            </span>
+          ))}
+          {listing.amenities.length > 3 && (
+            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+              +{listing.amenities.length - 3} more
+            </span>
+          )}
+        </div>
+      </div>
+    )}
+    
+    <div className="pt-4 border-t space-y-2">
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-600">Rent</span>
+        <span className="font-bold text-[#003366]">KES {listing.rent?.toLocaleString()}/mo</span>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-600">Deposit</span>
+        <span className="font-semibold text-gray-900">KES {listing.deposit?.toLocaleString()}</span>
+      </div>
+      <p className="text-xs text-gray-500 mt-2">Posted: {listing.postedDate}</p>
+    </div>
+  </div>
+</div>
                 ))}
               </div>
             </>
@@ -2136,6 +2211,134 @@ const handleAssignToProperty = async (memberId, propertyId) => {
           </div>
         </div>
       )}
+
+      {/* Edit Property Modal */}
+{showEditPropertyModal && editingProperty && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+        <h2 className="text-xl font-bold text-gray-900">Edit Property</h2>
+        <button onClick={() => {
+          setShowEditPropertyModal(false);
+          setEditingProperty(null);
+        }}><X className="w-6 h-6 text-gray-500" /></button>
+      </div>
+      <div className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Property Name *</label>
+          <input
+            type="text"
+            value={editingProperty.name}
+            onChange={(e) => setEditingProperty({...editingProperty, name: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+            placeholder="e.g., Sunset Apartments"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+          <input
+            type="text"
+            value={editingProperty.location}
+            onChange={(e) => setEditingProperty({...editingProperty, location: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+            placeholder="e.g., Westlands, Nairobi"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Total Units *</label>
+            <input
+              type="number"
+              value={editingProperty.units}
+              onChange={(e) => setEditingProperty({...editingProperty, units: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+              placeholder="12"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Occupied Units</label>
+            <input
+              type="number"
+              value={editingProperty.occupied}
+              onChange={(e) => setEditingProperty({...editingProperty, occupied: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+              placeholder="8"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Revenue</label>
+          <input
+            type="number"
+            value={editingProperty.revenue}
+            onChange={(e) => setEditingProperty({...editingProperty, revenue: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+            placeholder="240000"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Property Images</label>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#003366] transition cursor-pointer">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={async (e) => {
+                const urls = await handleImageUpload(e.target.files, 'property');
+                setEditingProperty({...editingProperty, images: [...(editingProperty.images || []), ...urls]});
+              }}
+              className="hidden"
+              id="edit-property-images"
+            />
+            <label htmlFor="edit-property-images" className="cursor-pointer">
+              {uploadingImages ? (
+                <div className="text-[#003366]">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003366] mx-auto mb-2"></div>
+                  <p>Uploading...</p>
+                </div>
+              ) : (
+                <>
+                  <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">Click to upload property images</p>
+                  <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB each</p>
+                </>
+              )}
+            </label>
+          </div>
+          {editingProperty.images && editingProperty.images.length > 0 && (
+            <div className="grid grid-cols-4 gap-2 mt-4">
+              {editingProperty.images.map((img, idx) => (
+                <div key={idx} className="relative aspect-square">
+                  <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                  <button
+                    onClick={() => setEditingProperty({
+                      ...editingProperty, 
+                      images: editingProperty.images.filter((_, i) => i !== idx)
+                    })}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="p-6 border-t border-gray-200 flex gap-3">
+        <button onClick={() => {
+          setShowEditPropertyModal(false);
+          setEditingProperty(null);
+        }} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+          Cancel
+        </button>
+        <button onClick={handleEditProperty} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+          Update Property
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Add Tenant Modal */}
       {showTenantModal && (
