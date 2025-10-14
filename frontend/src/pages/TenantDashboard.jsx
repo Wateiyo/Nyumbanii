@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, storage } from '../config/firebase';
+import { signOut } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import { 
   collection, 
   addDoc, 
@@ -40,6 +42,7 @@ import {
 } from 'lucide-react';
 
 const TenantDashboard = () => {
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -109,9 +112,13 @@ const TenantDashboard = () => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
       setLoading(false);
+      
+      if (!user) {
+        navigate('/login');
+      }
     });
     return unsubscribe;
-  }, []);
+  }, [navigate]);
 
   // Fetch Tenant's Lease
   useEffect(() => {
@@ -202,6 +209,17 @@ const TenantDashboard = () => {
 
     return unsubscribe;
   }, [currentUser, lease]);
+
+  // LOGOUT FUNCTION
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      alert('Error logging out. Please try again.');
+    }
+  };
 
   // Image upload handler
   const handleImageUpload = async (file) => {
@@ -325,6 +343,15 @@ const TenantDashboard = () => {
     } catch (error) {
       console.error('Error submitting payment proof:', error);
       alert('Error submitting payment proof. Please try again.');
+    }
+  };
+
+  // DOWNLOAD LEASE DOCUMENT
+  const handleDownloadLease = () => {
+    if (lease?.leaseDocument) {
+      window.open(lease.leaseDocument, '_blank');
+    } else {
+      alert('Lease document not available. Please contact your landlord.');
     }
   };
 
@@ -459,7 +486,10 @@ const TenantDashboard = () => {
         </nav>
 
         <div className="p-4 border-t border-[#002244]">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#002244] transition text-red-300">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#002244] transition text-red-300"
+          >
             <LogOut className="w-5 h-5" />
             <span className="text-sm">Logout</span>
           </button>
@@ -669,7 +699,7 @@ const TenantDashboard = () => {
                 </div>
 
                 {/* Recent Updates */}
-                <div className="bg-white p-6 rounded-xl shadow-sm">
+<div className="bg-white p-6 rounded-xl shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Mail className="w-5 h-5 text-[#003366]" />
                     Recent Updates
@@ -926,7 +956,7 @@ const TenantDashboard = () => {
             </>
           )}
 
-          {/* Lease View */}
+          {/* Lease View - IMPROVED WITH CLEAR FUNCTIONALITY */}
           {currentView === 'lease' && (
             <>
               <h2 className="text-xl font-bold text-gray-900 mb-6">My Lease Agreement</h2>
@@ -944,15 +974,13 @@ const TenantDashboard = () => {
                         <h3 className="text-2xl font-bold text-gray-900 mb-2">{lease.property}</h3>
                         <p className="text-gray-600">Unit {lease.unit}</p>
                       </div>
-                      {lease.leaseDocument && (
-                        <button 
-                          onClick={() => window.open(lease.leaseDocument, '_blank')}
-                          className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center gap-2"
-                        >
-                          <Download className="w-5 h-5" />
-                          Download Lease
-                        </button>
-                      )}
+                      <button 
+                        onClick={handleDownloadLease}
+                        className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center gap-2"
+                      >
+                        <Download className="w-5 h-5" />
+                        Download Lease
+                      </button>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -1248,7 +1276,7 @@ const TenantDashboard = () => {
                       <p className="font-medium text-gray-900">Landlord Updates</p>
                       <p className="text-sm text-gray-600">Important notices</p>
                     </div>
-                     <button
+                    <button
                       onClick={() => handleUpdateNotifications('memos')}
                       className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.memos ? 'bg-[#003366]' : 'bg-gray-300'}`}
                     >
