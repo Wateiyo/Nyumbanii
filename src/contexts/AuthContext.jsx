@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db, googleProvider, requestNotificationPermission } from '../firebase';
+import { auth, db, googleProvider, requestNotificationPermission } from '../firebase';  // ← Add requestNotificationPermission here
 
 const AuthContext = createContext();
 

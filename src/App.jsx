@@ -17,7 +17,6 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-      <Router>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
@@ -34,8 +33,7 @@ function App() {
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
     </Router>
   )
 }

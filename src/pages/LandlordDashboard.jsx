@@ -166,6 +166,11 @@ const LandlordDashboard = () => {
   const { tenants, loading: loadingTenants } = useTenants(currentUser?.uid);
   const { payments, loading: loadingPayments } = usePayments(currentUser?.uid, 'landlord');
   const { requests: maintenanceRequests, loading: loadingMaintenance } = useMaintenanceRequests(currentUser?.uid, 'landlord');
+  // Local state for data not in custom hooks yet
+  const [viewingBookings, setViewingBookings] = useState([]);
+  const [memos, setMemos] = useState([]);
+  const [listings, setListings] = useState([]);
+  
   // Mock maintenance data for display
   const mockMaintenanceRequests = [
     {
@@ -391,10 +396,7 @@ const mockCalendarMaintenance = [
 const displayViewingBookings = viewingBookings.length > 0 ? viewingBookings : mockViewingBookings;
 const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 'viewing'})), ...(maintenanceRequests.length > 0 ? maintenanceRequests : mockCalendarMaintenance).map(m => ({...m, type: 'maintenance'}))];
   
-  // Local state for data not in custom hooks yet
-  const [viewingBookings, setViewingBookings] = useState([]);
-  const [memos, setMemos] = useState([]);
-  const [listings, setListings] = useState([]);
+  
 
   const [profileSettings, setProfileSettings] = useState({
     name: userProfile?.displayName || 'Tom Doe',
@@ -528,6 +530,21 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
 
     return imageUrls;
   };
+  // Add this useEffect after your other useEffects
+useEffect(() => {
+  // Set loading to false once we have user data or determine user is not logged in
+  if (currentUser !== undefined) {
+    setLoading(false);
+  }
+}, [currentUser]);
+
+// Also add a check for unauthenticated users
+useEffect(() => {
+  if (currentUser === null) {
+    // User is not logged in, redirect to login
+    navigate('/login');
+  }
+}, [currentUser, navigate]);
 
   // ADD PROPERTY with images
   const handleAddProperty = async () => {
