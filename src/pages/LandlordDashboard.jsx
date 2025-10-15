@@ -1979,45 +1979,118 @@ const handleAssignToProperty = async (memberId, propertyId) => {
 
          {/* Calendar View */}
 {currentView === 'calendar' && (
-  <div className="bg-white p-6 rounded-xl shadow-sm">
-    <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Schedule</h2>
-    
-    <div className="space-y-4">
-      {displayCalendarEvents.length === 0 ? (
-        <div className="text-center py-12">
-          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No upcoming events scheduled</p>
-        </div>
-      ) : (
-        displayCalendarEvents.map(event => (
-          <div key={event.id} className={`flex items-center gap-4 p-4 rounded-lg ${event.type === 'viewing' ? 'bg-blue-50' : 'bg-orange-50'}`}>
-            <div className="w-16 h-16 bg-white rounded-lg flex flex-col items-center justify-center shadow-sm">
-              <span className={`text-xs font-medium ${event.type === 'viewing' ? 'text-blue-600' : 'text-orange-600'}`}>
-                {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
-              </span>
-              <span className={`text-2xl font-bold ${event.type === 'viewing' ? 'text-blue-900' : 'text-orange-900'}`}>
-                {new Date(event.date).getDate()}
-              </span>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">
-                {event.type === 'viewing' ? 'Property Viewing' : 'Maintenance'}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {event.type === 'viewing' 
-                  ? `${event.prospectName} - ${event.property}` 
-                  : `${event.issue} - ${event.property}`}
-              </p>
-              <p className="text-xs text-gray-500">{event.time || event.scheduledTime}</p>
-            </div>
-            {event.type === 'viewing' ? (
-              <CalendarCheck className="w-6 h-6 text-blue-600" />
-            ) : (
-              <Wrench className="w-6 h-6 text-orange-600" />
-            )}
+  <div className="space-y-6">
+    {/* Calendar Grid */}
+    <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Schedule Calendar</h2>
+        <div className="flex gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+            <span className="text-gray-600">Viewings</span>
           </div>
-        ))
-      )}
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-orange-500 rounded"></div>
+            <span className="text-gray-600">Maintenance</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Header */}
+      <div className="grid grid-cols-7 gap-2 mb-2">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Days */}
+      <div className="grid grid-cols-7 gap-2">
+        {Array.from({ length: 35 }, (_, i) => {
+          const currentDate = new Date(2025, 9, 1); // October 2025
+          const firstDay = currentDate.getDay();
+          const dayNumber = i - firstDay + 1;
+          const isValidDay = dayNumber > 0 && dayNumber <= 31;
+          
+          // Find events for this day
+          const dayEvents = isValidDay ? displayCalendarEvents.filter(event => {
+            const eventDate = new Date(event.date);
+            return eventDate.getDate() === dayNumber;
+          }) : [];
+
+          return (
+            <div
+              key={i}
+              className={`min-h-[80px] p-2 border border-gray-200 rounded-lg ${
+                isValidDay ? 'bg-white hover:bg-gray-50' : 'bg-gray-50'
+              } ${dayNumber === 15 ? 'border-2 border-[#003366]' : ''}`}
+            >
+              {isValidDay && (
+                <>
+                  <div className="text-sm font-medium text-gray-900 mb-1">{dayNumber}</div>
+                  <div className="space-y-1">
+                    {dayEvents.map(event => (
+                      <div
+                        key={event.id}
+                        className={`text-xs p-1 rounded truncate ${
+                          event.type === 'viewing' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
+                        }`}
+                        title={event.type === 'viewing' ? `Viewing: ${event.prospectName}` : `Maintenance: ${event.issue}`}
+                      >
+                        {event.time || event.scheduledTime} {event.type === 'viewing' ? 'Viewing' : 'Maintenance'}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+
+    {/* Upcoming Events List */}
+    <div className="bg-white p-6 rounded-xl shadow-sm">
+      <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Events</h2>
+      
+      <div className="space-y-4">
+        {displayCalendarEvents.length === 0 ? (
+          <div className="text-center py-12">
+            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No upcoming events scheduled</p>
+          </div>
+        ) : (
+          displayCalendarEvents.map(event => (
+            <div key={event.id} className={`flex items-center gap-4 p-4 rounded-lg ${event.type === 'viewing' ? 'bg-blue-50' : 'bg-orange-50'}`}>
+              <div className="w-16 h-16 bg-white rounded-lg flex flex-col items-center justify-center shadow-sm">
+                <span className={`text-xs font-medium ${event.type === 'viewing' ? 'text-blue-600' : 'text-orange-600'}`}>
+                  {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+                </span>
+                <span className={`text-2xl font-bold ${event.type === 'viewing' ? 'text-blue-900' : 'text-orange-900'}`}>
+                  {new Date(event.date).getDate()}
+                </span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">
+                  {event.type === 'viewing' ? 'Property Viewing' : 'Maintenance'}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {event.type === 'viewing' 
+                    ? `${event.prospectName} - ${event.property}` 
+                    : `${event.issue} - ${event.property}`}
+                </p>
+                <p className="text-xs text-gray-500">{event.time || event.scheduledTime}</p>
+              </div>
+              {event.type === 'viewing' ? (
+                <CalendarCheck className="w-6 h-6 text-blue-600" />
+              ) : (
+                <Wrench className="w-6 h-6 text-orange-600" />
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   </div>
 )}
