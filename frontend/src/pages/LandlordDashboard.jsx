@@ -166,7 +166,230 @@ const LandlordDashboard = () => {
   const { tenants, loading: loadingTenants } = useTenants(currentUser?.uid);
   const { payments, loading: loadingPayments } = usePayments(currentUser?.uid, 'landlord');
   const { requests: maintenanceRequests, loading: loadingMaintenance } = useMaintenanceRequests(currentUser?.uid, 'landlord');
+  // Mock maintenance data for display
+  const mockMaintenanceRequests = [
+    {
+    id: 'mock1',
+    issue: 'Leaking faucet',
+    property: 'Sunset Apartments',
+    unit: '2B',
+    tenant: 'John Doe',
+    priority: 'medium',
+    status: 'pending',
+    date: '2025-10-07',
+    scheduledTime: '09:00'
+  },
+  {
+    id: 'mock2',
+    issue: 'Broken AC',
+    property: 'Garden View',
+    unit: '4A',
+    tenant: 'Jane Smith',
+    priority: 'high',
+    status: 'in-progress',
+    date: '2025-10-08',
+    scheduledTime: '14:00'
+  },
+  {
+    id: 'mock3',
+    issue: 'Faulty door lock',
+    property: 'Riverside Towers',
+    unit: '8C',
+    tenant: 'Peter Kamau',
+    priority: 'high',
+    status: 'pending',
+    date: '2025-10-09',
+    scheduledTime: '10:00'
+  },
+  {
+    id: 'mock4',
+    issue: 'Water heater not working',
+    property: 'Sunset Apartments',
+    unit: '5D',
+    tenant: 'Grace Njeri',
+    priority: 'medium',
+    status: 'completed',
+    date: '2025-10-02',
+    scheduledTime: '11:00'
+  }
+];
+
+// Use real data if available, otherwise use mock
+  const displayMaintenanceRequests = maintenanceRequests.length > 0 ? maintenanceRequests : mockMaintenanceRequests;
   const { notifications, unreadCount } = useNotifications(currentUser?.uid);
+
+  // Mock viewing bookings
+const mockViewings = [
+  {
+    id: 'view1',
+    prospectName: 'Sarah Johnson',
+    email: 'sarah.j@email.com',
+    phone: '+254 734 567 890',
+    property: 'Sunset Apartments',
+    date: '2025-10-07',
+    time: '10:00',
+    status: 'pending',
+    credibilityScore: 85,
+    employment: 'Employed Full-time',
+    motivation: 'Interested in 2-bedroom unit'
+  },
+  {
+    id: 'view2',
+    prospectName: 'Michael Ochieng',
+    email: 'mochieng@email.com',
+    phone: '+254 745 678 901',
+    property: 'Sunset Apartments',
+    date: '2025-10-08',
+    time: '14:00',
+    status: 'confirmed',
+    credibilityScore: 92,
+    employment: 'Self-employed',
+    motivation: 'Looking for studio apartment'
+  }
+];
+
+// Use real or mock viewings
+const displayViewings = viewingBookings.length > 0 ? viewingBookings : mockViewings;
+
+// Mock memos
+const mockMemos = [
+  {
+    id: 'memo1',
+    title: 'Water Maintenance Notice',
+    message: 'Water will be shut off on Sunday, October 13th from 8 AM to 2 PM for routine maintenance. Please plan accordingly.',
+    priority: 'high',
+    targetAudience: 'all',
+    sentBy: 'Tom Doe',
+    sentAt: '2025-10-04T10:30:00',
+    recipients: 18,
+    landlordId: currentUser?.uid
+  },
+  {
+    id: 'memo2',
+    title: 'Rent Payment Reminder',
+    message: 'Friendly reminder that rent for October is due by the 5th. Please ensure timely payment to avoid late fees.',
+    priority: 'normal',
+    targetAudience: 'all',
+    sentBy: 'Tom Doe',
+    sentAt: '2025-10-01T09:00:00',
+    recipients: 18,
+    landlordId: currentUser?.uid
+  }
+];
+
+// Use real or mock memos
+const displayMemos = memos.length > 0 ? memos : mockMemos;
+
+// Mock tenants
+const mockTenants = [
+  {
+    id: 'tenant1',
+    name: 'John Doe',
+    email: 'john@email.com',
+    phone: '+254 712 345 678',
+    property: 'Sunset Apartments',
+    unit: '4A',
+    rent: 45000,
+    leaseStart: '2024-01-15',
+    leaseEnd: '2025-01-14',
+    status: 'active'
+  },
+  {
+    id: 'tenant2',
+    name: 'Grace Njeri',
+    email: 'grace@email.com',
+    phone: '+254 745 678 901',
+    property: 'Sunset Apartments',
+    unit: '2A',
+    rent: 42000,
+    leaseStart: '2023-11-01',
+    leaseEnd: '2024-10-31',
+    status: 'active'
+  },
+  {
+    id: 'tenant3',
+    name: 'Jane Smith',
+    email: 'jane@email.com',
+    phone: '+254 723 456 789',
+    property: 'Garden View',
+    unit: '2B',
+    rent: 38000,
+    leaseStart: '2024-03-01',
+    leaseEnd: '2025-02-28',
+    status: 'active'
+  },
+  {
+    id: 'tenant4',
+    name: 'Peter Kamau',
+    email: 'peter@email.com',
+    phone: '+254 734 567 890',
+    property: 'Riverside Towers',
+    unit: '8C',
+    rent: 52000,
+    leaseStart: '2024-06-01',
+    leaseEnd: '2025-05-31',
+    status: 'active'
+  }
+];
+
+// Use real or mock tenants
+const displayTenants = tenants.length > 0 ? tenants : mockTenants;
+
+  // Mock data for Calendar view
+const mockViewingBookings = [
+  {
+    id: 'viewing1',
+    prospectName: 'Sarah Johnson',
+    property: 'Sunset Apartments',
+    date: '2025-10-07',
+    time: '10:00',
+    status: 'pending',
+    type: 'viewing'
+  },
+  {
+    id: 'viewing2',
+    prospectName: 'Michael Ochieng',
+    property: 'Sunset Apartments',
+    date: '2025-10-08',
+    time: '14:00',
+    status: 'confirmed',
+    type: 'viewing'
+  }
+];
+
+const mockCalendarMaintenance = [
+  {
+    id: 'cal-maint1',
+    issue: 'Leaking faucet',
+    property: 'Sunset Apartments',
+    date: '2025-10-07',
+    scheduledTime: '09:00',
+    status: 'pending',
+    type: 'maintenance'
+  },
+  {
+    id: 'cal-maint2',
+    issue: 'Broken AC',
+    property: 'Garden View',
+    date: '2025-10-08',
+    scheduledTime: '14:00',
+    status: 'in-progress',
+    type: 'maintenance'
+  },
+  {
+    id: 'cal-maint3',
+    issue: 'Faulty door lock',
+    property: 'Riverside Towers',
+    date: '2025-10-09',
+    scheduledTime: '10:00',
+    status: 'pending',
+    type: 'maintenance'
+  }
+];
+
+// Use real data if available, otherwise use mock
+const displayViewingBookings = viewingBookings.length > 0 ? viewingBookings : mockViewingBookings;
+const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 'viewing'})), ...(maintenanceRequests.length > 0 ? maintenanceRequests : mockCalendarMaintenance).map(m => ({...m, type: 'maintenance'}))];
   
   // Local state for data not in custom hooks yet
   const [viewingBookings, setViewingBookings] = useState([]);
@@ -1109,143 +1332,138 @@ const handleAssignToProperty = async (memberId, propertyId) => {
             </>
           )}
 
-          {/* Listings View */}
-          {currentView === 'listings' && (
-            <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Property Listings</h2>
-                <button onClick={() => setShowListingModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Create Listing
-                </button>
-              </div>
-              
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {listings.map(listing => (
-                  <div key={listing.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
-  {/* Listing Images Carousel */}
-  <div className="relative h-56 bg-gray-200">
-    {listing.images && listing.images.length > 0 ? (
-      <>
-        <img 
-          src={listing.images[0]} 
-          alt={`${listing.property} - Unit ${listing.unit}`}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute top-2 left-2 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
-          {listing.status === 'available' ? 'Available' : 'Occupied'}
-        </div>
-        {listing.images.length > 1 && (
-          <button 
-            onClick={() => setSelectedListing(listing)}
-            className="absolute bottom-2 right-2 px-3 py-1 bg-black bg-opacity-70 text-white text-xs rounded-full hover:bg-opacity-90"
-          >
-            View all {listing.images.length} photos
-          </button>
-        )}
-      </>
-    ) : (
-      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
-        <Home className="w-16 h-16 text-white opacity-50" />
-      </div>
-    )}
-  </div>
-  
-  <div className="p-6">
-    <div className="flex justify-between items-start mb-3">
+         {/* Listings View */}
+{currentView === 'listings' && (
+  <>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <div>
-        <h3 className="font-semibold text-gray-900">{listing.property}</h3>
-        <p className="text-sm text-gray-600">Unit {listing.unit}</p>
+        <h2 className="text-xl font-bold text-gray-900">Property Listings</h2>
+        <p className="text-sm text-gray-600">Manage your available units for rent</p>
       </div>
-      <button onClick={() => handleDeleteListing(listing.id)} className="text-red-500 hover:text-red-700">
-        <Trash2 className="w-5 h-5" />
+      <button onClick={() => setShowListingModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+        <Plus className="w-5 h-5" />
+        Add Listing
       </button>
     </div>
     
-    <div className="flex gap-4 mb-4 text-sm text-gray-600">
-      <div className="flex items-center gap-1">
-        <Bed className="w-4 h-4" />
-        <span>{listing.bedrooms} bed</span>
+    {listings.length === 0 ? (
+      <div className="bg-white p-12 rounded-xl shadow-sm text-center">
+        <Eye className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <p className="text-gray-500 mb-4">No listings yet. Create your first listing to attract tenants!</p>
+        <button onClick={() => setShowListingModal(true)} className="px-6 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+          Create First Listing
+        </button>
       </div>
-      <div className="flex items-center gap-1">
-        <Bath className="w-4 h-4" />
-        <span>{listing.bathrooms} bath</span>
-      </div>
-      {listing.area && (
-        <div className="flex items-center gap-1">
-          <Square className="w-4 h-4" />
-          <span>{listing.area} m²</span>
-        </div>
-      )}
-    </div>
-    
-    {/* Viewing Bookings Count */}
-    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-medium text-gray-700">Viewing Requests</span>
-        </div>
-        <span className="text-lg font-bold text-blue-600">
-          {viewingBookings.filter(v => 
-            v.property === listing.property && 
-            v.unit === listing.unit
-          ).length}
-        </span>
-      </div>
-      <div className="mt-2 flex gap-2 text-xs">
-        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
-          {viewingBookings.filter(v => 
-            v.property === listing.property && 
-            v.unit === listing.unit && 
-            v.status === 'pending'
-          ).length} pending
-        </span>
-        <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
-          {viewingBookings.filter(v => 
-            v.property === listing.property && 
-            v.unit === listing.unit && 
-            v.status === 'confirmed'
-          ).length} confirmed
-        </span>
-      </div>
-    </div>
-    
-    {listing.amenities && listing.amenities.length > 0 && (
-      <div className="mb-4">
-        <p className="text-xs text-gray-600 mb-2">Amenities</p>
-        <div className="flex flex-wrap gap-2">
-          {listing.amenities.slice(0, 3).map((amenity, idx) => (
-            <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-              {amenity}
-            </span>
-          ))}
-          {listing.amenities.length > 3 && (
-            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-              +{listing.amenities.length - 3} more
-            </span>
-          )}
-        </div>
+    ) : (
+      <div className="grid md:grid-cols-2 gap-6">
+        {listings.map(listing => (
+          <div key={listing.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition">
+            {/* Listing Image */}
+            <div className="relative h-64 bg-gray-200">
+              {listing.images && listing.images.length > 0 ? (
+                <>
+                  <img 
+                    src={listing.images[0]} 
+                    alt={`${listing.property} - Unit ${listing.unit}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-3 left-3 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
+                    {listing.status === 'available' ? 'available' : 'occupied'}
+                  </div>
+                  {listing.images.length > 1 && (
+                    <button 
+                      onClick={() => setSelectedListing(listing)}
+                      className="absolute bottom-3 right-3 px-3 py-1 bg-black bg-opacity-70 text-white text-xs rounded-full hover:bg-opacity-90 flex items-center gap-1"
+                    >
+                      <Eye className="w-3 h-3" />
+                      View all {listing.images.length} photos
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
+                  <Home className="w-16 h-16 text-white opacity-50" />
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">{listing.property}</h3>
+                  <p className="text-sm text-gray-600">Unit {listing.unit}</p>
+                </div>
+                <button 
+                  onClick={() => handleDeleteListing(listing.id)} 
+                  className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition"
+                  title="Delete listing"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Property Stats */}
+              <div className="flex gap-4 mb-4 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Bed className="w-4 h-4" />
+                  <span>{listing.bedrooms} bed</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Bath className="w-4 h-4" />
+                  <span>{listing.bathrooms} bath</span>
+                </div>
+                {listing.area > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Square className="w-4 h-4" />
+                    <span>{listing.area} m²</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Amenities */}
+              {listing.amenities && listing.amenities.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {listing.amenities.slice(0, 3).map((amenity, idx) => (
+                      <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+                        {amenity}
+                      </span>
+                    ))}
+                    {listing.amenities.length > 3 && (
+                      <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        +{listing.amenities.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Pricing */}
+              <div className="pt-4 border-t space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Monthly Rent</span>
+                  <span className="font-bold text-[#003366] text-lg">KES {listing.rent?.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Deposit: KES {listing.deposit?.toLocaleString()}</span>
+                  <span className="text-xs text-gray-500">Posted: {listing.postedDate}</span>
+                </div>
+              </div>
+              
+              {/* Action Button */}
+              <button 
+                onClick={() => setSelectedListing(listing)}
+                className="w-full mt-4 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
+              >
+                View Details
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     )}
-    
-    <div className="pt-4 border-t space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-gray-600">Rent</span>
-        <span className="font-bold text-[#003366]">KES {listing.rent?.toLocaleString()}/mo</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-gray-600">Deposit</span>
-        <span className="font-semibold text-gray-900">KES {listing.deposit?.toLocaleString()}</span>
-      </div>
-      <p className="text-xs text-gray-500 mt-2">Posted: {listing.postedDate}</p>
-    </div>
-  </div>
-</div>
-                ))}
-              </div>
-            </>
-          )}
+  </>
+)}
 
           {/* Viewings View */}
           {currentView === 'viewings' && (
@@ -1281,7 +1499,7 @@ const handleAssignToProperty = async (memberId, propertyId) => {
               </div>
               
               <div className="grid gap-4">
-                {filteredViewings.map(viewing => (
+                {displayViewings.filter(v => viewingFilter === 'all' || v.status === viewingFilter).map(viewing => (
                   <div key={viewing.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
@@ -1408,10 +1626,10 @@ const handleAssignToProperty = async (memberId, propertyId) => {
               </div>
               
               <div className="grid gap-4">
-                {tenants
+                {displayTenants
                   .filter(tenant => tenantFilter === 'all' || tenant.status === tenantFilter)
                   .filter(tenant => tenant.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) || 
-                                   tenant.email.toLowerCase().includes(tenantSearchQuery.toLowerCase()))
+                   tenant.email.toLowerCase().includes(tenantSearchQuery.toLowerCase()))
                   .map(tenant => (
                   <div key={tenant.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -1468,177 +1686,235 @@ const handleAssignToProperty = async (memberId, propertyId) => {
             </>
           )}
 
-          {/* Payments View */}
-          {currentView === 'payments' && (
-            <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
-                <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-                  Record Payment
-                </button>
-              </div>
-              
-              <div className="grid md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <p className="text-sm text-gray-600 mb-1">Total Expected</p>
-                  <p className="text-2xl font-bold text-gray-900">KES {paymentStats.expected.toLocaleString()}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <p className="text-sm text-gray-600 mb-1">Received</p>
-                  <p className="text-2xl font-bold text-green-600">KES {paymentStats.received.toLocaleString()}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <p className="text-sm text-gray-600 mb-1">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-600">KES {paymentStats.pending.toLocaleString()}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <p className="text-sm text-gray-600 mb-1">Overdue</p>
-                  <p className="text-2xl font-bold text-red-600">KES {paymentStats.overdue.toLocaleString()}</p>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tenant</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                        
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {payments.map(payment => (
-                        <tr key={payment.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{payment.tenant}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-600">{payment.property}</div>
-                            <div className="text-xs text-gray-500">Unit {payment.unit}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-semibold text-gray-900">KES {payment.amount?.toLocaleString()}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-600">{payment.dueDate}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              payment.status === 'paid' ? 'bg-green-100 text-green-800' :
-                              payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {payment.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {payment.status === 'pending' && (
-                              <button 
-                                onClick={() => handleRecordPayment(payment.id)}
-                                className="text-[#003366] hover:text-[#002244] font-medium"
-                              >
-                                Mark Paid
-                              </button>
-                            )}
-                            {payment.status === 'paid' && (
-                              <button className="text-gray-400 cursor-not-allowed">
-                                <Download className="w-5 h-5" />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
+         {/* Payments View */}
+{currentView === 'payments' && (
+  <>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
+      <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+        Record Payment
+      </button>
+    </div>
+    
+    {/* Payment Stats Cards */}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Expected</p>
+        <p className="text-lg sm:text-2xl font-bold text-gray-900">KES {paymentStats.expected.toLocaleString()}</p>
+      </div>
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <p className="text-xs sm:text-sm text-gray-600 mb-1">Received</p>
+        <p className="text-lg sm:text-2xl font-bold text-green-600">KES {paymentStats.received.toLocaleString()}</p>
+      </div>
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <p className="text-xs sm:text-sm text-gray-600 mb-1">Pending</p>
+        <p className="text-lg sm:text-2xl font-bold text-yellow-600">KES {paymentStats.pending.toLocaleString()}</p>
+      </div>
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <p className="text-xs sm:text-sm text-gray-600 mb-1">Overdue</p>
+        <p className="text-lg sm:text-2xl font-bold text-red-600">KES {paymentStats.overdue.toLocaleString()}</p>
+      </div>
+    </div>
+    
+    {/* Mobile-Optimized Payment Cards (Hidden on Desktop) */}
+    <div className="lg:hidden space-y-4">
+      {payments.map(payment => (
+        <div key={payment.id} className="bg-white p-4 rounded-xl shadow-sm">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h3 className="font-semibold text-gray-900">{payment.tenant}</h3>
+              <p className="text-sm text-gray-600">{payment.property}</p>
+              <p className="text-xs text-gray-500">Unit {payment.unit}</p>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              payment.status === 'paid' ? 'bg-green-100 text-green-800' :
+              payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {payment.status}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <p className="text-xs text-gray-500">Amount</p>
+              <p className="font-semibold text-gray-900">KES {payment.amount?.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Due Date</p>
+              <p className="font-medium text-gray-700">{payment.dueDate}</p>
+            </div>
+          </div>
+          
+          {payment.status === 'pending' && (
+            <button 
+              onClick={() => handleRecordPayment(payment.id)}
+              className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm"
+            >
+              Mark as Paid
+            </button>
           )}
+          {payment.status === 'paid' && (
+            <div className="flex items-center gap-2 text-green-600 text-sm">
+              <CheckCircle className="w-4 h-4" />
+              <span>Paid on {payment.paidDate}</span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+    
+    {/* Desktop Table (Hidden on Mobile) */}
+    <div className="hidden lg:block bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tenant</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {payments.map(payment => (
+              <tr key={payment.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{payment.tenant}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-600">{payment.property}</div>
+                  <div className="text-xs text-gray-500">Unit {payment.unit}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-semibold text-gray-900">KES {payment.amount?.toLocaleString()}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-600">{payment.dueDate}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    payment.status === 'paid' ? 'bg-green-100 text-green-800' :
+                    payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {payment.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  {payment.status === 'pending' && (
+                    <button 
+                      onClick={() => handleRecordPayment(payment.id)}
+                      className="text-[#003366] hover:text-[#002244] font-medium"
+                    >
+                      Mark Paid
+                    </button>
+                  )}
+                  {payment.status === 'paid' && (
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <Download className="w-5 h-5" />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </>
+)}
 
           {/* Maintenance View */}
-          {currentView === 'maintenance' && (
-            <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Maintenance Requests</h2>
-                <button onClick={() => setShowMaintenanceModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-                  Add Request
-                </button>
-              </div>
-              
-              <div className="grid gap-4">
-                {maintenanceRequests.map(request => (
-                  <div key={request.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 text-lg">{request.issue}</h3>
-                            <p className="text-sm text-gray-600 mt-1">{request.property} - Unit {request.unit}</p>
-                            <p className="text-sm text-gray-600">Tenant: {request.tenant}</p>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            request.priority === 'high' ? 'bg-red-100 text-red-800' :
-                            request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
-                          }`}>
-                            {request.priority} priority
-                          </span>
-                        </div>
-                        
-                        <div className="flex gap-4 text-sm text-gray-600 mb-3">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {request.date}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {request.scheduledTime}
-                          </span>
-                        </div>
-                        
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                          request.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {request.status}
-                        </span>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        {request.status === 'pending' && (
-                          <button 
-                            onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-                          >
-                            Start Work
-                          </button>
-                        )}
-                        {request.status === 'in-progress' && (
-                          <button 
-                            onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')}
-                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-                          >
-                            Mark Complete
-                          </button>
-                        )}
-                        {request.status === 'completed' && (
-                          <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg">
-                            Completed ✓
-                          </span>
-                        )}
-                      </div>
-                    </div>
+{currentView === 'maintenance' && (
+  <>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <h2 className="text-xl font-bold text-gray-900">Maintenance Requests</h2>
+      <button onClick={() => setShowMaintenanceModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+        <Wrench className="w-5 h-5" />
+        Add Request
+      </button>
+    </div>
+    
+    <div className="grid gap-4">
+      {displayMaintenanceRequests.map(request => (
+        <div key={request.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-semibold text-gray-900 text-lg">{request.issue}</h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      request.priority === 'high' ? 'bg-red-100 text-red-800' :
+                      request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {request.priority}
+                    </span>
                   </div>
-                ))}
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <Building className="w-4 h-4" />
+                      {request.property} - Unit {request.unit}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {request.tenant}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {request.date} at {request.scheduledTime}
+                    </span>
+                  </div>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {request.status}
+                </span>
               </div>
-            </>
-          )}
+            </div>
+            
+            <div className="flex gap-2">
+              {request.status === 'pending' && (
+                <button 
+                  onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2"
+                >
+                  <Clock className="w-4 h-4" />
+                  Start Work
+                </button>
+              )}
+              {request.status === 'in-progress' && (
+                <button 
+                  onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Mark Complete
+                </button>
+              )}
+              {request.status === 'completed' && (
+                <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  Completed
+                </span>
+              )}
+              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                Contact Tenant
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </>
+)}
 
           {/* Memos View */}
           {currentView === 'memos' && (
@@ -1652,7 +1928,7 @@ const handleAssignToProperty = async (memberId, propertyId) => {
               </div>
               
               <div className="grid gap-4">
-                {memos.map(memo => (
+                {displayMemos.map(memo => (
                   <div key={memo.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -1684,52 +1960,50 @@ const handleAssignToProperty = async (memberId, propertyId) => {
             </>
           )}
 
-          {/* Calendar View */}
-          {currentView === 'calendar' && (
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Schedule</h2>
-              
-              <div className="space-y-4">
-                {viewingBookings.filter(v => v.status === 'confirmed').map(viewing => (
-                  <div key={viewing.id} className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
-                    <div className="w-16 h-16 bg-blue-100 rounded-lg flex flex-col items-center justify-center">
-                      <span className="text-xs text-blue-600 font-medium">
-                        {new Date(viewing.date).toLocaleDateString('en-US', { month: 'short' })}
-                      </span>
-                      <span className="text-2xl font-bold text-blue-900">
-                        {new Date(viewing.date).getDate()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">Property Viewing</h3>
-                      <p className="text-sm text-gray-600">{viewing.prospectName} - {viewing.property}</p>
-                      <p className="text-xs text-gray-500">{viewing.time}</p>
-                    </div>
-                    <CalendarCheck className="w-6 h-6 text-blue-600" />
-                  </div>
-                ))}
-                
-                {maintenanceRequests.filter(m => m.status !== 'completed').map(request => (
-                  <div key={request.id} className="flex items-center gap-4 p-4 bg-orange-50 rounded-lg">
-                    <div className="w-16 h-16 bg-orange-100 rounded-lg flex flex-col items-center justify-center">
-                      <span className="text-xs text-orange-600 font-medium">
-                        {new Date(request.date).toLocaleDateString('en-US', { month: 'short' })}
-                      </span>
-                      <span className="text-2xl font-bold text-orange-900">
-                        {new Date(request.date).getDate()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">Maintenance</h3>
-                      <p className="text-sm text-gray-600">{request.issue} - {request.property}</p>
-                      <p className="text-xs text-gray-500">{request.scheduledTime}</p>
-                    </div>
-                    <Wrench className="w-6 h-6 text-orange-600" />
-                  </div>
-                ))}
-              </div>
+         {/* Calendar View */}
+{currentView === 'calendar' && (
+  <div className="bg-white p-6 rounded-xl shadow-sm">
+    <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Schedule</h2>
+    
+    <div className="space-y-4">
+      {displayCalendarEvents.length === 0 ? (
+        <div className="text-center py-12">
+          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No upcoming events scheduled</p>
+        </div>
+      ) : (
+        displayCalendarEvents.map(event => (
+          <div key={event.id} className={`flex items-center gap-4 p-4 rounded-lg ${event.type === 'viewing' ? 'bg-blue-50' : 'bg-orange-50'}`}>
+            <div className="w-16 h-16 bg-white rounded-lg flex flex-col items-center justify-center shadow-sm">
+              <span className={`text-xs font-medium ${event.type === 'viewing' ? 'text-blue-600' : 'text-orange-600'}`}>
+                {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+              </span>
+              <span className={`text-2xl font-bold ${event.type === 'viewing' ? 'text-blue-900' : 'text-orange-900'}`}>
+                {new Date(event.date).getDate()}
+              </span>
             </div>
-          )}
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">
+                {event.type === 'viewing' ? 'Property Viewing' : 'Maintenance'}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {event.type === 'viewing' 
+                  ? `${event.prospectName} - ${event.property}` 
+                  : `${event.issue} - ${event.property}`}
+              </p>
+              <p className="text-xs text-gray-500">{event.time || event.scheduledTime}</p>
+            </div>
+            {event.type === 'viewing' ? (
+              <CalendarCheck className="w-6 h-6 text-blue-600" />
+            ) : (
+              <Wrench className="w-6 h-6 text-orange-600" />
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+)}
 
           {/* Team View */}
 {currentView === 'team' && (
@@ -1854,183 +2128,239 @@ const handleAssignToProperty = async (memberId, propertyId) => {
 )}
 
           {/* Settings View */}
-          {currentView === 'settings' && (
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Profile Settings */}
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="font-semibold text-gray-900 mb-4">Profile Information</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input
-                      type="text"
-                      value={profileSettings.name}
-                      onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
-                      disabled={!editingProfile}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={profileSettings.email}
-                      onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
-                      disabled={!editingProfile}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <input
-                      type="tel"
-                      value={profileSettings.phone}
-                      onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})}
-                      disabled={!editingProfile}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                    <input
-                      type="text"
-                      value={profileSettings.company}
-                      onChange={(e) => setProfileSettings({...profileSettings, company: e.target.value})}
-                      disabled={!editingProfile}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input
-                      type="text"
-                      value={profileSettings.address}
-                      onChange={(e) => setProfileSettings({...profileSettings, address: e.target.value})}
-                      disabled={!editingProfile}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-                  <div className="flex gap-2 pt-2">
-                    {editingProfile ? (
-                      <>
-                        <button onClick={handleUpdateProfile} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-                          Save Changes
-                        </button>
-                        <button onClick={() => setEditingProfile(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <button onClick={() => setEditingProfile(true)} className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-                        Edit Profile
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+{currentView === 'settings' && (
+  <div className="max-w-4xl mx-auto space-y-6">
+    {/* Profile Settings */}
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">Profile Settings</h3>
+        <button 
+          onClick={() => setEditingProfile(!editingProfile)}
+          className="px-4 py-2 bg-[#003366] text-white text-sm rounded-lg hover:bg-[#002244] transition"
+        >
+          {editingProfile ? 'Cancel' : 'Edit Profile'}
+        </button>
+      </div>
+      
+      {/* Profile Photo */}
+      <div className="flex items-center gap-4 mb-6 pb-6 border-b">
+        <div className="w-20 h-20 bg-[#003366] rounded-full flex items-center justify-center text-white text-2xl font-semibold">
+          {profileSettings.name.split(' ').map(n => n[0]).join('')}
+        </div>
+        <div>
+          <h4 className="font-semibold text-gray-900">{profileSettings.name}</h4>
+          <p className="text-sm text-gray-600">{profileSettings.email}</p>
+          <button className="text-[#003366] text-sm mt-1 hover:underline flex items-center gap-1">
+            <Camera className="w-4 h-4" />
+            Change Photo
+          </button>
+        </div>
+      </div>
 
-              {/* Notification Settings */}
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="font-semibold text-gray-900 mb-4">Notification Preferences</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">Email Notifications</p>
-                      <p className="text-sm text-gray-600">Receive updates via email</p>
-                    </div>
-                    <button
-                      onClick={() => handleUpdateNotifications('email')}
-                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.email ? 'bg-[#003366]' : 'bg-gray-300'}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.email ? 'translate-x-6' : 'translate-x-0'}`}></span>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">SMS Notifications</p>
-                      <p className="text-sm text-gray-600">Receive updates via SMS</p>
-                    </div>
-                    <button
-                      onClick={() => handleUpdateNotifications('sms')}
-                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.sms ? 'bg-[#003366]' : 'bg-gray-300'}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.sms ? 'translate-x-6' : 'translate-x-0'}`}></span>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">Push Notifications</p>
-                      <p className="text-sm text-gray-600">Browser notifications</p>
-                    </div>
-                    <button
-                      onClick={() => handleUpdateNotifications('push')}
-                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.push ? 'bg-[#003366]' : 'bg-gray-300'}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.push ? 'translate-x-6' : 'translate-x-0'}`}></span>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">Payment Alerts</p>
-                      <p className="text-sm text-gray-600">Payment reminders</p>
-                    </div>
-                    <button
-                      onClick={() => handleUpdateNotifications('paymentAlerts')}
-                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.paymentAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.paymentAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">Maintenance Alerts</p>
-                      <p className="text-sm text-gray-600">New maintenance requests</p>
-                    </div>
-                    <button
-                      onClick={() => handleUpdateNotifications('maintenanceAlerts')}
-                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.maintenanceAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.maintenanceAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">Viewing Alerts</p>
-                      <p className="text-sm text-gray-600">New viewing requests</p>
-                    </div>
-                    <button
-                      onClick={() => handleUpdateNotifications('viewingAlerts')}
-                      className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.viewingAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.viewingAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+      {/* Profile Form */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          <input
+            type="text"
+            value={profileSettings.name}
+            onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
+            disabled={!editingProfile}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input
+            type="email"
+            value={profileSettings.email}
+            onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
+            disabled={!editingProfile}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <input
+            type="tel"
+            value={profileSettings.phone}
+            onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})}
+            disabled={!editingProfile}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+          <input
+            type="text"
+            value={profileSettings.company}
+            onChange={(e) => setProfileSettings({...profileSettings, company: e.target.value})}
+            disabled={!editingProfile}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+          <input
+            type="text"
+            value={profileSettings.address}
+            onChange={(e) => setProfileSettings({...profileSettings, address: e.target.value})}
+            disabled={!editingProfile}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+          />
+        </div>
+      </div>
 
-              {/* Security Settings */}
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="font-semibold text-gray-900 mb-4">Security</h3>
-                <button onClick={() => setShowPasswordModal(true)} className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-                  Change Password
-                </button>
-              </div>
+      {editingProfile && (
+        <div className="mt-6 pt-6 border-t">
+          <button 
+            onClick={handleUpdateProfile}
+            className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
+          >
+            Save Changes
+          </button>
+        </div>
+      )}
+    </div>
 
-              {/* Privacy & Data */}
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="font-semibold text-gray-900 mb-4">Privacy & Data</h3>
-                <div className="space-y-3">
-                  <button className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-left flex items-center gap-2">
-                    <Download className="w-5 h-5" />
-                    Download My Data
-                  </button>
-                  <button className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-left">
-                    Delete Account
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+    {/* Security */}
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">Security</h3>
+      
+      <div className="space-y-4">
+        <div className="flex items-center justify-between py-3 border-b">
+          <div>
+            <p className="font-medium text-gray-900">Password</p>
+            <p className="text-sm text-gray-500">Last changed 3 months ago</p>
+          </div>
+          <button 
+            onClick={() => setShowPasswordModal(true)}
+            className="px-4 py-2 border border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition"
+          >
+            Change Password
+          </button>
+        </div>
+        
+        <div className="flex items-center justify-between py-3">
+          <div>
+            <p className="font-medium text-gray-900">Two-Factor Authentication</p>
+            <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+          </div>
+          <button className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+            Enable
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* Notification Preferences */}
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">Notification Preferences</h3>
+      
+      <div className="space-y-4">
+        <div className="flex items-center justify-between py-3">
+          <div>
+            <p className="font-medium text-gray-900">Email Notifications</p>
+            <p className="text-sm text-gray-500">Receive updates via email</p>
+          </div>
+          <button
+            onClick={() => handleUpdateNotifications('email')}
+            className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.email ? 'bg-[#003366]' : 'bg-gray-300'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.email ? 'translate-x-6' : 'translate-x-0'}`}></span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between py-3">
+          <div>
+            <p className="font-medium text-gray-900">SMS Notifications</p>
+            <p className="text-sm text-gray-500">Receive updates via text message</p>
+          </div>
+          <button
+            onClick={() => handleUpdateNotifications('sms')}
+            className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.sms ? 'bg-[#003366]' : 'bg-gray-300'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.sms ? 'translate-x-6' : 'translate-x-0'}`}></span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between py-3">
+          <div>
+            <p className="font-medium text-gray-900">Push Notifications</p>
+            <p className="text-sm text-gray-500">Receive browser push notifications</p>
+          </div>
+          <button
+            onClick={() => handleUpdateNotifications('push')}
+            className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.push ? 'bg-[#003366]' : 'bg-gray-300'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.push ? 'translate-x-6' : 'translate-x-0'}`}></span>
+          </button>
+        </div>
+      </div>
+
+      {/* Alert Types */}
+      <div className="mt-6 pt-6 border-t">
+        <h4 className="font-medium text-gray-900 mb-4">Alert Types</h4>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-700">Payment Alerts</span>
+            <button
+              onClick={() => handleUpdateNotifications('paymentAlerts')}
+              className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.paymentAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.paymentAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-700">Maintenance Requests</span>
+            <button
+              onClick={() => handleUpdateNotifications('maintenanceAlerts')}
+              className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.maintenanceAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.maintenanceAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-700">Viewing Bookings</span>
+            <button
+              onClick={() => handleUpdateNotifications('viewingAlerts')}
+              className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.viewingAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.viewingAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Danger Zone */}
+    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-red-200">
+      <h3 className="text-lg font-semibold text-red-600 mb-6">Danger Zone</h3>
+      
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3 border-b">
+          <div>
+            <p className="font-medium text-gray-900">Deactivate Account</p>
+            <p className="text-sm text-gray-500">Temporarily disable your account</p>
+          </div>
+          <button className="px-4 py-2 border-2 border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition whitespace-nowrap">
+            Deactivate
+          </button>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3">
+          <div>
+            <p className="font-medium text-gray-900">Delete Account</p>
+            <p className="text-sm text-gray-500">Permanently delete your account and all data</p>
+          </div>
+          <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition whitespace-nowrap">
+            Delete Account
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </div>
 
@@ -2096,20 +2426,25 @@ const handleAssignToProperty = async (memberId, propertyId) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Property Images</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#003366] transition cursor-pointer">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const urls = await handleImageUpload(e.target.files, 'property');
-                      setNewProperty({...newProperty, images: [...newProperty.images, ...urls]});
-                    }}
-                    className="hidden"
-                    id="property-images"
-                  />
-                  <label htmlFor="property-images" className="cursor-pointer">
+  <label className="block text-sm font-medium text-gray-700 mb-2">Property Images</label>
+    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#003366] transition">
+       <input
+         type="file"
+          multiple
+          accept="image/*"
+          onChange={async (e) => {
+          const files = e.target.files;
+         if (files && files.length > 0) {
+          const urls = await handleImageUpload(files, 'property');
+          if (urls && urls.length > 0) {
+            setNewProperty({...newProperty, images: [...(newProperty.images || []), ...urls]});
+          }
+        }
+      }}
+      className="hidden"
+      id="property-images-upload"
+    />
+    <label htmlFor="property-images-upload" className="cursor-pointer block">
                     {uploadingImages ? (
                       <div className="text-[#003366]">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003366] mx-auto mb-2"></div>
@@ -2124,7 +2459,7 @@ const handleAssignToProperty = async (memberId, propertyId) => {
                     )}
                   </label>
                 </div>
-                {newProperty.images.length > 0 && (
+                {newProperty.images && newProperty.images.length > 0 && (
                   <div className="grid grid-cols-4 gap-2 mt-4">
                     {newProperty.images.map((img, idx) => (
                       <div key={idx} className="relative aspect-square">
