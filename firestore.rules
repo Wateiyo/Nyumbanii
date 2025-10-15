@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Users collection - core user data
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if false;
+    }
+    
+    // Properties collection
+    match /properties/{propertyId} {
+      allow read: if true; // Anyone can browse properties
+      allow create: if isAuthenticated() && 
+                       getUserRole() == 'landlord' &&
+                       request.resource.data.landlordId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && 
+                               resource.data.landlordId == request.auth.uid;
+    }
+    
+    // Tenants collection
+    match /tenants/{tenantId} {
+      allow read: if isAuthenticated() && 
+                     (getUserRole() == 'landlord' || isOwner(tenantId));
+      allow create: if isAuthenticated() && getUserRole() == 'landlord';
+      allow update: if isAuthenticated() && 
+                       (getUserRole() == 'landlord' || isOwner(tenantId));
+      allow delete: if isAuthenticated() && getUserRole() == 'landlord';
+    }
+    
+    // Payments collection
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && 
+                     (request.auth.uid == resource.data.tenantId || 
+                      request.auth.uid == resource.data.landlordId);
+      allow create: if isAuthenticated() && getUserRole() == 'landlord';
+      allow update: if isAuthenticated() && 
+                       (request.auth.uid == resource.data.landlordId || 
+                        request.auth.uid == resource.data.tenantId);
+      allow delete: if isAuthenticated() && 
+                       request.auth.uid == resource.data.landlordId;
+    }
+    
+    // Maintenance requests collection
+    match /maintenanceRequests/{requestId} {
+      allow read: if isAuthenticated() && 
+                     (request.auth.uid == resource.data.tenantId || 
+                      request.auth.uid == resource.data.landlordId);
+      allow create: if isAuthenticated() && 
+                       getUserRole() == 'tenant' &&
+                       request.resource.data.tenantId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                       (request.auth.uid == resource.data.tenantId || 
+                        request.auth.uid == resource.data.landlordId);
+      allow delete: if isAuthenticated() && 
+                       request.auth.uid == resource.data.landlordId;
+    }
+    
+    // Viewing bookings collection
+    match /viewingBookings/{bookingId} {
+      allow read: if isAuthenticated() && 
+                     (request.auth.uid == resource.data.landlordId || 
+                      request.auth.uid == resource.data.prospectId);
+      allow create: if true; // Anyone can request a viewing
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == resource.data.landlordId;
+      allow delete: if isAuthenticated() && 
+                       request.auth.uid == resource.data.landlordId;
+    }
+    
+    // Messages collection
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && 
+                     (request.auth.uid == resource.data.senderId || 
+                      request.auth.uid == resource.data.recipientId ||
+                      resource.data.recipientId == 'all');
+      allow create: if isAuthenticated() && getUserRole() == 'landlord';
+      allow delete: if isAuthenticated() && 
+                       request.auth.uid == resource.data.senderId;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

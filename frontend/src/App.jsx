@@ -4,48 +4,38 @@ import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Import pages
-import LandingPage from './pages/LandingPage'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Listings from './pages/Listings'  // ADD THIS
-import LandlordDashboard from './pages/LandlordDashboard'
-import TenantDashboard from './pages/TenantDashboard'
+import LandingPage from './pages/LandingPage';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import LandlordDashboard from './pages/LandlordDashboard';
+import TenantDashboard from './pages/TenantDashboard';
+import PropertyManagerDashboard from './pages/PropertyManagerDashboard';
+import MaintenanceStaffDashboard from './pages/MaintenanceStaffDashboard';
+import PropertyListings from './pages/Listings';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
+      <Router>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/listings" element={<Listings />} />  {/* ADD THIS */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/listings" element={<PropertyListings />} />
           
-          {/* Protected Landlord Routes */}
-          <Route 
-            path="/landlord/dashboard" 
-            element={
-              <ProtectedRoute requiredRole="landlord">
-                <LandlordDashboard />
-              </ProtectedRoute>
-            } 
-          />
+          {/* Protected Dashboard Routes */}
+          <Route path="/landlord/dashboard" element={<LandlordDashboard />} />
+          <Route path="/tenant/dashboard" element={<TenantDashboard />} />
+          <Route path="/property-manager/dashboard" element={<PropertyManagerDashboard />} />
+          <Route path="/maintenance/dashboard" element={<MaintenanceStaffDashboard />} />
           
-          {/* Protected Tenant Routes */}
-          <Route 
-            path="/tenant/dashboard" 
-            element={
-              <ProtectedRoute requiredRole="tenant">
-                <TenantDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Catch all */}
+          {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </AuthProvider>
+      </Router>
+    </AuthProvider>
     </Router>
   )
 }

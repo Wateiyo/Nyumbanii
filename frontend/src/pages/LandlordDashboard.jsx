@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db, storage } from '../config/firebase';
+import { auth, storage } from '../firebase';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { 
+  useProperties, 
+  useTenants, 
+  usePayments, 
+  useMaintenanceRequests,
+  useNotifications 
+} from '../hooks/useRealtimeData';
 import { useNavigate } from 'react-router-dom';
 import { 
   collection, 
@@ -66,7 +75,6 @@ const LandlordDashboard = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [tenantFilter, setTenantFilter] = useState('all');
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
-  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [viewingFilter, setViewingFilter] = useState('all');
@@ -150,21 +158,27 @@ const LandlordDashboard = () => {
     targetAudience: 'all'
   });
   
-  const [properties, setProperties] = useState([]);
-  const [tenants, setTenants] = useState([]);
-  const [payments, setPayments] = useState([]);
+  // Use Auth Context and Real-time Hooks
+  const { currentUser, userProfile } = useAuth();
+  
+  // Real-time data with custom hooks
+  const { properties, loading: loadingProps } = useProperties(currentUser?.uid);
+  const { tenants, loading: loadingTenants } = useTenants(currentUser?.uid);
+  const { payments, loading: loadingPayments } = usePayments(currentUser?.uid, 'landlord');
+  const { requests: maintenanceRequests, loading: loadingMaintenance } = useMaintenanceRequests(currentUser?.uid, 'landlord');
+  const { notifications, unreadCount } = useNotifications(currentUser?.uid);
+  
+  // Local state for data not in custom hooks yet
   const [viewingBookings, setViewingBookings] = useState([]);
-  const [maintenanceRequests, setMaintenanceRequests] = useState([]);
-  const [notifications, setNotifications] = useState([]);
   const [memos, setMemos] = useState([]);
   const [listings, setListings] = useState([]);
 
   const [profileSettings, setProfileSettings] = useState({
-    name: 'Tom Doe',
-    email: 'tom@nyumbanii.co.ke',
-    phone: '+254 712 345 678',
-    company: 'Doe Properties Ltd',
-    address: 'Westlands, Nairobi',
+    name: userProfile?.displayName || 'Tom Doe',
+    email: userProfile?.email || 'tom@nyumbanii.co.ke',
+    phone: userProfile?.phone || '+254 712 345 678',
+    company: userProfile?.companyName || 'Doe Properties Ltd',
+    address: userProfile?.address || 'Westlands, Nairobi',
     notifications: {
       email: true,
       sms: true,
@@ -175,76 +189,21 @@ const LandlordDashboard = () => {
     }
   });
 
-  // Get current user
+  // Update profileSettings when userProfile changes
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      setCurrentUser(user);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
-  // Fetch Properties with real-time updates
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, 'properties'),
-      where('landlordId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const propertiesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+    if (userProfile) {
+      setProfileSettings(prev => ({
+        ...prev,
+        name: userProfile.displayName || prev.name,
+        email: userProfile.email || prev.email,
+        phone: userProfile.phone || prev.phone,
+        company: userProfile.companyName || prev.company,
+        address: userProfile.address || prev.address
       }));
-      setProperties(propertiesData);
-    });
+    }
+  }, [userProfile]);
 
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Fetch Tenants
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, 'tenants'),
-      where('landlordId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const tenantsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setTenants(tenantsData);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Fetch Payments
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, 'payments'),
-      where('landlordId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const paymentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setPayments(paymentsData);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Fetch Viewing Bookings
+  // Fetch Viewing Bookings (keep this one as-is since it's not in hooks yet)
   useEffect(() => {
     if (!currentUser) return;
 
@@ -264,27 +223,7 @@ const LandlordDashboard = () => {
     return unsubscribe;
   }, [currentUser]);
 
-  // Fetch Maintenance Requests
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, 'maintenanceRequests'),
-      where('landlordId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const requestsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setMaintenanceRequests(requestsData);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Fetch Listings
+  // Fetch Listings (keep this one as-is)
   useEffect(() => {
     if (!currentUser) return;
 
@@ -304,7 +243,7 @@ const LandlordDashboard = () => {
     return unsubscribe;
   }, [currentUser]);
 
-  // Fetch Memos
+  // Fetch Memos (keep this one as-is)
   useEffect(() => {
     if (!currentUser) return;
 
@@ -324,26 +263,25 @@ const LandlordDashboard = () => {
     return unsubscribe;
   }, [currentUser]);
 
-  // Fetch Team Members
-useEffect(() => {
-  if (!currentUser) return;
+  // Fetch Team Members (keep this one as-is)
+  useEffect(() => {
+    if (!currentUser) return;
 
-  const q = query(
-    collection(db, 'teamMembers'),
-    where('landlordId', '==', currentUser.uid)
-  );
+    const q = query(
+      collection(db, 'teamMembers'),
+      where('landlordId', '==', currentUser.uid)
+    );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const teamData = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    setTeamMembers(teamData);
-  });
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const teamData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setTeamMembers(teamData);
+    });
 
-  return unsubscribe;
-}, [currentUser]);
-
+    return unsubscribe;
+  }, [currentUser]);
   // Image upload handler
   const handleImageUpload = async (files, type = 'property') => {
     if (!files || files.length === 0) return [];
@@ -684,10 +622,14 @@ const handleEditProperty = async () => {
     setPasswordData({ current: '', new: '', confirm: '' });
   };
 
-  const markNotificationRead = (id) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === id ? { ...notif, read: true } : notif
-    ));
+  const markNotificationRead = async (id) => {
+    try {
+      await updateDoc(doc(db, 'notifications', id), {
+        read: true
+      });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   // Add team member handler
@@ -805,7 +747,6 @@ const handleAssignToProperty = async (memberId, propertyId) => {
     overdue: payments.filter(p => p.status === 'overdue').reduce((sum, p) => sum + (p.amount || 0), 0)
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Filter viewings
   const filteredViewings = viewingBookings.filter(viewing => {
