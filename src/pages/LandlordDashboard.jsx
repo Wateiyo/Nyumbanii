@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, storage } from '../firebase';
 import { db } from '../firebase';
-import MessageModal from './MessageModal';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   useProperties, 
@@ -1054,7 +1053,7 @@ const handleMessageTenant = (tenant) => {
             {sidebarOpen && <span className="text-xl font-bold">Nyumbanii</span>}
           </a>
         </div>
-        
+
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'team', 'memos', 'settings'].map((view) => {
             const icons = { 
