@@ -1610,7 +1610,7 @@ const handleAssignToProperty = async (memberId, propertyId) => {
           {currentView === 'tenants' && (
             <>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">My Tenants</h2>
+                <h2 className="text-xl font-bold text-gray-900">Tenant Directory</h2>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <div className="relative flex-1 sm:flex-initial">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1622,84 +1622,139 @@ const handleAssignToProperty = async (memberId, propertyId) => {
                       className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent w-full"
                     />
                   </div>
-                  <button onClick={() => setShowTenantModal(true)} className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition whitespace-nowrap">
+                  <select
+                    value={tenantFilter}
+                    onChange={(e) => setTenantFilter(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  >
+                    <option value="all">All Properties</option>
+                    {properties.map(prop => (
+                      <option key={prop.id} value={prop.name}>{prop.name}</option>
+                    ))}
+                  </select>
+                  <button onClick={() => setShowTenantModal(true)} className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition whitespace-nowrap flex items-center gap-2">
+                    <Users className="w-4 h-4" />
                     Add Tenant
                   </button>
                 </div>
               </div>
-
-              <div className="flex gap-2 mb-6 overflow-x-auto">
-                {['all', 'active', 'pending', 'moved-out'].map(filter => (
-                  <button
-                    key={filter}
-                    onClick={() => setTenantFilter(filter)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
-                      tenantFilter === filter ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {filter.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                  </button>
-                ))}
-              </div>
               
-              <div className="grid gap-4">
-                {displayTenants
-                  .filter(tenant => tenantFilter === 'all' || tenant.status === tenantFilter)
-                  .filter(tenant => tenant.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) || 
-                   tenant.email.toLowerCase().includes(tenantSearchQuery.toLowerCase()))
-                  .map(tenant => (
-                  <div key={tenant.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                          {tenant.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-gray-900 text-lg">{tenant.name}</h3>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              tenant.status === 'active' ? 'bg-green-100 text-green-800' :
-                              tenant.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {tenant.status}
-                            </span>
-                          </div>
-                          <div className="grid sm:grid-cols-2 gap-2 text-sm text-gray-600">
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-4 h-4" />
-                              {tenant.email}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-4 h-4" />
-                              {tenant.phone}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Building className="w-4 h-4" />
-                              {tenant.property} - Unit {tenant.unit}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <DollarSign className="w-4 h-4" />
-                              KES {tenant.rent?.toLocaleString()}/mo
-                            </span>
-                          </div>
-                          {tenant.leaseEnd && (
-                            <p className="text-xs text-gray-500 mt-2">Lease ends: {tenant.leaseEnd}</p>
-                          )}
+              {/* Group tenants by property */}
+              {properties
+                .filter(property => {
+                  // Filter by selected property if not "all"
+                  if (tenantFilter !== 'all' && property.name !== tenantFilter) return false;
+                  // Check if property has any tenants matching search
+                  const propertyTenants = displayTenants.filter(t => t.property === property.name);
+                  if (tenantSearchQuery) {
+                    return propertyTenants.some(t => 
+                      t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) || 
+                      t.email.toLowerCase().includes(tenantSearchQuery.toLowerCase())
+                    );
+                  }
+                  return propertyTenants.length > 0;
+                })
+                .map(property => {
+                  const propertyTenants = displayTenants
+                    .filter(tenant => tenant.property === property.name)
+                    .filter(tenant => 
+                      !tenantSearchQuery || 
+                      tenant.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) || 
+                      tenant.email.toLowerCase().includes(tenantSearchQuery.toLowerCase())
+                    );
+                  
+                  if (propertyTenants.length === 0) return null;
+
+                  return (
+                    <div key={property.id} className="mb-8">
+                      {/* Property Header */}
+                      <div className="mb-4">
+                        <h3 className="text-lg font-bold text-gray-900">{property.name}</h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="w-4 h-4" />
+                          <span>{property.location}</span>
+                          <span className="ml-4 text-[#003366] font-semibold">
+                            {propertyTenants.length} {propertyTenants.length === 1 ? 'Tenant' : 'Tenants'}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm">
-                          View Details
-                        </button>
-                        <button className="px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition text-sm">
-                          Message
-                        </button>
+
+                      {/* Tenants Grid */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {propertyTenants.map(tenant => (
+                          <div key={tenant.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                            <div className="flex items-start gap-4 mb-4">
+                              <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                {tenant.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-semibold text-gray-900">{tenant.name}</h4>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    tenant.status === 'active' ? 'bg-green-100 text-green-800' :
+                                    tenant.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {tenant.status}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600">Unit {tenant.unit}</p>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 text-sm text-gray-600 mb-4">
+                              <div className="flex items-center gap-2">
+                                <Mail className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate">{tenant.email}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-4 h-4 flex-shrink-0" />
+                                <span>{tenant.phone}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                <span className="font-semibold text-gray-900">KES {tenant.rent?.toLocaleString()}/month</span>
+                              </div>
+                              {tenant.leaseEnd && (
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 flex-shrink-0" />
+                                  <span>Lease: {tenant.leaseStart} to {tenant.leaseEnd}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm">
+                                View Details
+                              </button>
+                              <button className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm">
+                                Message
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  );
+                })}
+
+              {/* No results message */}
+              {properties.filter(property => {
+                const propertyTenants = displayTenants.filter(t => t.property === property.name);
+                if (tenantFilter !== 'all' && property.name !== tenantFilter) return false;
+                if (tenantSearchQuery) {
+                  return propertyTenants.some(t => 
+                    t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) || 
+                    t.email.toLowerCase().includes(tenantSearchQuery.toLowerCase())
+                  );
+                }
+                return propertyTenants.length > 0;
+              }).length === 0 && (
+                <div className="text-center py-12 bg-white rounded-xl">
+                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No tenants found</p>
+                </div>
+              )}
             </>
           )}
 
