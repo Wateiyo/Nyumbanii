@@ -1047,12 +1047,14 @@ const handleMessageTenant = (tenant) => {
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
         <div className="p-6">
-          <div onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
-          <Home className="w-8 h-8" />
-            <span className="text-xl font-bold">Nyumbanii</span>
+          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
             </div>
+            {sidebarOpen && <span className="text-xl font-bold">Nyumbanii</span>}
+          </a>
         </div>
-
+        
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'team', 'memos', 'settings'].map((view) => {
             const icons = { 
