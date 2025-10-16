@@ -1,10 +1,11 @@
 module.exports = {
+  root: true,
   env: {
     es6: true,
     node: true,
   },
   parserOptions: {
-    "ecmaVersion": 2018,
+    ecmaVersion: 2018,
   },
   extends: [
     "eslint:recommended",
@@ -14,6 +15,9 @@ module.exports = {
     "no-restricted-globals": ["error", "name", "length"],
     "prefer-arrow-callback": "error",
     "quotes": ["error", "double", {"allowTemplateLiterals": true}],
+    "max-len": ["error", {"code": 120}],
+    "object-curly-spacing": ["error", "always"],
+    "require-jsdoc": "off",
   },
   overrides: [
     {
@@ -24,5 +28,4 @@ module.exports = {
       rules: {},
     },
   ],
-  globals: {},
 };
