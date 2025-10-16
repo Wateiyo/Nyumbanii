@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, storage } from '../firebase';
 import { db } from '../firebase';
+import MessageModal from './MessageModal';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   useProperties, 
@@ -85,8 +86,10 @@ const LandlordDashboard = () => {
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
   const [editingProperty, setEditingProperty] = useState(null);
   const [showEditPropertyModal, setShowEditPropertyModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [selectedTenantForMessage, setSelectedTenantForMessage] = useState(null);
+  const [unreadMessages, setUnreadMessages] = useState({}); 
   
-
   const [newTeamMember, setNewTeamMember] = useState({
   name: '',
   email: '',
@@ -507,6 +510,29 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
 
     return unsubscribe;
   }, [currentUser]);
+
+  // Track unread messages
+useEffect(() => {
+  if (!currentUser) return;
+
+  const q = query(
+    collection(db, 'messages'),
+    where('recipientId', '==', currentUser.uid),
+    where('read', '==', false)
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unreadCounts = {};
+    snapshot.docs.forEach(doc => {
+      const message = doc.data();
+      unreadCounts[message.senderId] = (unreadCounts[message.senderId] || 0) + 1;
+    });
+    setUnreadMessages(unreadCounts);
+  });
+
+  return unsubscribe;
+}, [currentUser]);
+
   // Image upload handler
   const handleImageUpload = async (files, type = 'property') => {
     if (!files || files.length === 0) return [];
@@ -951,6 +977,12 @@ const handleAssignToProperty = async (memberId, propertyId) => {
     alert('Error assigning property. Please try again.');
   }
 };
+// Handle opening message modal
+const handleMessageTenant = (tenant) => {
+  setSelectedTenantForMessage(tenant);
+  setShowMessageModal(true);
+};
+
 
   // Stats calculations
   const stats = [
@@ -1727,8 +1759,15 @@ const handleAssignToProperty = async (memberId, propertyId) => {
                               <button className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm">
                                 View Details
                               </button>
-                              <button className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm">
+                              <button 
+                                onClick={() => handleMessageTenant(tenant)}
+                                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm relative">
                                 Message
+                                 {unreadMessages[tenant.id] > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                                 {unreadMessages[tenant.id]}
+                                </span>
+                                  )}
                               </button>
                             </div>
                           </div>
@@ -3724,6 +3763,19 @@ const handleAssignToProperty = async (memberId, propertyId) => {
       </div>
     </div>
   </div>
+)}
+{/* Message Modal */}
+{showMessageModal && selectedTenantForMessage && (
+  <MessageModal
+    tenant={selectedTenantForMessage}
+    currentUser={currentUser}
+    userProfile={userProfile}
+    isOpen={showMessageModal}
+    onClose={() => {
+      setShowMessageModal(false);
+      setSelectedTenantForMessage(null);
+    }}
+  />
 )}
     </div>
   );
