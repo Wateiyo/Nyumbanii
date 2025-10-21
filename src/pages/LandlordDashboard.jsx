@@ -25,7 +25,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   Home, 
   Users, 
-  DollarSign, 
+  Banknote, 
   Bell, 
   Settings, 
   LogOut,
@@ -54,7 +54,8 @@ import {
   Upload,
   Image as ImageIcon,
   Filter,
-  Search
+  Search,
+  Ban
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -1000,7 +1001,7 @@ const handleMessageTenant = (tenant) => {
     { 
       label: 'Monthly Revenue', 
       value: `KES ${Math.round(properties.reduce((sum, p) => sum + (p.revenue || 0), 0) / 1000)}K`, 
-      icon: DollarSign, 
+      icon: Banknote, 
       color: 'bg-purple-100 text-purple-900' 
     },
     { 
@@ -1064,7 +1065,7 @@ const handleMessageTenant = (tenant) => {
               calendar: Calendar, 
               maintenance: Wrench, 
               tenants: Users, 
-              payments: DollarSign,
+              payments: Banknote,
               team: Users, 
               memos: Mail, 
               settings: Settings 
@@ -1203,7 +1204,7 @@ const handleMessageTenant = (tenant) => {
                 {/* Payment Summary */}
                 <div className="bg-white p-6 rounded-xl shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-[#003366]" />
+                    <Banknote className="w-5 h-5 text-[#003366]" />
                     Payment Summary
                   </h3>
                   <div className="space-y-3">
@@ -1745,7 +1746,7 @@ const handleMessageTenant = (tenant) => {
                                 <span>{tenant.phone}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                <Banknote className="w-4 h-4 flex-shrink-0" />
                                 <span className="font-semibold text-gray-900">KES {tenant.rent?.toLocaleString()}/month</span>
                               </div>
                               {tenant.leaseEnd && (
@@ -2108,11 +2109,14 @@ const handleMessageTenant = (tenant) => {
           const dayNumber = i - firstDay + 1;
           const isValidDay = dayNumber > 0 && dayNumber <= 31;
           
-          // Find events for this day
+          // Find events for this day and count by type
           const dayEvents = isValidDay ? displayCalendarEvents.filter(event => {
             const eventDate = new Date(event.date);
             return eventDate.getDate() === dayNumber;
           }) : [];
+          
+          const viewingsCount = dayEvents.filter(e => e.type === 'viewing').length;
+          const maintenanceCount = dayEvents.filter(e => e.type === 'maintenance').length;
 
           return (
             <div
@@ -2123,19 +2127,20 @@ const handleMessageTenant = (tenant) => {
             >
               {isValidDay && (
                 <>
-                  <div className="text-sm font-medium text-gray-900 mb-1">{dayNumber}</div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">{dayNumber}</div>
                   <div className="space-y-1">
-                    {dayEvents.map(event => (
-                      <div
-                        key={event.id}
-                        className={`text-xs p-1 rounded truncate ${
-                          event.type === 'viewing' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
-                        }`}
-                        title={event.type === 'viewing' ? `Viewing: ${event.prospectName}` : `Maintenance: ${event.issue}`}
-                      >
-                        {event.time || event.scheduledTime} {event.type === 'viewing' ? 'Viewing' : 'Maintenance'}
+                    {viewingsCount > 0 && (
+                      <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        <CalendarCheck className="w-3 h-3" />
+                        <span className="font-medium">{viewingsCount}</span>
                       </div>
-                    ))}
+                    )}
+                    {maintenanceCount > 0 && (
+                      <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                        <Wrench className="w-3 h-3" />
+                        <span className="font-medium">{maintenanceCount}</span>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
