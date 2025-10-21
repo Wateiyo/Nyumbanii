@@ -105,7 +105,7 @@ export const useTenants = (landlordId) => {
     const q = query(
       collection(db, 'tenants'),
       where('landlordId', '==', landlordId),
-      orderBy('createdAt', 'desc')
+      
     );
 
     const unsubscribe = onSnapshot(
