@@ -1038,7 +1038,7 @@ const handleMessageTenant = (tenant) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
@@ -1103,7 +1103,7 @@ const handleMessageTenant = (tenant) => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full lg:w-auto">
         {/* Header */}
         <header className="bg-white shadow-sm p-4 lg:p-6">
           <div className="flex justify-between items-center">
