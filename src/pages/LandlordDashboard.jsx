@@ -1295,7 +1295,7 @@ const handleMessageTenant = (tenant) => {
                 </button>
               </div>
               
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-3 lg:grid-cols-3 gap-6">
                 {properties.map(property => (
                   <div key={property.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
                     {/* Property Image */}
