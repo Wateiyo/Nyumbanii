@@ -148,7 +148,7 @@ export const useMaintenanceRequests = (userId, userRole) => {
     const q = query(
       collection(db, 'maintenanceRequests'),
       where(field, '==', userId),
-      orderBy('createdAt', 'desc')
+      
     );
 
     const unsubscribe = onSnapshot(
@@ -191,7 +191,7 @@ export const usePayments = (userId, userRole) => {
     const q = query(
       collection(db, 'payments'),
       where(field, '==', userId),
-      orderBy('createdAt', 'desc')
+      
     );
 
     const unsubscribe = onSnapshot(
@@ -234,7 +234,7 @@ export const useNotifications = (userId) => {
     const q = query(
       collection(db, 'notifications'),
       where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      
     );
 
     const unsubscribe = onSnapshot(
@@ -361,7 +361,7 @@ export const useViewings = (userId, userRole) => {
     const q = query(
       collection(db, 'viewings'),
       where(field, '==', userId),
-      orderBy('createdAt', 'desc')
+      
     );
 
     const unsubscribe = onSnapshot(
