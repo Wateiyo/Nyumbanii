@@ -1801,7 +1801,7 @@ const handleMessageTenant = (tenant) => {
 
          {/* Payments View */}
 {currentView === 'payments' && (
-  <div className="min-h-full">
+  <div className="min-h-full bg-gray-50"> 
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
       <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
