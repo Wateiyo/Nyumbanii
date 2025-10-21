@@ -1801,7 +1801,7 @@ const handleMessageTenant = (tenant) => {
 
          {/* Payments View */}
 {currentView === 'payments' && (
-  <>
+  <div className="min-h-full">
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
       <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
@@ -1937,7 +1937,7 @@ const handleMessageTenant = (tenant) => {
         </table>
       </div>
     </div>
-  </>
+  </div>
 )}
 
           {/* Maintenance View */}
@@ -2197,7 +2197,7 @@ const handleMessageTenant = (tenant) => {
 
           {/* Team View */}
 {currentView === 'team' && (
-  <>
+  <div className="min-h-full">
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <h2 className="text-xl font-bold text-gray-900">Team Management</h2>
       <button onClick={() => setShowTeamModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
@@ -2314,12 +2314,12 @@ const handleMessageTenant = (tenant) => {
         ))}
       </div>
     )}
-  </>
+  </div>
 )}
 
           {/* Settings View */}
 {currentView === 'settings' && (
-  <div className="max-w-4xl mx-auto space-y-6">
+  <div className="max-w-4xl mx-auto space-y-6 min-h-full">
     {/* Profile Settings */}
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
