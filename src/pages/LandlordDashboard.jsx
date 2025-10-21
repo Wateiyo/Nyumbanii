@@ -1159,130 +1159,144 @@ const handleMessageTenant = (tenant) => {
         {/* Content Area */}
         <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
           {/* Dashboard View */}
-          {currentView === 'dashboard' && (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
-                {stats.map((stat, index) => (
-                  <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-xs sm:text-sm mb-1">{stat.label}</p>
-                        <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
-                      </div>
-                      <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
-                        <stat.icon className="w-6 h-6" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+{currentView === 'dashboard' && (
+  <>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
+      {stats.map((stat, index) => (
+        <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 text-xs sm:text-sm mb-1">{stat.label}</p>
+              <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
+            </div>
+            <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
+              <stat.icon className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Recent Viewings */}
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <CalendarCheck className="w-5 h-5 text-[#003366]" />
+          Recent Viewing Requests
+        </h3>
+        {viewingBookings.length === 0 ? (
+          <div className="text-center py-8">
+            <CalendarCheck className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">No viewing requests yet</p>
+          </div>
+        ) : (
+          viewingBookings.slice(0, 5).map(viewing => (
+            <div key={viewing.id} className="flex items-center justify-between py-3 border-b last:border-0">
+              <div className="flex-1">
+                <p className="font-medium text-gray-900 text-sm">{viewing.prospectName}</p>
+                <p className="text-xs text-gray-600">{viewing.property} - {viewing.date}</p>
               </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {viewing.status}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
 
-              <div className="grid lg:grid-cols-2 gap-6">
-                {/* Recent Viewings */}
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <CalendarCheck className="w-5 h-5 text-[#003366]" />
-                    Recent Viewing Requests
-                  </h3>
-                  {viewingBookings.slice(0, 5).map(viewing => (
-                    <div key={viewing.id} className="flex items-center justify-between py-3 border-b last:border-0">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">{viewing.prospectName}</p>
-                        <p className="text-xs text-gray-600">{viewing.property} - {viewing.date}</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                        viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {viewing.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+      {/* Payment Summary */}
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Banknote className="w-5 h-5 text-[#003366]" />
+          Payment Summary
+        </h3>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Expected This Month</span>
+            <span className="font-semibold text-gray-900">KES {paymentStats.expected.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Received</span>
+            <span className="font-semibold text-green-600">KES {paymentStats.received.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Pending</span>
+            <span className="font-semibold text-yellow-600">KES {paymentStats.pending.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Overdue</span>
+            <span className="font-semibold text-red-600">KES {paymentStats.overdue.toLocaleString()}</span>
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t">
+          <div className="flex justify-between items-center">
+            <span className="font-medium text-gray-900">Collection Rate</span>
+            <span className="font-bold text-[#003366]">
+              {paymentStats.expected > 0 ? Math.round((paymentStats.received / paymentStats.expected) * 100) : 0}%
+            </span>
+          </div>
+        </div>
+      </div>
 
-                {/* Payment Summary */}
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Banknote className="w-5 h-5 text-[#003366]" />
-                    Payment Summary
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Expected This Month</span>
-                      <span className="font-semibold text-gray-900">KES {paymentStats.expected.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Received</span>
-                      <span className="font-semibold text-green-600">KES {paymentStats.received.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Pending</span>
-                      <span className="font-semibold text-yellow-600">KES {paymentStats.pending.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Overdue</span>
-                      <span className="font-semibold text-red-600">KES {paymentStats.overdue.toLocaleString()}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-900">Collection Rate</span>
-                      <span className="font-bold text-[#003366]">
-                        {paymentStats.expected > 0 ? Math.round((paymentStats.received / paymentStats.expected) * 100) : 0}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Maintenance Overview */}
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Wrench className="w-5 h-5 text-[#003366]" />
-                    Maintenance Requests
-                  </h3>
-                  {maintenanceRequests.slice(0, 5).map(request => (
-                    <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-0">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">{request.issue}</p>
-                        <p className="text-xs text-gray-600">{request.property} - Unit {request.unit}</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        request.priority === 'high' ? 'bg-red-100 text-red-800' :
-                        request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {request.priority}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setShowPropertyModal(true)} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-center">
-                      <Building className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                      <span className="text-xs font-medium text-gray-900">Add Property</span>
-                    </button>
-                    <button onClick={() => setShowTenantModal(true)} className="p-4 bg-green-50 hover:bg-green-100 rounded-lg transition text-center">
-                      <Users className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                      <span className="text-xs font-medium text-gray-900">Add Tenant</span>
-                    </button>
-                    <button onClick={() => setShowListingModal(true)} className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-center">
-                      <Eye className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                      <span className="text-xs font-medium text-gray-900">Create Listing</span>
-                    </button>
-                    <button onClick={() => setShowMemoModal(true)} className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition text-center">
-                      <Mail className="w-6 h-6 text-orange-600 mx-auto mb-2" />
-                      <span className="text-xs font-medium text-gray-900">Send Memo</span>
-                    </button>
-                  </div>
-                </div>
+      {/* Maintenance Overview */}
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Wrench className="w-5 h-5 text-[#003366]" />
+          Maintenance Requests
+        </h3>
+        {displayMaintenanceRequests.length === 0 ? (
+          <div className="text-center py-8">
+            <Wrench className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">No maintenance requests</p>
+          </div>
+        ) : (
+          displayMaintenanceRequests.slice(0, 5).map(request => (
+            <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-0">
+              <div className="flex-1">
+                <p className="font-medium text-gray-900 text-sm">{request.issue}</p>
+                <p className="text-xs text-gray-600">{request.property} - Unit {request.unit}</p>
               </div>
-            </>
-          )}
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                request.priority === 'high' ? 'bg-red-100 text-red-800' :
+                request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-green-100 text-green-800'
+              }`}>
+                {request.priority}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => setShowPropertyModal(true)} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-center">
+            <Building className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+            <span className="text-xs font-medium text-gray-900">Add Property</span>
+          </button>
+          <button onClick={() => setShowTenantModal(true)} className="p-4 bg-green-50 hover:bg-green-100 rounded-lg transition text-center">
+            <Users className="w-6 h-6 text-green-600 mx-auto mb-2" />
+            <span className="text-xs font-medium text-gray-900">Add Tenant</span>
+          </button>
+          <button onClick={() => setShowListingModal(true)} className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-center">
+            <Eye className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+            <span className="text-xs font-medium text-gray-900">Create Listing</span>
+          </button>
+          <button onClick={() => setShowMemoModal(true)} className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition text-center">
+            <Mail className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+            <span className="text-xs font-medium text-gray-900">Send Memo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </>
+)}
 
           {/* Properties View */}
           {currentView === 'properties' && (
