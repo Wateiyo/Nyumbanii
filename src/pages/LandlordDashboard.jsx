@@ -1103,9 +1103,9 @@ const handleMessageTenant = (tenant) => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 w-full lg:w-auto">
+      <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 w-full overflow-hidden">
         {/* Header */}
-        <header className="bg-white shadow-sm p-4 lg:p-6">
+        <header className="bg-white shadow-sm p-4 lg:p-6 flex-shrink-0">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
@@ -1157,13 +1157,13 @@ const handleMessageTenant = (tenant) => {
         </header>
 
         {/* Content Area */}
-        <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
           {/* Dashboard View */}
 {currentView === 'dashboard' && (
-  <>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
+  <div className="h-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-4 lg:mb-6">
       {stats.map((stat, index) => (
-        <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+        <div key={index} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-xs sm:text-sm mb-1">{stat.label}</p>
@@ -1177,9 +1177,9 @@ const handleMessageTenant = (tenant) => {
       ))}
     </div>
 
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
       {/* Recent Viewings */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
         <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <CalendarCheck className="w-5 h-5 text-[#003366]" />
           Recent Viewing Requests
@@ -1209,7 +1209,7 @@ const handleMessageTenant = (tenant) => {
       </div>
 
       {/* Payment Summary */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
         <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Banknote className="w-5 h-5 text-[#003366]" />
           Payment Summary
@@ -1243,7 +1243,7 @@ const handleMessageTenant = (tenant) => {
       </div>
 
       {/* Maintenance Overview */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
         <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Wrench className="w-5 h-5 text-[#003366]" />
           Maintenance Requests
@@ -1273,7 +1273,7 @@ const handleMessageTenant = (tenant) => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
         <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 gap-3">
           <button onClick={() => setShowPropertyModal(true)} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-center">
@@ -1295,8 +1295,9 @@ const handleMessageTenant = (tenant) => {
         </div>
       </div>
     </div>
-  </>
+  </div>
 )}
+
 
           {/* Properties View */}
           {currentView === 'properties' && (
