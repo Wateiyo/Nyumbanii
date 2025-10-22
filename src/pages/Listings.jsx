@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
 import { 
   Home,
   MapPin,
@@ -17,7 +15,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight
-  
 } from 'lucide-react';
 
 const ImageCarousel = ({ images, alt }) => {
@@ -97,7 +94,7 @@ const Listings = () => {
   });
   const navigate = useNavigate();
 
-  const sampleListings = [
+  const [listings] = useState([
     {
       id: 1,
       propertyName: 'Sunset Apartments',
@@ -327,44 +324,14 @@ const Listings = () => {
       ],
       listed: '2025-10-03'
     }
-  ]
-
-
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch listings from Firestore
-  useEffect(() => {
-    const fetchListings = async () => {
-      try {
-        const listingsRef = collection(db, 'listings');
-        const q = query(listingsRef, where('status', '==', 'available'));
-        
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const listingsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          setListings(listingsData);
-          setLoading(false);
-        });
-
-        return () => unsubscribe();
-      } catch (error) {
-        console.error('Error fetching listings:', error);
-        setLoading(false);
-      }
-    };
-
-    fetchListings();
-  }, []);
+  ]);
 
   const locations = ['all', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Kwale'];
 
   const filteredListings = listings.filter(listing => {
-    const matchesSearch = listing.propertyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         listing.location?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLocation = filterLocation === 'all' || listing.location?.includes(filterLocation);
+    const matchesSearch = listing.propertyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         listing.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesLocation = filterLocation === 'all' || listing.location.includes(filterLocation);
     return matchesSearch && matchesLocation;
   });
 
@@ -377,7 +344,7 @@ const Listings = () => {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <nav className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -446,12 +413,7 @@ const Listings = () => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto mb-4"></div>
-            <p className="text-gray-500 text-lg">Loading listings...</p>
-          </div>
-        ) : filteredListings.length === 0 ? (
+        {filteredListings.length === 0 ? (
           <div className="text-center py-12">
             <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 text-lg">No properties found matching your search</p>
@@ -485,29 +447,41 @@ const Listings = () => {
                     </div>
                     <div className="flex items-center text-sm text-gray-700">
                       <DollarSign className="w-4 h-4 mr-2 text-[#003366]" />
-                      <span>KES {listing.rent}/month</span>
+                      <span className="font-semibold">KES {listing.rent}/month</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {listing.amenities?.slice(0, 3).map((amenity, idx) => (
-                      <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {listing.amenities.slice(0, 3).map((amenity, idx) => (
+                      <span key={idx} className="bg-blue-50 text-[#003366] px-2 py-1 rounded text-xs">
                         {amenity}
                       </span>
                     ))}
-                    {listing.amenities?.length > 3 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                    {listing.amenities.length > 3 && (
+                      <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
                         +{listing.amenities.length - 3} more
                       </span>
                     )}
                   </div>
 
-                  <button 
-                    onClick={() => setSelectedProperty(listing)}
-                    className="w-full bg-[#003366] text-white py-2 rounded-lg hover:bg-[#002244] transition font-semibold"
-                  >
-                    View Details
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedProperty(listing);
+                        setShowBookingModal(true);
+                      }}
+                      className="flex-1 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      Book Viewing
+                    </button>
+                    <button
+                      onClick={() => setSelectedProperty(listing)}
+                      className="px-4 py-2 border-2 border-[#003366] text-[#003366] hover:bg-blue-50 rounded-lg font-semibold transition"
+                    >
+                      Details
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -581,7 +555,7 @@ const Listings = () => {
               <div className="mb-6">
                 <h4 className="font-semibold text-gray-900 mb-3">Amenities</h4>
                 <div className="flex flex-wrap gap-2">
-                  {selectedProperty.amenities?.map((amenity, idx) => (
+                  {selectedProperty.amenities.map((amenity, idx) => (
                     <span key={idx} className="bg-blue-50 text-[#003366] px-3 py-1 rounded-lg text-sm flex items-center gap-1">
                       <CheckCircle className="w-4 h-4" />
                       {amenity}
