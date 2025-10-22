@@ -1655,6 +1655,100 @@ const handleMessageTenant = (tenant) => {
               </div>
             </div>
           )}
+ {/* Maintenance View */}
+{currentView === 'maintenance' && (
+  <div className="max-w-7xl mx-auto">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <h2 className="text-xl font-bold text-gray-900">Maintenance Requests</h2>
+      <button 
+        onClick={() => setShowMaintenanceModal(true)} 
+        className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2"
+      >
+        <Wrench className="w-5 h-5" />
+        Add Request
+      </button>
+    </div>
+
+    {displayMaintenanceRequests.length === 0 ? (
+      <div className="bg-white p-12 rounded-xl shadow-sm text-center">
+        <Wrench className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <p className="text-gray-500">No maintenance requests yet</p>
+      </div>
+    ) : (
+      <div className="grid gap-4">
+        {displayMaintenanceRequests.map(request => (
+          <div key={request.id} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{request.issue}</h3>
+                    <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Building className="w-4 h-4" />
+                        {request.property} - Unit {request.unit}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        {request.tenant}
+                      </span>
+                      {request.date && request.scheduledTime && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {request.date} at {request.scheduledTime}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                      request.priority === 'high' ? 'bg-red-100 text-red-800' :
+                      request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {request.priority}
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                      request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {request.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {request.status === 'pending' && (
+                    <button 
+                      onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2 text-sm"
+                    >
+                      <Wrench className="w-4 h-4" />
+                      Start Work
+                    </button>
+                  )}
+                  {request.status === 'in-progress' && (
+                    <button 
+                      onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-2 text-sm"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Mark Complete
+                    </button>
+                  )}
+                  <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm">
+                    Contact Tenant
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
 
           {/* Tenants View */}
           {currentView === 'tenants' && (
