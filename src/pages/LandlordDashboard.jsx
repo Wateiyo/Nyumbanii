@@ -1403,15 +1403,27 @@ const handleMessageTenant = (tenant) => {
 {currentView === 'listings' && (
   <>
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">Property Listings</h2>
-        <p className="text-sm text-gray-600">Manage your available units for rent</p>
-      </div>
-      <button onClick={() => setShowListingModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" />
-        Add Listing
-      </button>
-    </div>
+  <div>
+    <h2 className="text-xl font-bold text-gray-900">Property Listings</h2>
+    <p className="text-sm text-gray-600">Manage your available units for rent</p>
+  </div>
+  <div className="flex gap-2 w-full sm:w-auto">
+    <button 
+      onClick={() => navigate('/listings')} 
+      className="flex-1 sm:flex-initial px-4 py-2 bg-white border-2 border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition flex items-center justify-center gap-2"
+    >
+      <Eye className="w-5 h-5" />
+      View Listings
+    </button>
+    <button 
+      onClick={() => setShowListingModal(true)} 
+      className="flex-1 sm:flex-initial px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2"
+    >
+      <Plus className="w-5 h-5" />
+      Add Listing
+    </button>
+  </div>
+</div>
     
     {listings.length === 0 ? (
       <div className="bg-white p-12 rounded-xl shadow-sm text-center">
@@ -1532,10 +1544,10 @@ const handleMessageTenant = (tenant) => {
   </>
 )}
 
-          {/* Viewings View */}
-          {currentView === 'viewings' && (
-            <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+{/* Viewings View */}
+{currentView === 'viewings' && (
+  <div className="max-w-7xl mx-auto">
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Viewing Requests</h2>
                 <div className="flex gap-2">
                   <button 
@@ -1652,13 +1664,13 @@ const handleMessageTenant = (tenant) => {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
- {/* Maintenance View */}
+    </div>
+    </div>
+  )}
+{/* Maintenance View */}
 {currentView === 'maintenance' && (
   <div className="max-w-7xl mx-auto">
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <h2 className="text-xl font-bold text-gray-900">Maintenance Requests</h2>
       <button 
         onClick={() => setShowMaintenanceModal(true)} 
