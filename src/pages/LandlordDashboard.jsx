@@ -994,7 +994,7 @@ const handleMessageTenant = (tenant) => {
     },
     { 
       label: 'Active Tenants', 
-      value: tenants.filter(t => t.status === 'active').length, 
+      value: displayTenants.filter(t => t.status === 'active').length,
       icon: Users, 
       color: 'bg-green-100 text-green-900' 
     },
