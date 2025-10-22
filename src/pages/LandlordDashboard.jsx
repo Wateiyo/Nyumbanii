@@ -1191,7 +1191,7 @@ const handleMessageTenant = (tenant) => {
       {/* Payment Summary */}
       <div className="bg-white p-4 sm:p-5 lg:p-6 rounded-xl shadow-sm">
         <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#003366]" />
+          <Banknote className="w-4 h-4 sm:w-5 sm:h-5 text-[#003366]" />
           Payment Summary
         </h3>
         <div className="space-y-2 sm:space-y-3">
