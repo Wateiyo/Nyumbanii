@@ -1160,7 +1160,7 @@ const handleMessageTenant = (tenant) => {
         <div className="flex-1 overflow-y-auto p-4 lg:p-6">
           {/* Dashboard View */}
 {currentView === 'dashboard' && (
-  <div className="h-full">
+  <div className="h-full max-w-7xl mx-auto">
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-4 lg:mb-6">
       {stats.map((stat, index) => (
         <div key={index} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition">
@@ -1300,9 +1300,9 @@ const handleMessageTenant = (tenant) => {
 
 
           {/* Properties View */}
-          {currentView === 'properties' && (
-            <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        {currentView === 'properties' && (
+        <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h2 className="text-xl font-bold text-gray-900">My Properties</h2>
                 <button onClick={() => setShowPropertyModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
                   <Plus className="w-5 h-5" />
@@ -1343,23 +1343,23 @@ const handleMessageTenant = (tenant) => {
                           </p>
                         </div>
                         <div className="flex gap-2">
-  <button 
-    onClick={() => {
-      setEditingProperty(property);
-      setShowEditPropertyModal(true);
-    }}
-    className="text-blue-500 hover:text-blue-700"
-    title="Edit Property"
-  >
-    <Settings className="w-5 h-5" />
-  </button>
-  <button 
-    onClick={() => handleDeleteProperty(property.id)} 
-    className="text-red-500 hover:text-red-700"
-    title="Delete Property"
-  >
-    <Trash2 className="w-5 h-5" />
-  </button>
+                  <button 
+                    onClick={() => {
+                   setEditingProperty(property);
+                   setShowEditPropertyModal(true);
+                   }}
+                className="text-blue-500 hover:text-blue-700"
+                title="Edit Property"
+                   >
+                 <Settings className="w-5 h-5" />
+                 </button>
+                <button 
+               onClick={() => handleDeleteProperty(property.id)} 
+               className="text-red-500 hover:text-red-700"
+                title="Delete Property"
+                  >
+                 <Trash2 className="w-5 h-5" />
+                </button>
 </div>
                       </div>
                       
@@ -1395,7 +1395,8 @@ const handleMessageTenant = (tenant) => {
                   </div>
                 ))}
               </div>
-            </>
+            </div>
+
           )}
 
          {/* Listings View */}
@@ -1533,8 +1534,8 @@ const handleMessageTenant = (tenant) => {
 
           {/* Viewings View */}
           {currentView === 'viewings' && (
-            <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Viewing Requests</h2>
                 <div className="flex gap-2">
                   <button 
@@ -1652,7 +1653,7 @@ const handleMessageTenant = (tenant) => {
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
 
           {/* Tenants View */}
@@ -1816,7 +1817,7 @@ const handleMessageTenant = (tenant) => {
 
          {/* Payments View */}
 {currentView === 'payments' && (
-  <>
+  <div className="max-w-7xl mx-auto">
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
       <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
@@ -1961,7 +1962,7 @@ const handleMessageTenant = (tenant) => {
         </table>
       </div>
     </div>
-  </>
+  </div>
 )}
           {/* Memos View */}
           {currentView === 'memos' && (
@@ -2131,7 +2132,7 @@ const handleMessageTenant = (tenant) => {
 
           {/* Team View */}
 {currentView === 'team' && (
-  <>
+    <div className="max-w-7xl mx-auto">
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <h2 className="text-xl font-bold text-gray-900">Team Management</h2>
       <button onClick={() => setShowTeamModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
@@ -2248,7 +2249,7 @@ const handleMessageTenant = (tenant) => {
         ))}
       </div>
     )}
-  </>
+  </div>
 )}
 
           {/* Settings View */}
