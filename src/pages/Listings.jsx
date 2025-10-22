@@ -170,13 +170,13 @@ const Listings = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="bg-[#003366] text-white py-12">
+      <div className="bg-[#003366] text-white py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Find Your Perfect Home</h1>
-          <p className="text-xl text-blue-100 mb-8">Browse available properties across Kenya</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">Find Your Perfect Home</h1>
+          <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8">Browse available properties across Kenya</p>
           
           {/* Search and Filter */}
-          <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
+          <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -184,14 +184,14 @@ const Listings = () => {
                 placeholder="Search by property name or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none text-gray-900"
+                className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none text-gray-900 text-sm sm:text-base"
               />
             </div>
-            <div className="flex gap-2">
+            <div>
               <select
                 value={filterLocation}
                 onChange={(e) => setFilterLocation(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none text-gray-900"
+                className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none text-gray-900 text-sm sm:text-base"
               >
                 {locations.map(loc => (
                   <option key={loc} value={loc}>
@@ -232,7 +232,7 @@ const Listings = () => {
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">{listing.propertyName}</h3>
+                      <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-1">{listing.propertyName}</h3>
                       <div className="flex items-center text-gray-600 text-sm">
                         <MapPin className="w-4 h-4 mr-1" />
                         {listing.location}
