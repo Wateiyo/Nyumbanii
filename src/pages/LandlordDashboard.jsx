@@ -1180,17 +1180,25 @@ const handleMessageTenant = (tenant) => {
 {currentView === 'properties' && (
   <>
     {/* SIMPLE MESSAGE BANNER */}
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 mb-6 rounded-xl">
-      <p className="text-sm text-gray-700">
-        You have {properties.length} {properties.length === 1 ? 'property' : 'properties'} in your portfolio
-      </p>
+    {/* INFO MESSAGE BANNER - ADD THIS */}
+    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-lg">
+      <div className="flex items-start">
+        <div className="flex-shrink-0">
+          <Building className="w-5 h-5 text-blue-500" />
+        </div>
+        <div className="ml-3">
+          <p className="text-sm text-blue-700">
+            Manage your properties and track occupancy rates
+          </p>
+        </div>
+      </div>
     </div>
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
   <div>
     <h2 className="text-xl font-bold text-gray-900">My Properties</h2>
     <p className="text-sm text-gray-600">Manage your property portfolio</p>
   </div>
-  <div className="flex gap-2 w-full sm:w-auto">
+  <div className="flex gap-2 w-full">
     <button onClick={() => setShowPropertyModal(true)} className="flex-1 sm:flex-initial px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
       <Plus className="w-5 h-5" />
       Add Property
@@ -1199,7 +1207,7 @@ const handleMessageTenant = (tenant) => {
 </div>
     
   
-  <div className="grid md:grid-cols-1 gap-6">
+  <div className="grid md:grid-cols-2 gap-6">
       {properties.map(property => (
         <div key={property.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
           {/* Property Image */}
