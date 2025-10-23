@@ -143,6 +143,136 @@ exports.sendTeamInvitation = onDocumentCreated(
   }
 );
 
+// Send invitation email when tenant is added
+exports.sendTenantInvitation = onDocumentCreated(
+  "tenants/{tenantId}",
+  async (event) => {
+    try {
+      if (!resend) {
+        logger.error("Resend API key not configured");
+        return { success: false, error: "Email service not configured" };
+      }
+
+      const tenant = event.data.data();
+      const tenantId = event.params.tenantId;
+
+      // Only send invitation if status is 'pending' and invitation hasn't been sent
+      if (tenant.status !== 'pending' || tenant.invitationSent) {
+        logger.info("Skipping invitation - already sent or not pending");
+        return { success: false, reason: "Invitation not needed" };
+      }
+
+      logger.info("Sending invitation to tenant:", tenant.email);
+
+      // Get landlord information
+      const landlordDoc = await admin.firestore()
+        .collection("users")
+        .doc(tenant.landlordId)
+        .get();
+      
+      const landlordData = landlordDoc.data();
+      const landlordName = landlordData?.displayName || "Your Landlord";
+
+      // Get property details
+      const propertyDoc = await admin.firestore()
+        .collection("properties")
+        .doc(tenant.property)
+        .get();
+      
+      const propertyData = propertyDoc.exists ? propertyDoc.data() : null;
+      const propertyName = propertyData?.name || tenant.property;
+
+      const { data, error } = await resend.emails.send({
+        from: "Nyumbanii <onboarding@resend.dev>",
+        to: [tenant.email],
+        subject: "Welcome to Your Tenant Portal - Nyumbanii",
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+              .button { display: inline-block; background-color: #003366; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .property-box { background-color: white; padding: 20px; border-left: 4px solid #003366; border-radius: 4px; margin: 20px 0; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🏠 Welcome to Nyumbanii</h1>
+              </div>
+              <div class="content">
+                <h2>Hello ${tenant.name}!</h2>
+                <p>You have been invited by <strong>${landlordName}</strong> to access your tenant portal on Nyumbanii.</p>
+                
+                <p>With your tenant portal, you can:</p>
+                <ul>
+                  <li>💳 Pay rent online securely</li>
+                  <li>🔧 Submit and track maintenance requests</li>
+                  <li>📄 View your lease information</li>
+                  <li>💬 Communicate with your landlord</li>
+                  <li>📊 Access payment history</li>
+                </ul>
+                
+                <div class="property-box">
+                  <p style="margin: 5px 0;"><strong>Your Property Details:</strong></p>
+                  <p style="margin: 5px 0;">📍 Property: ${propertyName}</p>
+                  <p style="margin: 5px 0;">🚪 Unit: ${tenant.unit}</p>
+                  <p style="margin: 5px 0;">💰 Monthly Rent: KES ${tenant.rent ? tenant.rent.toLocaleString() : 'N/A'}</p>
+                  ${tenant.leaseStart ? `<p style="margin: 5px 0;">📅 Lease Start: ${tenant.leaseStart}</p>` : ''}
+                  ${tenant.leaseEnd ? `<p style="margin: 5px 0;">📅 Lease End: ${tenant.leaseEnd}</p>` : ''}
+                </div>
+                
+                <p>Click the button below to create your account and access your portal:</p>
+                <center>
+                  <a href="https://nyumbanii.co.ke/tenant-signup?invite=${tenantId}" class="button">
+                    Create Your Account
+                  </a>
+                </center>
+                
+                <p style="font-size: 12px; color: #666; margin-top: 20px;">This invitation link is unique to you and will expire in 7 days.</p>
+                
+                <p>If you have any questions, please contact ${landlordName}.</p>
+                
+                <p>Best regards,<br>The Nyumbanii Team</p>
+              </div>
+              <div class="footer">
+                <p>© 2025 Nyumbanii Property Management. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      });
+
+      if (error) {
+        logger.error("Error sending tenant invitation email:", error);
+        return { success: false, error: error.message };
+      }
+
+      logger.info("Tenant invitation email sent successfully:", data);
+
+      // Update tenant status
+      await admin.firestore()
+        .collection("tenants")
+        .doc(tenantId)
+        .update({
+          invitationSent: true,
+          invitationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+      return { success: true, emailId: data.id };
+    } catch (error) {
+      logger.error("Error in sendTenantInvitation function:", error);
+      return { success: false, error: error.message };
+    }
+  }
+);
+
 // Send memo emails to tenants when memo is created
 exports.sendMemoToTenants = onDocumentCreated(
   "memos/{memoId}",
