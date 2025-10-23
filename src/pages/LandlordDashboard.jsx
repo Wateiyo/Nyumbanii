@@ -1038,7 +1038,7 @@ const handleMessageTenant = (tenant) => {
 </header>
 
 {/* Content Area */}
-<div className="p-3 sm:p-4 lg:p-6 flex-1 overflow-y-auto">
+<div className="flex-1 overflow-y-auto">
   
 {/* Dashboard View */}
 {currentView === 'dashboard' && (
@@ -1177,7 +1177,7 @@ const handleMessageTenant = (tenant) => {
 
           {/* Properties View */}
         {currentView === 'properties' && (
-        <div>
+        <div className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h2 className="text-xl font-bold text-gray-900">My Properties</h2>
                 <button onClick={() => setShowPropertyModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
