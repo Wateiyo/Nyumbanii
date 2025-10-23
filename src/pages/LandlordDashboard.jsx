@@ -8,7 +8,8 @@ import {
   usePayments, 
   useViewings,
   useMaintenanceRequests,
-  useNotifications 
+  useNotifications,
+  useListings 
 } from '../hooks/useRealtimeData';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -171,9 +172,10 @@ const { tenants, loading: loadingTenants } = useTenants(currentUser?.uid);
 const { payments, loading: loadingPayments } = usePayments(currentUser?.uid, 'landlord');
 const { requests: maintenanceRequests, loading: loadingMaintenance } = useMaintenanceRequests(currentUser?.uid, 'landlord');
 const { viewings, loading: loadingViewings } = useViewings(currentUser?.uid, 'landlord');
+const { listings, loading: loadingListings } = useListings(currentUser?.uid);
   // Local state for data not in custom hooks yet
   const [memos, setMemos] = useState([]);
-  const [listings, setListings] = useState([]);
+  
   
   // Mock maintenance data for display
   const mockMaintenanceRequests = [

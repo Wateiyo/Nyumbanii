@@ -424,3 +424,46 @@ export const useDocument = (collectionName, documentId) => {
 
   return { document, loading, error };
 };
+
+// ============= LISTINGS =============
+
+export const useListings = (landlordId) => {
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!landlordId) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'listings'),
+      where('landlordId', '==', landlordId)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const listingsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setListings(listingsData);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Error fetching listings:', err);
+        setError(err);
+        setListings([]);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [landlordId]);
+
+  return { listings, loading, error };
+};
+
