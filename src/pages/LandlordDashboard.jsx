@@ -1038,7 +1038,7 @@ const handleMessageTenant = (tenant) => {
 </header>
 
 {/* Content Area */}
-<div className="px-4 py-6 flex-1 overflow-y-auto">
+<div className="px-2 py-6 flex-1 overflow-y-auto">
   
 
 {/* Dashboard View */}
