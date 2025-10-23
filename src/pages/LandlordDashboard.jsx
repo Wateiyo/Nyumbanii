@@ -6,6 +6,7 @@ import {
   useProperties, 
   useTenants, 
   usePayments, 
+  useViewings,
   useMaintenanceRequests,
   useNotifications 
 } from '../hooks/useRealtimeData';
