@@ -1198,8 +1198,8 @@ const handleMessageTenant = (tenant) => {
   </div>
 </div>
     
-  <div className="max-w-2xl mx-auto">
-  <div className="grid md:grid-cols-1 gap-6">
+  
+  <div className="grid md:grid-cols-2 gap-6">
       {properties.map(property => (
         <div key={property.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
           {/* Property Image */}
@@ -1284,7 +1284,7 @@ const handleMessageTenant = (tenant) => {
         </div>
       ))}
     </div>
-    </div>
+    
   </>
 )}
 
