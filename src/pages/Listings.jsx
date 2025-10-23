@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   Home,
   MapPin,
@@ -95,6 +97,7 @@ const Listings = () => {
     time: ''
   });
   const navigate = useNavigate();
+  const { currentUser } = useAuth(); 
 
   // STATE FOR REAL-TIME LISTINGS FROM FIREBASE
   const [listings, setListings] = useState([]);
@@ -180,15 +183,36 @@ const Listings = () => {
     return matchesSearch && matchesLocation;
   });
 
-  const handleBookViewing = () => {
-    if (bookingData.name && bookingData.email && bookingData.phone && bookingData.date && bookingData.time) {
+  const handleBookViewing = async () => {
+  if (bookingData.name && bookingData.email && bookingData.phone && bookingData.date && bookingData.time) {
+    try {
+      // Save to Firebase
+      await addDoc(collection(db, 'viewings'), {
+        landlordId: selectedProperty.landlordId,  // The landlord who owns this property
+        tenantId: currentUser?.uid || 'guest',     // Current user ID or 'guest' if not logged in
+        property: selectedProperty.propertyName,
+        unit: selectedProperty.unit || 'N/A',
+        prospectName: bookingData.name,
+        email: bookingData.email,
+        phone: bookingData.phone,
+        date: bookingData.date,
+        time: bookingData.time,
+        status: 'pending',
+        credibilityScore: 85, // Default score, you can calculate this later
+        createdAt: serverTimestamp()
+      });
+
       alert(`Viewing booked successfully for ${selectedProperty.propertyName} on ${bookingData.date} at ${bookingData.time}. You will receive a confirmation email shortly.`);
       setShowBookingModal(false);
       setBookingData({ name: '', email: '', phone: '', date: '', time: '' });
-    } else {
-      alert('Please fill in all required fields');
+    } catch (error) {
+      console.error('Error booking viewing:', error);
+      alert('Failed to book viewing. Please try again.');
     }
-  };
+  } else {
+    alert('Please fill in all required fields');
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50">
