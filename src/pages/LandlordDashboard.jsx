@@ -1009,7 +1009,7 @@ const handleMessageTenant = (tenant) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 w-full overflow-hidden">
         {/* Header */}
-<header className="bg-gray-50 border-b border-gray-200 px-4 py-4">
+<header className="bg-gray-50 px-4 py-4">
   <div className="flex justify-between items-center">
     <div className="flex items-center gap-3 flex-1 min-w-0">
       <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
@@ -1198,7 +1198,8 @@ const handleMessageTenant = (tenant) => {
   </div>
 </div>
     
-    <div className="grid md:grid-cols-2 gap-6">
+  <div className="max-w-2xl mx-auto">
+  <div className="grid md:grid-cols-1 gap-6">
       {properties.map(property => (
         <div key={property.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
           {/* Property Image */}
@@ -1282,6 +1283,7 @@ const handleMessageTenant = (tenant) => {
           </div>
         </div>
       ))}
+    </div>
     </div>
   </>
 )}
