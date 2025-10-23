@@ -124,7 +124,9 @@ const LandlordDashboard = () => {
     unit: '',
     rent: '',
     leaseStart: '',
-    leaseEnd: ''
+    leaseEnd: '',
+    sendInvitation: true
+
   });
   
   const [newMaintenance, setNewMaintenance] = useState({
@@ -540,36 +542,55 @@ const handleEditProperty = async () => {
   }
 };
 
-  // ADD TENANT
   const handleAddTenant = async () => {
-    if (newTenant.name && newTenant.email && newTenant.property && newTenant.unit && newTenant.rent) {
-      try {
-        await addDoc(collection(db, 'tenants'), {
-          name: newTenant.name,
-          email: newTenant.email,
-          phone: newTenant.phone,
-          property: newTenant.property,
-          unit: newTenant.unit,
-          rent: parseInt(newTenant.rent),
-          leaseStart: newTenant.leaseStart,
-          leaseEnd: newTenant.leaseEnd,
-          status: 'active',
-          lastPayment: null,
-          landlordId: currentUser.uid,
-          createdAt: serverTimestamp()
-        });
-        
-        setNewTenant({ name: '', email: '', phone: '', property: '', unit: '', rent: '', leaseStart: '', leaseEnd: '' });
-        setShowTenantModal(false);
-        alert('Tenant added successfully!');
-      } catch (error) {
-        console.error('Error adding tenant:', error);
-        alert('Error adding tenant. Please try again.');
-      }
-    } else {
+  try {
+    if (!newTenant.name || !newTenant.email || !newTenant.property || !newTenant.unit) {
       alert('Please fill in all required fields');
+      return;
     }
-  };
+
+    // Add tenant to Firestore
+    const tenantData = {
+      name: newTenant.name,
+      email: newTenant.email.toLowerCase(),
+      phone: newTenant.phone,
+      property: newTenant.property,
+      unit: newTenant.unit,
+      rent: parseFloat(newTenant.rent) || 0,
+      leaseStart: newTenant.leaseStart,
+      leaseEnd: newTenant.leaseEnd,
+      landlordId: currentUser.uid,
+      status: newTenant.sendInvitation ? 'pending' : 'active', // pending if sending invitation
+      createdAt: serverTimestamp()
+    };
+
+    await addDoc(collection(db, 'tenants'), tenantData);
+
+    // The Cloud Function will automatically send the invitation email
+    if (newTenant.sendInvitation) {
+      alert('Tenant added and invitation will be sent shortly!');
+    } else {
+      alert('Tenant added successfully!');
+    }
+
+    // Reset form and close modal
+    setNewTenant({
+      name: '',
+      email: '',
+      phone: '',
+      property: '',
+      unit: '',
+      rent: '',
+      leaseStart: '',
+      leaseEnd: '',
+      sendInvitation: true
+    });
+    setShowTenantModal(false);
+  } catch (error) {
+    console.error('Error adding tenant:', error);
+    alert('Failed to add tenant. Please try again.');
+  }
+};
 
   // ADD PAYMENT
   const handleAddPayment = async () => {
@@ -808,20 +829,23 @@ const handleAddTeamMember = async () => {
       return;
     }
 
-    // Add to Firebase
-    await addDoc(collection(db, 'teamMembers'), {
-      ...newTeamMember,
+    // Add team member to Firestore
+    const teamData = {
+      name: newTeamMember.name,
+      email: newTeamMember.email.toLowerCase(),
+      phone: newTeamMember.phone,
+      role: newTeamMember.role,
+      assignedProperties: newTeamMember.assignedProperties,
       landlordId: currentUser.uid,
-      createdAt: serverTimestamp(),
-      invitationSent: true,
-      invitationDate: new Date().toISOString()
-    });
+      status: 'pending',
+      createdAt: serverTimestamp()
+    };
 
-    // TODO: Send email invitation via your backend/email service
-    // Example: await sendInvitationEmail(newTeamMember.email, newTeamMember.name);
-    
-    alert(`Invitation sent to ${newTeamMember.name}!`);
-    
+    await addDoc(collection(db, 'teamMembers'), teamData);
+
+    // The Cloud Function will automatically send the invitation email
+    alert('Team member added and invitation will be sent shortly!');
+
     // Reset form
     setNewTeamMember({
       name: '',
@@ -830,7 +854,6 @@ const handleAddTeamMember = async () => {
       role: 'property_manager',
       assignedProperties: []
     });
-    
     setShowTeamModal(false);
   } catch (error) {
     console.error('Error adding team member:', error);
@@ -1296,7 +1319,7 @@ const handleMessageTenant = (tenant) => {
   </>
 )}
 
-         {/* Listings View */}
+{/* Listings View */}
 {currentView === 'listings' && (
   <>
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -2860,6 +2883,18 @@ const handleMessageTenant = (tenant) => {
                 </div>
               </div>
             </div>
+        <div className="flex items-center gap-2 p-4 bg-blue-50 rounded-lg">
+            <input
+             type="checkbox"
+             id="sendInvitation"
+             checked={newTenant.sendInvitation}
+             onChange={(e) => setNewTenant({...newTenant, sendInvitation: e.target.checked})}
+             className="w-4 h-4 text-[#003366] border-gray-300 rounded focus:ring-[#003366]"
+             />
+          <label htmlFor="sendInvitation" className="text-sm text-gray-700">
+          Send invitation email to tenant
+          </label>
+        </div>
             <div className="p-6 border-t border-gray-200 flex gap-3">
               <button onClick={() => setShowTenantModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
                 Cancel
