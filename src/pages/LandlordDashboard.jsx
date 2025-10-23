@@ -1038,8 +1038,9 @@ const handleMessageTenant = (tenant) => {
 </header>
 
 {/* Content Area */}
-<div className="p-3 sm:p-4 lg:p-6 flex-1 overflow-y-auto">
+<div className="p-6 flex-1 overflow-y-auto">
   
+
 {/* Dashboard View */}
 {currentView === 'dashboard' && (
   <>
