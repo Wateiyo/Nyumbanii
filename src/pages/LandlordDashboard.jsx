@@ -258,7 +258,7 @@ const mockViewings = [
 ];
 
 // Use real or mock viewings
-const displayViewings = viewingBookings.length > 0 ? viewingBookings : mockViewings;
+const displayViewings = viewings.length > 0 ? viewings : mockViewings;
 
 // Mock memos
 const mockMemos = [
