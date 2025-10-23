@@ -1088,7 +1088,7 @@ const handleMessageTenant = (tenant) => {
     <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
       {/* Recent Viewings */}
       <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
-        <h3 className="font-semibold text-gray-900 mb-3 lg:mb-4 flex items-center gap-2 text-sm lg:text-base">
+        <h3 className="font-semibold text-gray-900 mb-3 lg:mb-4 flex items-center gap-2 text-md lg:text-base">
           <CalendarCheck className="w-4 h-4 lg:w-5 lg:h-5 text-[#003366]" />
           Recent Viewing Requests
         </h3>
@@ -1865,7 +1865,7 @@ const handleMessageTenant = (tenant) => {
   <>
     <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
       <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
-      <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
+      <button onClick={() => setShowPaymentModal(true)} className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
         Record Payment
       </button>
     </div>
