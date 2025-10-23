@@ -1179,6 +1179,19 @@ const handleMessageTenant = (tenant) => {
 {/* Properties View */}
 {currentView === 'properties' && (
   <>
+  {/* INFO MESSAGE BANNER - ADD THIS */}
+    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-lg">
+      <div className="flex items-start">
+        <div className="flex-shrink-0">
+          <Building className="w-5 h-5 text-blue-500" />
+        </div>
+        <div className="ml-3">
+          <p className="text-sm text-blue-700">
+            Manage your properties and track occupancy rates
+          </p>
+        </div>
+      </div>
+    </div>
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
   <div>
     <h2 className="text-xl font-bold text-gray-900">My Properties</h2>
