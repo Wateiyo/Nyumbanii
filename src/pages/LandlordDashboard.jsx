@@ -165,12 +165,12 @@ const LandlordDashboard = () => {
   const { currentUser, userProfile } = useAuth();
   
   // Real-time data with custom hooks
-  const { properties, loading: loadingProps } = useProperties(currentUser?.uid);
-  const { tenants, loading: loadingTenants } = useTenants(currentUser?.uid);
-  const { payments, loading: loadingPayments } = usePayments(currentUser?.uid, 'landlord');
-  const { requests: maintenanceRequests, loading: loadingMaintenance } = useMaintenanceRequests(currentUser?.uid, 'landlord');
+const { properties, loading: loadingProps } = useProperties(currentUser?.uid);
+const { tenants, loading: loadingTenants } = useTenants(currentUser?.uid);
+const { payments, loading: loadingPayments } = usePayments(currentUser?.uid, 'landlord');
+const { requests: maintenanceRequests, loading: loadingMaintenance } = useMaintenanceRequests(currentUser?.uid, 'landlord');
+const { viewings, loading: loadingViewings } = useViewings(currentUser?.uid, 'landlord');
   // Local state for data not in custom hooks yet
-  const [viewingBookings, setViewingBookings] = useState([]);
   const [memos, setMemos] = useState([]);
   const [listings, setListings] = useState([]);
   
@@ -396,7 +396,7 @@ const mockCalendarMaintenance = [
 ];
 
 // Use real data if available, otherwise use mock
-const displayViewingBookings = viewingBookings.length > 0 ? viewingBookings : mockViewingBookings;
+const displayViewingBookings = viewings.length > 0 ? viewings : mockViewingBookings;
 const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 'viewing'})), ...(maintenanceRequests.length > 0 ? maintenanceRequests : mockCalendarMaintenance).map(m => ({...m, type: 'maintenance'}))];
   
   
@@ -431,107 +431,7 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     }
   }, [userProfile]);
 
-  // Fetch Viewing Bookings (keep this one as-is since it's not in hooks yet)
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, 'viewingBookings'),
-      where('landlordId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const viewingsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setViewingBookings(viewingsData);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Fetch Listings (keep this one as-is)
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, 'listings'),
-      where('landlordId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const listingsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setListings(listingsData);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Fetch Memos (keep this one as-is)
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, 'memos'),
-      where('landlordId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const memosData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setMemos(memosData);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Fetch Team Members (keep this one as-is)
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const q = query(
-      collection(db, 'teamMembers'),
-      where('landlordId', '==', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const teamData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setTeamMembers(teamData);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Track unread messages
-useEffect(() => {
-  if (!currentUser) return;
-
-  const q = query(
-    collection(db, 'messages'),
-    where('recipientId', '==', currentUser.uid),
-    where('read', '==', false)
-  );
-
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const unreadCounts = {};
-    snapshot.docs.forEach(doc => {
-      const message = doc.data();
-      unreadCounts[message.senderId] = (unreadCounts[message.senderId] || 0) + 1;
-    });
-    setUnreadMessages(unreadCounts);
-  });
-
-  return unsubscribe;
-}, [currentUser]);
+ 
 
   // Image upload handler
   const handleImageUpload = async (files, type = 'property') => {
@@ -1005,10 +905,10 @@ const handleMessageTenant = (tenant) => {
       color: 'bg-purple-100 text-purple-900' 
     },
     { 
-      label: 'Pending Viewings', 
-      value: viewingBookings.filter(v => v.status === 'pending').length, 
-      icon: CalendarCheck, 
-      color: 'bg-orange-100 text-orange-900' 
+    label: 'Pending Viewings', 
+    value: viewings.filter(v => v.status === 'pending').length, 
+    icon: CalendarCheck, 
+    color: 'bg-orange-100 text-orange-900'  
     }
   ];
 
@@ -1021,10 +921,10 @@ const handleMessageTenant = (tenant) => {
 
 
   // Filter viewings
-  const filteredViewings = viewingBookings.filter(viewing => {
-    if (viewingFilter === 'all') return true;
-    return viewing.status === viewingFilter;
-  });
+  const filteredViewings = viewings.filter(viewing => {
+  if (viewingFilter === 'all') return true;
+  return viewing.status === viewingFilter;
+});
 
   if (loading) {
     return (
