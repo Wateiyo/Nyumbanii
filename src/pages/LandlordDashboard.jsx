@@ -1009,7 +1009,7 @@ const handleMessageTenant = (tenant) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 w-full overflow-hidden">
         {/* Header */}
-<header className="bg-white shadow-sm p-3 sm:p-4 lg:p-6">
+<header className="bg-white shadow-sm px-6 py-4">
   <div className="flex justify-between items-center">
     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
       <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
@@ -1044,7 +1044,7 @@ const handleMessageTenant = (tenant) => {
 {/* Dashboard View */}
 {currentView === 'dashboard' && (
   <>
-    {/* Stats Cards - Full Width */}
+    {/* Stats Cards */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
       {stats.map((stat, index) => (
         <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
@@ -1061,7 +1061,7 @@ const handleMessageTenant = (tenant) => {
       ))}
     </div>
 
-    {/* Cards Grid - Full Width */}
+    {/* Cards Grid */}
     <div className="grid lg:grid-cols-2 gap-6">
       {/* Recent Viewings */}
       <div className="bg-white p-6 rounded-xl shadow-sm">
