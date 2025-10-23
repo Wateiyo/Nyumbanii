@@ -509,3 +509,46 @@ export const useMemos = (landlordId) => {
 
   return { memos, loading, error };
 };
+
+// ============= TEAM MEMBERS =============
+
+export const useTeamMembers = (landlordId) => {
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!landlordId) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'teamMembers'),
+      where('landlordId', '==', landlordId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const teamData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setTeamMembers(teamData);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Error fetching team members:', err);
+        setError(err);
+        setTeamMembers([]);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [landlordId]);
+
+  return { teamMembers, loading, error };
+};

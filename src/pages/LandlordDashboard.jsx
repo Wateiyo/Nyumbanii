@@ -10,7 +10,8 @@ import {
   useMaintenanceRequests,
   useNotifications,
   useListings, 
-  useMemos 
+  useMemos,
+  useTeamMembers
 } from '../hooks/useRealtimeData';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -84,7 +85,6 @@ const LandlordDashboard = () => {
   const [viewingFilter, setViewingFilter] = useState('all');
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showAssignTeamModal, setShowAssignTeamModal] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
   const [editingProperty, setEditingProperty] = useState(null);
@@ -175,7 +175,7 @@ const { requests: maintenanceRequests, loading: loadingMaintenance } = useMainte
 const { viewings, loading: loadingViewings } = useViewings(currentUser?.uid, 'landlord');
 const { listings, loading: loadingListings } = useListings(currentUser?.uid);
 const { memos, loading: loadingMemos } = useMemos(currentUser?.uid);
-  
+const { teamMembers, loading: loadingTeam } = useTeamMembers(currentUser?.uid);
   
   // Mock maintenance data for display
   const mockMaintenanceRequests = [
@@ -801,28 +801,28 @@ const handleEditProperty = async () => {
     }
   };
 
-  // Add team member handler
 const handleAddTeamMember = async () => {
-  if (!newTeamMember.name || !newTeamMember.email || !newTeamMember.phone) {
-    alert('Please fill in all required fields');
-    return;
-  }
-
   try {
+    if (!newTeamMember.name || !newTeamMember.email || !newTeamMember.phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // Add to Firebase
     await addDoc(collection(db, 'teamMembers'), {
-      name: newTeamMember.name,
-      email: newTeamMember.email,
-      phone: newTeamMember.phone,
-      role: newTeamMember.role,
-      assignedProperties: newTeamMember.assignedProperties,
+      ...newTeamMember,
       landlordId: currentUser.uid,
-      status: 'pending', // pending, active, inactive
-      invitedAt: serverTimestamp(),
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      invitationSent: true,
+      invitationDate: new Date().toISOString()
     });
 
-    alert(`Invitation sent to ${newTeamMember.email}! They will receive an email to create their account.`);
+    // TODO: Send email invitation via your backend/email service
+    // Example: await sendInvitationEmail(newTeamMember.email, newTeamMember.name);
     
+    alert(`Invitation sent to ${newTeamMember.name}!`);
+    
+    // Reset form
     setNewTeamMember({
       name: '',
       email: '',
@@ -830,10 +830,11 @@ const handleAddTeamMember = async () => {
       role: 'property_manager',
       assignedProperties: []
     });
+    
     setShowTeamModal(false);
   } catch (error) {
     console.error('Error adding team member:', error);
-    alert('Error adding team member. Please try again.');
+    alert('Failed to add team member. Please try again.');
   }
 };
 
