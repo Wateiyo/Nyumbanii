@@ -748,7 +748,7 @@ const handleEditProperty = async () => {
   // UPDATE VIEWING STATUS
   const handleUpdateViewingStatus = async (id, status) => {
     try {
-      const viewingRef = doc(db, 'viewingBookings', id);
+      const viewingRef = doc(db, 'viewings', id);
       await updateDoc(viewingRef, { status });
       
       if (status === 'confirmed') {
