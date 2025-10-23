@@ -467,3 +467,45 @@ export const useListings = (landlordId) => {
   return { listings, loading, error };
 };
 
+// ============= MEMOS =============
+
+export const useMemos = (landlordId) => {
+  const [memos, setMemos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!landlordId) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'memos'),
+      where('landlordId', '==', landlordId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const memosData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setMemos(memosData);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Error fetching memos:', err);
+        setError(err);
+        setMemos([]);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [landlordId]);
+
+  return { memos, loading, error };
+};
