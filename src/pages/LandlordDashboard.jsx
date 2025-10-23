@@ -1044,7 +1044,7 @@ const handleMessageTenant = (tenant) => {
 {currentView === 'dashboard' && (
   <>
     {/* Stats Cards - Now Responsive */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
       {stats.map((stat, index) => (
         <div key={index} className="bg-white p-4 sm:p-5 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between">
@@ -1177,7 +1177,7 @@ const handleMessageTenant = (tenant) => {
 
           {/* Properties View */}
         {currentView === 'properties' && (
-        <div className="p-3 sm:p-4 lg:p-6">
+        <>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h2 className="text-xl font-bold text-gray-900">My Properties</h2>
                 <button onClick={() => setShowPropertyModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
@@ -1271,7 +1271,7 @@ const handleMessageTenant = (tenant) => {
                   </div>
                 ))}
               </div>
-            </div>
+            </>
 
           )}
 
