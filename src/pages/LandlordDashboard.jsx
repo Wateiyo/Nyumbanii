@@ -1061,9 +1061,9 @@ const handleMessageTenant = (tenant) => {
     </div>
 
     {/* Cards Grid - Now Responsive */}
-    <div className="grid lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+    <div className="grid lg:grid-cols-2 gap-3  lg:gap-6">
       {/* Recent Viewings */}
-      <div className="bg-white p-4 sm:p-5 lg:p-6 rounded-xl shadow-sm">
+      <div className="bg-white p-4  lg:p-6 rounded-xl shadow-sm">
         <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
           <CalendarCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[#003366]" />
           Recent Viewing Requests
