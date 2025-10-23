@@ -1009,7 +1009,7 @@ const handleMessageTenant = (tenant) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 w-full overflow-hidden">
         {/* Header */}
-<header className="bg-white shadow-sm px-6 py-4">
+<header className="bg-gray-50 border-b border-gray-200 px-4 py-4">
   <div className="flex justify-between items-center">
     <div className="flex items-center gap-3 flex-1 min-w-0">
       <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
@@ -1179,18 +1179,11 @@ const handleMessageTenant = (tenant) => {
 {/* Properties View */}
 {currentView === 'properties' && (
   <>
-  {/* INFO MESSAGE BANNER - ADD THIS */}
-    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-lg">
-      <div className="flex items-start">
-        <div className="flex-shrink-0">
-          <Building className="w-5 h-5 text-blue-500" />
-        </div>
-        <div className="ml-3">
-          <p className="text-sm text-blue-700">
-            Manage your properties and track occupancy rates
-          </p>
-        </div>
-      </div>
+    {/* SIMPLE MESSAGE BANNER */}
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 mb-6 rounded-xl">
+      <p className="text-sm text-gray-700">
+        You have {properties.length} {properties.length === 1 ? 'property' : 'properties'} in your portfolio
+      </p>
     </div>
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
   <div>
