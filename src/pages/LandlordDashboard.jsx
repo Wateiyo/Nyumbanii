@@ -1038,7 +1038,7 @@ const handleMessageTenant = (tenant) => {
 </header>
 
 {/* Content Area */}
-<div className="px-2 py-6 flex-1 overflow-y-auto">
+<div className="px-4 py-6 flex-1 overflow-y-auto">
   
 
 {/* Dashboard View */}
@@ -1179,13 +1179,18 @@ const handleMessageTenant = (tenant) => {
 {/* Properties View */}
 {currentView === 'properties' && (
   <>
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-xl lg:text-2xl font-bold text-gray-900">My Properties</h2>
-      <button onClick={() => setShowPropertyModal(true)} className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center gap-2">
-        <Plus className="w-5 h-5" />
-        <span className="hidden sm:inline">Add Property</span>
-      </button>
-    </div>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+  <div>
+    <h2 className="text-xl font-bold text-gray-900">My Properties</h2>
+    <p className="text-sm text-gray-600">Manage your property portfolio</p>
+  </div>
+  <div className="flex gap-2 w-full sm:w-auto">
+    <button onClick={() => setShowPropertyModal(true)} className="flex-1 sm:flex-initial px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+      <Plus className="w-5 h-5" />
+      Add Property
+    </button>
+  </div>
+</div>
     
     <div className="grid md:grid-cols-2 gap-6">
       {properties.map(property => (
