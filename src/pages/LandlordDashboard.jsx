@@ -1011,26 +1011,26 @@ const handleMessageTenant = (tenant) => {
         {/* Header */}
 <header className="bg-white shadow-sm px-6 py-4">
   <div className="flex justify-between items-center">
-    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+    <div className="flex items-center gap-3 flex-1 min-w-0">
       <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
-        <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+        <Menu className="w-6 h-6 text-gray-600" />
       </button>
       <div className="min-w-0 flex-1">
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 capitalize truncate">{currentView}</h1>
-        <p className="text-xs sm:text-sm lg:text-base text-gray-600 hidden sm:block truncate">Welcome back, {profileSettings.name.split(' ')[0]}!</p>
+        <h1 className="text-2xl font-bold text-gray-900 capitalize truncate">{currentView}</h1>
+        <p className="text-sm text-gray-600 truncate">Welcome back, {profileSettings.name.split(' ')[0]}!</p>
       </div>
     </div>
-    <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-shrink-0">
+    <div className="flex items-center gap-4 flex-shrink-0">
       <div className="relative">
-        <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition">
-          <Bell className="w-5 h-5 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600" />
+        <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
+          <Bell className="w-6 h-6 text-gray-600" />
           {unreadCount > 0 && (
-            <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-4 sm:h-4 lg:w-5 lg:h-5 bg-red-500 rounded-full text-white text-[9px] sm:text-[10px] lg:text-xs flex items-center justify-center font-medium">{unreadCount}</span>
+            <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-medium">{unreadCount}</span>
           )}
         </button>
         {/* Rest of notifications dropdown stays the same */}
       </div>
-      <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm flex-shrink-0">
+      <div className="w-10 h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
         {profileSettings.name.split(' ').map(n => n[0]).join('')}
       </div>
     </div>
