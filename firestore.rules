@@ -41,8 +41,8 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
     
-    // Viewing bookings collection
-    match /viewingBookings/{bookingId} {
+    // Viewings collection
+    match /viewings/{viewingId} {
       allow read, write: if isAuthenticated();
       allow create: if true;
     }
