@@ -1862,8 +1862,8 @@ const handleMessageTenant = (tenant) => {
 
          {/* Payments View */}
 {currentView === 'payments' && (
-  <div className="max-w-7xl mx-auto">
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+  <>
+    <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
       <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
       <button onClick={() => setShowPaymentModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
         Record Payment
@@ -1873,7 +1873,7 @@ const handleMessageTenant = (tenant) => {
     {/* Payment Stats Cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
       <div className="bg-white p-4 rounded-xl shadow-sm">
-        <p className="text-xs sm:text-sm text-gray-600 mb-1">Total Expected</p>
+        <p className="text-xs  text-gray-600 mb-1">Total Expected</p>
         <p className="text-lg sm:text-2xl font-bold text-gray-900">KES {paymentStats.expected.toLocaleString()}</p>
       </div>
       <div className="bg-white p-4 rounded-xl shadow-sm">
@@ -2007,7 +2007,7 @@ const handleMessageTenant = (tenant) => {
         </table>
       </div>
     </div>
-  </div>
+  </>
 )}
           {/* Memos View */}
           {currentView === 'memos' && (
