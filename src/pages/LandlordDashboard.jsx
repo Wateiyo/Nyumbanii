@@ -1176,18 +1176,18 @@ const handleMessageTenant = (tenant) => {
   </>
 )}
 
-          {/* Properties View */}
+{/* Properties View */}
         {currentView === 'properties' && (
         <>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">My Properties</h2>
-                <button onClick={() => setShowPropertyModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
+        <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl lg:text-2xl font-bold text-gray-900">My Properties</h2>
+                <button onClick={() => setShowPropertyModal(true)} className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center gap-2">
                   <Plus className="w-5 h-5" />
-                  Add Property
+                  <span className="hidden sm:inline">Add Property</span>
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                 {properties.map(property => (
                   <div key={property.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
                     {/* Property Image */}
@@ -1210,16 +1210,16 @@ const handleMessageTenant = (tenant) => {
                       )}
                     </div>
                     
-                    <div className="p-6">
+                    <div className="p-4 lg:p-6">
                       <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 text-lg">{property.name}</h3>
-                          <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                            <MapPin className="w-4 h-4" />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 text-base lg:text-lg truncate">{property.name}</h3>
+                          <p className="text-xs lg:text-sm text-gray-600 flex items-center gap-1 mt-1 truncate">
+                            <MapPin className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
                             {property.location}
                           </p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0 ml-2">
                   <button 
                     onClick={() => {
                    setEditingProperty(property);
@@ -1240,18 +1240,18 @@ const handleMessageTenant = (tenant) => {
 </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-3 lg:mb-4">
                         <div>
                           <p className="text-xs text-gray-600">Total Units</p>
-                          <p className="text-lg font-semibold text-gray-900">{property.units}</p>
+                          <p className="text-base lg:text-lg font-semibold text-gray-900">{property.units}</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-600">Occupied</p>
-                          <p className="text-lg font-semibold text-green-600">{property.occupied}</p>
+                          <p className="text-base lg:text-lg font-semibold text-green-600">{property.occupied}</p>
                         </div>
                       </div>
                       
-                      <div className="mb-4">
+                      <div className="mb-3 lg:mb-4">
                         <p className="text-xs text-gray-600 mb-1">Occupancy Rate</p>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div 
@@ -1262,10 +1262,10 @@ const handleMessageTenant = (tenant) => {
                         <p className="text-xs text-gray-600 mt-1">{Math.round((property.occupied / property.units) * 100)}% occupied</p>
                       </div>
                       
-                      <div className="pt-4 border-t">
+                      <div className="pt-3 lg:pt-4 border-t">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Monthly Revenue</span>
-                          <span className="font-semibold text-[#003366]">KES {property.revenue?.toLocaleString() || 0}</span>
+                          <span className="text-xs lg:text-sm text-gray-600">Monthly Revenue</span>
+                          <span className="font-semibold text-[#003366] text-sm lg:text-base">KES {property.revenue?.toLocaleString() || 0}</span>
                         </div>
                       </div>
                     </div>
