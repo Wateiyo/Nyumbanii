@@ -2838,245 +2838,239 @@ const handleMessageTenant = (tenant) => {
 
 {/* Settings View */}
 {currentView === 'settings' && (
-  <div className="flex-1 overflow-auto">
+  <div className="flex-1 bg-gray-50 overflow-y-auto">
 
-    {/* ===== CONTENT SECTION ===== */}
-    <div className="px-6 pb-8">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* ===== PROFILE SETTINGS SECTION ===== */}
-        <div className="mb-8 mt-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Profile Settings</h2>
-            <button 
-              onClick={() => setEditingProfile(true)}
-              className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition"
+    {/* Content Container - Full Width with padding */}
+    <div className="px-6 py-6 space-y-6">
+      
+      {/* Profile Settings Card */}
+      <div className="bg-white rounded-xl border border-gray-200">
+        <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">Profile Settings</h2>
+          <button
+            onClick={() => setEditingProfile(!editingProfile)}
+            className="px-6 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium"
+          >
+            {editingProfile ? 'Save Profile' : 'Edit Profile'}
+          </button>
+        </div>
+
+        <div className="p-6">
+          <div className="flex items-start gap-6 mb-6">
+            <div className="relative">
+              <div className="w-20 h-20 bg-[#003366] rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                {userProfile?.name?.charAt(0)?.toUpperCase() || 'T'}
+              </div>
+              <button className="absolute bottom-0 right-0 w-6 h-6 bg-[#003366] rounded-full flex items-center justify-center text-white hover:bg-[#002244] transition">
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-lg">{userProfile?.name || 'Test User'}</h3>
+              <p className="text-gray-600">{userProfile?.email || 'test@test.com'}</p>
+              <button className="text-[#003366] text-sm mt-1 hover:underline font-medium flex items-center gap-1">
+                <Camera className="w-4 h-4" />
+                Change Photo
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input
+                type="text"
+                value={userProfile?.name || 'Test User'}
+                disabled={!editingProfile}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={userProfile?.email || 'test@test.com'}
+                disabled={!editingProfile}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <input
+                type="tel"
+                value={userProfile?.phone || '+25470000000'}
+                disabled={!editingProfile}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+              <input
+                type="text"
+                value={userProfile?.companyName || 'Doe Properties Ltd'}
+                disabled={!editingProfile}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <input
+              type="text"
+              value={userProfile?.address || 'Westlands, Nairobi'}
+              disabled={!editingProfile}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Security Card */}
+      <div className="bg-white rounded-xl border border-gray-200">
+        <div className="px-6 py-5 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Security</h2>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between py-4 border-b border-gray-100">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Password</h3>
+              <p className="text-sm text-gray-500 mt-1">Last changed 3 months ago</p>
+            </div>
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
             >
-              Edit Profile
+              Change Password
             </button>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6">
-            {/* Profile Avatar and Change Photo */}
-            <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200">
-              <div className="w-20 h-20 bg-[#003366] text-white rounded-full flex items-center justify-center text-2xl font-bold">
-                {userProfile?.name?.charAt(0).toUpperCase() || 'TU'}
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">{userProfile?.name || 'Test User'}</h3>
-                <p className="text-gray-600">{userProfile?.email || 'test@test.com'}</p>
-                <button className="text-[#003366] text-sm mt-2 flex items-center gap-1 hover:underline">
-                  <Camera className="w-4 h-4" />
-                  Change Photo
-                </button>
-              </div>
+          <div className="flex items-center justify-between py-4">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Two-Factor Authentication</h3>
+              <p className="text-sm text-gray-500 mt-1">Add an extra layer of security to your account</p>
             </div>
-
-            {/* Profile Form */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Full Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                <input
-                  type="text"
-                  value={userProfile?.name || 'Test User'}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={userProfile?.email || 'test@test.com'}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
-                />
-              </div>
-
-              {/* Phone Number */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                <input
-                  type="tel"
-                  value={userProfile?.phone || '+25470000000'}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
-                />
-              </div>
-
-              {/* Company Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-                <input
-                  type="text"
-                  value={userProfile?.company || 'Doe Properties Ltd'}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
-                />
-              </div>
-
-              {/* Address */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                <input
-                  type="text"
-                  value={userProfile?.address || 'Westlands, Nairobi'}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
-                />
-              </div>
-            </div>
+            <button className="px-6 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium">
+              Enable
+            </button>
           </div>
         </div>
-
-        {/* ===== SECURITY SECTION ===== */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Security</h2>
-
-          <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
-            {/* Password */}
-            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Password</h3>
-                <p className="text-sm text-gray-600">Last changed 3 months ago</p>
-              </div>
-              <button 
-                onClick={() => setShowPasswordModal(true)}
-                className="px-4 py-2 border border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition"
-              >
-                Change Password
-              </button>
-            </div>
-
-            {/* Two-Factor Authentication */}
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
-              </div>
-              <button className="bg-[#003366] text-white px-6 py-2 rounded-lg hover:bg-[#002244] transition">
-                Enable
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ===== NOTIFICATION PREFERENCES SECTION ===== */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Notification Preferences</h2>
-
-          <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
-            {/* Email Notifications */}
-            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Email Notifications</h3>
-                <p className="text-sm text-gray-600">Receive updates via email</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            {/* SMS Notifications */}
-            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">SMS Notifications</h3>
-                <p className="text-sm text-gray-600">Receive updates via text message</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            {/* Push Notifications */}
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Push Notifications</h3>
-                <p className="text-sm text-gray-600">Receive browser push notifications</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* ===== ALERT TYPES SECTION ===== */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Alert Types</h2>
-
-          <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
-            {/* Payment Alerts */}
-            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Payment Alerts</h3>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            {/* Maintenance Requests */}
-            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Maintenance Requests</h3>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            {/* Viewing Bookings */}
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Viewing Bookings</h3>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* ===== DANGER ZONE SECTION ===== */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-red-600 mb-6">Danger Zone</h2>
-
-          <div className="bg-white rounded-xl shadow-md border-2 border-red-200 p-6 space-y-6">
-            {/* Deactivate Account */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-gray-200">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Deactivate Account</h3>
-                <p className="text-sm text-gray-600">Temporarily disable your account</p>
-              </div>
-              <button className="px-6 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition whitespace-nowrap">
-                Deactivate
-              </button>
-            </div>
-
-            {/* Delete Account */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
-                <p className="text-sm text-gray-600">Permanently delete your account and all data</p>
-              </div>
-              <button className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition whitespace-nowrap">
-                Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
-
       </div>
+
+      {/* Notification Preferences Card */}
+      <div className="bg-white rounded-xl border border-gray-200">
+        <div className="px-6 py-5 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Notification Preferences</h2>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between py-4 border-b border-gray-100">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Email Notifications</h3>
+              <p className="text-sm text-gray-500 mt-1">Receive updates via email</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" defaultChecked className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between py-4 border-b border-gray-100">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">SMS Notifications</h3>
+              <p className="text-sm text-gray-500 mt-1">Receive updates via text message</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" defaultChecked className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between py-4">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Push Notifications</h3>
+              <p className="text-sm text-gray-500 mt-1">Receive browser push notifications</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" defaultChecked className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Alert Types Card */}
+      <div className="bg-white rounded-xl border border-gray-200">
+        <div className="px-6 py-5 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Alert Types</h2>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between py-4 border-b border-gray-100">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Payment Alerts</h3>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" defaultChecked className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between py-4 border-b border-gray-100">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Maintenance Requests</h3>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" defaultChecked className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between py-4">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Viewing Bookings</h3>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" defaultChecked className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Danger Zone Card */}
+      <div className="bg-white rounded-xl border border-red-200">
+        <div className="px-6 py-5 border-b border-red-200">
+          <h2 className="text-xl font-bold text-red-600">Danger Zone</h2>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between py-4 border-b border-gray-100">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Deactivate Account</h3>
+              <p className="text-sm text-gray-500 mt-1">Temporarily disable your account</p>
+            </div>
+            <button className="px-6 py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">
+              Deactivate
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-4">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Delete Account</h3>
+              <p className="text-sm text-gray-500 mt-1">Permanently delete your account and all data</p>
+            </div>
+            <button className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
+              Delete Account
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 )}
