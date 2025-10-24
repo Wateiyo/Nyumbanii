@@ -2880,9 +2880,6 @@ const handleMessageTenant = (tenant) => {
 )}
 
 {/* Settings View */}
-// SETTINGS PAGE - FULL WIDTH RESPONSIVE LAYOUT (FINAL CORRECTED)
-// Replace your Settings section with this code
-
 {currentView === 'settings' && (
   <div className="flex-1 overflow-auto">
     {/* ===== HEADER SECTION ===== */}
