@@ -1648,98 +1648,265 @@ const handleMessageTenant = (tenant) => {
     </div>
     </div>
   )}
+
 {/* Maintenance View */}
 {currentView === 'maintenance' && (
-  <div className="max-w-7xl mx-auto">
-  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <h2 className="text-xl font-bold text-gray-900">Maintenance Requests</h2>
-      <button 
-        onClick={() => setShowMaintenanceModal(true)} 
-        className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2"
-      >
-        <Wrench className="w-5 h-5" />
-        Add Request
-      </button>
+  <div className="flex-1 overflow-auto">
+    {/* ===== HEADER SECTION ===== */}
+    <div className="bg-white border-b border-gray-200 px-6 py-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900">Maintenance</h1>
+        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
+      </div>
     </div>
 
-    {displayMaintenanceRequests.length === 0 ? (
-      <div className="bg-white p-12 rounded-xl shadow-sm text-center">
-        <Wrench className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-500">No maintenance requests yet</p>
-      </div>
-    ) : (
-      <div className="grid gap-4">
-        {displayMaintenanceRequests.map(request => (
-          <div key={request.id} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{request.issue}</h3>
-                    <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Building className="w-4 h-4" />
-                        {request.property} - Unit {request.unit}
+    {/* ===== CONTENT SECTION ===== */}
+    <div className="px-6 pb-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Maintenance Requests</h2>
+            <p className="text-sm text-gray-600 mt-1">Manage and track maintenance issues</p>
+          </div>
+          <button 
+            onClick={() => setShowMaintenanceModal(true)}
+            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
+          >
+            <Plus className="w-5 h-5" />
+            Add Request
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3 mb-6">
+          <select 
+            value={viewingFilter}
+            onChange={(e) => setViewingFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
+          >
+            <option value="all">All Requests</option>
+            <option value="pending">Pending</option>
+            <option value="in-progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+
+          <select 
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
+          >
+            <option value="all">All Priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+
+          <select 
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
+          >
+            <option value="all">All Properties</option>
+            {properties.map(property => (
+              <option key={property.id} value={property.id}>{property.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Maintenance Requests List */}
+        {loadingMaintenance ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
+          </div>
+        ) : maintenanceRequests.length === 0 ? (
+          <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+            <Wrench className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Maintenance Requests</h3>
+            <p className="text-gray-600 mb-6">All systems are running smoothly</p>
+            <button 
+              onClick={() => setShowMaintenanceModal(true)}
+              className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition inline-flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Add Request
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {maintenanceRequests.map(request => (
+              <div 
+                key={request.id}
+                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition"
+              >
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          request.priority === 'high' ? 'bg-red-100' :
+                          request.priority === 'medium' ? 'bg-yellow-100' :
+                          'bg-green-100'
+                        }`}>
+                          <Wrench className={`w-5 h-5 ${
+                            request.priority === 'high' ? 'text-red-600' :
+                            request.priority === 'medium' ? 'text-yellow-600' :
+                            'text-green-600'
+                          }`} />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">{request.issue}</h3>
+                          
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Building className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{request.property} - Unit {request.unit}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{request.tenant}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 flex-shrink-0" />
+                              <span>{new Date(request.date).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric' 
+                              })} at {request.scheduledTime}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status Badges */}
+                    <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        request.priority === 'high' ? 'bg-red-100 text-red-700' :
+                        request.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {request.priority}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {request.tenant}
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        request.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        request.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {request.status}
                       </span>
-                      {request.date && request.scheduledTime && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {request.date} at {request.scheduledTime}
-                        </span>
-                      )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                      request.priority === 'high' ? 'bg-red-100 text-red-800' :
-                      request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {request.priority}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                      request.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {request.status}
-                    </span>
+
+                  {/* Description if exists */}
+                  {request.description && (
+                    <div className="mb-4 pl-13">
+                      <p className="text-gray-600 text-sm">{request.description}</p>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                    {request.status === 'pending' && (
+                      <button 
+                        onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm"
+                      >
+                        <Wrench className="w-4 h-4" />
+                        Start Work
+                      </button>
+                    )}
+                    
+                    {request.status === 'in-progress' && (
+                      <button 
+                        onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Mark Complete
+                      </button>
+                    )}
+
+                    <button 
+                      onClick={() => {
+                        const tenant = tenants.find(t => t.name === request.tenant);
+                        if (tenant) {
+                          setSelectedTenantForMessage(tenant);
+                          setShowMessageModal(true);
+                        }
+                      }}
+                      className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Contact Tenant
+                    </button>
+
+                    <button 
+                      onClick={() => handleDeleteMaintenance(request.id)}
+                      className="bg-white border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-2 text-sm ml-auto"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-                <div className="flex flex-wrap gap-2">
-                  {request.status === 'pending' && (
-                    <button 
-                      onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2 text-sm"
-                    >
-                      <Wrench className="w-4 h-4" />
-                      Start Work
-                    </button>
-                  )}
-                  {request.status === 'in-progress' && (
-                    <button 
-                      onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')}
-                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-2 text-sm"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Mark Complete
-                    </button>
-                  )}
-                  <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm">
-                    Contact Tenant
-                  </button>
+        {/* Stats Cards at Bottom */}
+        {!loadingMaintenance && maintenanceRequests.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Total Requests</span>
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Wrench className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
+              <p className="text-3xl font-bold text-gray-900">{maintenanceRequests.length}</p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Pending</span>
+                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-yellow-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-gray-900">
+                {maintenanceRequests.filter(r => r.status === 'pending').length}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">In Progress</span>
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Wrench className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-gray-900">
+                {maintenanceRequests.filter(r => r.status === 'in-progress').length}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Completed</span>
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-gray-900">
+                {maintenanceRequests.filter(r => r.status === 'completed').length}
+              </p>
             </div>
           </div>
-        ))}
+        )}
+
       </div>
-    )}
+    </div>
   </div>
 )}
 
@@ -2095,7 +2262,7 @@ const handleMessageTenant = (tenant) => {
             </>
           )}
 
-
+{/*Calendar View*/}
 {currentView === 'calendar' && (
   <div className="flex-1 overflow-auto">
     {/* ===== HEADER SECTION ===== */}
