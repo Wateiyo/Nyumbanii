@@ -2095,123 +2095,245 @@ const handleMessageTenant = (tenant) => {
             </>
           )}
 
-         {/* Calendar View */}
+
 {currentView === 'calendar' && (
-  <div className="space-y-6">
-    {/* Calendar Grid */}
-    <div className="bg-white p-6 rounded-xl shadow-sm">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Schedule Calendar</h2>
-        <div className="flex gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded"></div>
-            <span className="text-gray-600">Viewings</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-orange-500 rounded"></div>
-            <span className="text-gray-600">Maintenance</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Calendar Header */}
-      <div className="grid grid-cols-7 gap-2 mb-2">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Calendar Days */}
-      <div className="grid grid-cols-7 gap-2">
-        {Array.from({ length: 35 }, (_, i) => {
-          const currentDate = new Date(2025, 9, 1); // October 2025
-          const firstDay = currentDate.getDay();
-          const dayNumber = i - firstDay + 1;
-          const isValidDay = dayNumber > 0 && dayNumber <= 31;
-          
-          // Find events for this day and count by type
-          const dayEvents = isValidDay ? displayCalendarEvents.filter(event => {
-            const eventDate = new Date(event.date);
-            return eventDate.getDate() === dayNumber;
-          }) : [];
-          
-          const viewingsCount = dayEvents.filter(e => e.type === 'viewing').length;
-          const maintenanceCount = dayEvents.filter(e => e.type === 'maintenance').length;
-
-          return (
-            <div
-              key={i}
-              className={`min-h-[80px] p-2 border border-gray-200 rounded-lg ${
-                isValidDay ? 'bg-white hover:bg-gray-50' : 'bg-gray-50'
-              } ${dayNumber === 15 ? 'border-2 border-[#003366]' : ''}`}
-            >
-              {isValidDay && (
-                <>
-                  <div className="text-sm font-medium text-gray-900 mb-2">{dayNumber}</div>
-                  <div className="space-y-1">
-                    {viewingsCount > 0 && (
-                      <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        <CalendarCheck className="w-3 h-3" />
-                        <span className="font-medium">{viewingsCount}</span>
-                      </div>
-                    )}
-                    {maintenanceCount > 0 && (
-                      <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                        <Wrench className="w-3 h-3" />
-                        <span className="font-medium">{maintenanceCount}</span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })}
+  <div className="flex-1 overflow-auto">
+    {/* ===== HEADER SECTION ===== */}
+    <div className="bg-white border-b border-gray-200 px-6 py-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
+        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
       </div>
     </div>
 
-    {/* Upcoming Events List */}
-    <div className="bg-white p-6 rounded-xl shadow-sm">
-      <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Events</h2>
-      
-      <div className="space-y-4">
-        {displayCalendarEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No upcoming events scheduled</p>
-          </div>
-        ) : (
-          displayCalendarEvents.map(event => (
-            <div key={event.id} className={`flex items-center gap-4 p-4 rounded-lg ${event.type === 'viewing' ? 'bg-blue-50' : 'bg-orange-50'}`}>
-              <div className="w-16 h-16 bg-white rounded-lg flex flex-col items-center justify-center shadow-sm">
-                <span className={`text-xs font-medium ${event.type === 'viewing' ? 'text-blue-600' : 'text-orange-600'}`}>
-                  {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
-                </span>
-                <span className={`text-2xl font-bold ${event.type === 'viewing' ? 'text-blue-900' : 'text-orange-900'}`}>
-                  {new Date(event.date).getDate()}
-                </span>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">
-                  {event.type === 'viewing' ? 'Property Viewing' : 'Maintenance'}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {event.type === 'viewing' 
-                    ? `${event.prospectName} - ${event.property}` 
-                    : `${event.issue} - ${event.property}`}
-                </p>
-                <p className="text-xs text-gray-500">{event.time || event.scheduledTime}</p>
-              </div>
-              {event.type === 'viewing' ? (
-                <CalendarCheck className="w-6 h-6 text-blue-600" />
-              ) : (
-                <Wrench className="w-6 h-6 text-orange-600" />
-              )}
+    {/* ===== CONTENT SECTION ===== */}
+    <div className="px-6 pb-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* ===== CALENDAR SECTION ===== */}
+        <div className="mb-8">
+          {/* Section Header with Navigation */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Schedule Calendar</h2>
+              <p className="text-sm text-gray-600 mt-1">View and manage your appointments</p>
             </div>
-          ))
-        )}
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-sm text-gray-700">Viewings</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span className="text-sm text-gray-700">Maintenance</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            {/* Calendar Header - Days of Week */}
+            <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="px-2 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200 last:border-r-0">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Body - Responsive Grid */}
+            <div className="grid grid-cols-7 auto-rows-fr">
+              {/* Generate calendar days dynamically */}
+              {(() => {
+                const daysInMonth = 31;
+                const startDay = 3; // 0 = Sunday, 3 = Wednesday for October 1st
+                const days = [];
+                
+                // Empty cells before month starts
+                for (let i = 0; i < startDay; i++) {
+                  days.push(
+                    <div key={`empty-${i}`} className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 bg-gray-50"></div>
+                  );
+                }
+                
+                // Actual days
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const isLastInRow = (day + startDay) % 7 === 0;
+                  
+                  // Count events for this day
+                  const dayViewings = viewings.filter(v => {
+                    const viewingDate = new Date(v.date);
+                    return viewingDate.getDate() === day;
+                  });
+                  
+                  const dayMaintenance = maintenanceRequests.filter(m => {
+                    const maintenanceDate = new Date(m.date);
+                    return maintenanceDate.getDate() === day;
+                  });
+                  
+                  days.push(
+                    <div 
+                      key={day} 
+                      className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer ${!isLastInRow ? 'border-r' : ''}`}
+                    >
+                      <div className="text-sm font-medium text-gray-900 mb-1">{day}</div>
+                      <div className="space-y-1">
+                        {dayViewings.length > 0 && (
+                          <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                            <CalendarCheck className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{dayViewings.length}</span>
+                          </div>
+                        )}
+                        {dayMaintenance.length > 0 && (
+                          <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                            <Wrench className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{dayMaintenance.length}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Fill remaining cells in last week
+                const totalCells = days.length;
+                const remainingCells = 35 - totalCells; // 5 weeks * 7 days
+                for (let i = 0; i < remainingCells; i++) {
+                  const isLast = i === remainingCells - 1;
+                  days.push(
+                    <div key={`fill-${i}`} className={`aspect-square min-h-[80px] sm:min-h-[100px] p-2 bg-gray-50 ${!isLast ? 'border-r' : ''}`}></div>
+                  );
+                }
+                
+                return days;
+              })()}
+            </div>
+          </div>
+        </div>
+
+        {/* ===== UPCOMING EVENTS SECTION ===== */}
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Upcoming Events</h2>
+              <p className="text-sm text-gray-600 mt-1">Your scheduled appointments</p>
+            </div>
+            <select 
+              value={viewingFilter}
+              onChange={(e) => setViewingFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm"
+            >
+              <option value="all">All Events</option>
+              <option value="viewings">Viewings Only</option>
+              <option value="maintenance">Maintenance Only</option>
+            </select>
+          </div>
+          
+          {/* Events List */}
+          <div className="space-y-4">
+            {/* Loading State */}
+            {(loadingViewings || loadingMaintenance) && (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!loadingViewings && !loadingMaintenance && 
+             viewings.length === 0 && maintenanceRequests.length === 0 && (
+              <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Upcoming Events</h3>
+                <p className="text-gray-600">Your calendar is clear</p>
+              </div>
+            )}
+
+            {/* Viewings */}
+            {!loadingViewings && (viewingFilter === 'all' || viewingFilter === 'viewings') && 
+             viewings.slice(0, 10).map(viewing => (
+              <div 
+                key={viewing.id} 
+                className="bg-white rounded-xl shadow-md p-4 sm:p-6 hover:shadow-xl transition flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 cursor-pointer"
+                onClick={() => setSelectedViewing(viewing)}
+              >
+                <div className="flex-shrink-0 text-center">
+                  <div className="text-blue-600 text-sm font-semibold">
+                    {new Date(viewing.date).toLocaleString('en-US', { month: 'short' })}
+                  </div>
+                  <div className="text-3xl sm:text-4xl font-bold text-gray-900">
+                    {new Date(viewing.date).getDate()}
+                  </div>
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Property Viewing</h3>
+                  <p className="text-gray-600 text-sm mb-1 truncate">
+                    {viewing.tenantName} - {viewing.property}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Clock className="w-3 h-3" />
+                    <span>{viewing.time}</span>
+                  </div>
+                </div>
+                
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <CalendarCheck className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Maintenance Requests */}
+            {!loadingMaintenance && (viewingFilter === 'all' || viewingFilter === 'maintenance') && 
+             maintenanceRequests
+               .filter(req => req.scheduledTime)
+               .slice(0, 10)
+               .map(request => (
+              <div 
+                key={request.id} 
+                className="bg-orange-50 rounded-xl shadow-md p-4 sm:p-6 hover:shadow-xl transition flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 cursor-pointer"
+                onClick={() => setSelectedViewing(request)}
+              >
+                <div className="flex-shrink-0 text-center">
+                  <div className="text-orange-600 text-sm font-semibold">
+                    {new Date(request.date).toLocaleString('en-US', { month: 'short' })}
+                  </div>
+                  <div className="text-3xl sm:text-4xl font-bold text-gray-900">
+                    {new Date(request.date).getDate()}
+                  </div>
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
+                  <p className="text-gray-600 text-sm mb-1 truncate">
+                    {request.issue} - {request.property}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Clock className="w-3 h-3" />
+                    <span>{request.scheduledTime}</span>
+                  </div>
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      request.priority === 'high' ? 'bg-red-100 text-red-700' :
+                      request.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-green-100 text-green-700'
+                    }`}>
+                      {request.priority} priority
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <Wrench className="w-6 h-6 text-orange-600" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
