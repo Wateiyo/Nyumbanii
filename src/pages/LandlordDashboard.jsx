@@ -1680,8 +1680,6 @@ const handleMessageTenant = (tenant) => {
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">
           <select 
-            value={viewingFilter}
-            onChange={(e) => setViewingFilter(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
           >
             <option value="all">All Requests</option>
@@ -1709,199 +1707,220 @@ const handleMessageTenant = (tenant) => {
           </select>
         </div>
 
-        {/* Maintenance Requests List */}
-        {loadingMaintenance ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
-          </div>
-        ) : maintenanceRequests.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-            <Wrench className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Maintenance Requests</h3>
-            <p className="text-gray-600 mb-6">All systems are running smoothly</p>
-            <button 
-              onClick={() => setShowMaintenanceModal(true)}
-              className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition inline-flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Add Request
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {maintenanceRequests.map(request => (
-              <div 
-                key={request.id}
-                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition"
-              >
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          request.priority === 'high' ? 'bg-red-100' :
-                          request.priority === 'medium' ? 'bg-yellow-100' :
-                          'bg-green-100'
-                        }`}>
-                          <Wrench className={`w-5 h-5 ${
-                            request.priority === 'high' ? 'text-red-600' :
-                            request.priority === 'medium' ? 'text-yellow-600' :
-                            'text-green-600'
-                          }`} />
+        {/* Mock Maintenance Requests - Always show these */}
+        <div className="space-y-4">
+          {/* Request 1 - Leaking faucet */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
+            <div className="p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-yellow-100">
+                      <Wrench className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Leaking faucet</h3>
+                      
+                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">Sunset Apartments - Unit 2B</span>
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-xl font-bold text-gray-900 mb-2">{request.issue}</h3>
-                          
-                          <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                              <Building className="w-4 h-4 flex-shrink-0" />
-                              <span className="truncate">{request.property} - Unit {request.unit}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4 flex-shrink-0" />
-                              <span className="truncate">{request.tenant}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 flex-shrink-0" />
-                              <span>{new Date(request.date).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                year: 'numeric' 
-                              })} at {request.scheduledTime}</span>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">John Doe</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
+                          <span>2025-10-07 at 09:00</span>
                         </div>
                       </div>
                     </div>
-
-                    {/* Status Badges */}
-                    <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        request.priority === 'high' ? 'bg-red-100 text-red-700' :
-                        request.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-green-100 text-green-700'
-                      }`}>
-                        {request.priority}
-                      </span>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        request.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        request.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {request.status}
-                      </span>
-                    </div>
                   </div>
+                </div>
 
-                  {/* Description if exists */}
-                  {request.description && (
-                    <div className="mb-4 pl-13">
-                      <p className="text-gray-600 text-sm">{request.description}</p>
+                <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                    medium
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                    pending
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm">
+                  <Wrench className="w-4 h-4" />
+                  Start Work
+                </button>
+                <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
+                  <Mail className="w-4 h-4" />
+                  Contact Tenant
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Request 2 - Broken AC */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
+            <div className="p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-red-100">
+                      <Wrench className="w-5 h-5 text-red-600" />
                     </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                    {request.status === 'pending' && (
-                      <button 
-                        onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm"
-                      >
-                        <Wrench className="w-4 h-4" />
-                        Start Work
-                      </button>
-                    )}
                     
-                    {request.status === 'in-progress' && (
-                      <button 
-                        onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Mark Complete
-                      </button>
-                    )}
-
-                    <button 
-                      onClick={() => {
-                        const tenant = tenants.find(t => t.name === request.tenant);
-                        if (tenant) {
-                          setSelectedTenantForMessage(tenant);
-                          setShowMessageModal(true);
-                        }
-                      }}
-                      className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm"
-                    >
-                      <Mail className="w-4 h-4" />
-                      Contact Tenant
-                    </button>
-
-                    <button 
-                      onClick={() => handleDeleteMaintenance(request.id)}
-                      className="bg-white border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-2 text-sm ml-auto"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Broken AC</h3>
+                      
+                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">Garden View - Unit 4A</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">Jane Smith</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
+                          <span>2025-10-08 at 14:00</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
 
-        {/* Stats Cards at Bottom */}
-        {!loadingMaintenance && maintenanceRequests.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Total Requests</span>
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Wrench className="w-5 h-5 text-blue-600" />
+                <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                    high
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    in-progress
+                  </span>
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{maintenanceRequests.length}</p>
-            </div>
 
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Pending</span>
-                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-yellow-600" />
-                </div>
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  Mark Complete
+                </button>
+                <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
+                  <Mail className="w-4 h-4" />
+                  Contact Tenant
+                </button>
               </div>
-              <p className="text-3xl font-bold text-gray-900">
-                {maintenanceRequests.filter(r => r.status === 'pending').length}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">In Progress</span>
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Wrench className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">
-                {maintenanceRequests.filter(r => r.status === 'in-progress').length}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Completed</span>
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">
-                {maintenanceRequests.filter(r => r.status === 'completed').length}
-              </p>
             </div>
           </div>
-        )}
+
+          {/* Request 3 - Faulty door lock */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
+            <div className="p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-red-100">
+                      <Wrench className="w-5 h-5 text-red-600" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Faulty door lock</h3>
+                      
+                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">Riverside Towers - Unit 8C</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">Peter Kamau</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
+                          <span>2025-10-09 at 10:00</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                    high
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                    pending
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm">
+                  <Wrench className="w-4 h-4" />
+                  Start Work
+                </button>
+                <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
+                  <Mail className="w-4 h-4" />
+                  Contact Tenant
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Request 4 - Water heater not working */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
+            <div className="p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-green-100">
+                      <Wrench className="w-5 h-5 text-green-600" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Water heater not working</h3>
+                      
+                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">Sunset Apartments - Unit 5D</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">Grace Njeri</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
+                          <span>2025-10-02 at 11:00</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                    medium
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    completed
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
+                  <Mail className="w-4 h-4" />
+                  Contact Tenant
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -2084,10 +2103,7 @@ const handleMessageTenant = (tenant) => {
         
         {/* Section Header with Button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Payment Tracking</h2>
-            <p className="text-sm text-gray-600 mt-1">Monitor rent payments and outstanding balances</p>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Payment Tracking</h2>
           <button 
             onClick={() => setShowPaymentModal(true)}
             className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
@@ -2329,49 +2345,93 @@ const handleMessageTenant = (tenant) => {
     </div>
   </div>
 )}
-          {/* Memos View */}
-          {currentView === 'memos' && (
-            <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Updates & Memos</h2>
-                <button onClick={() => setShowMemoModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
-                  <Send className="w-5 h-5" />
-                  Send Memo
-                </button>
-              </div>
-              
-              <div className="grid gap-4">
-                {displayMemos.map(memo => (
-                  <div key={memo.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-gray-900 text-lg">{memo.title}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            memo.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                            memo.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            {memo.priority}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3">{memo.message}</p>
-                        <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                          <span>Sent by: {memo.sentBy}</span>
-                          <span>Date: {new Date(memo.sentAt).toLocaleDateString()}</span>
-                          <span>Recipients: {memo.recipients} tenant{memo.recipients !== 1 ? 's' : ''}</span>
-                          <span>Target: {memo.targetAudience === 'all' ? 'All Properties' : memo.targetAudience}</span>
-                        </div>
-                      </div>
-                      <button onClick={() => handleDeleteMemo(memo.id)} className="text-red-500 hover:text-red-700 ml-4">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+
+{/* Memos View */}
+{currentView === 'memos' && (
+  <div className="flex-1 overflow-auto">
+    {/* ===== HEADER SECTION ===== */}
+    <div className="bg-white border-b border-gray-200 px-6 py-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900">Memos</h1>
+        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
+      </div>
+    </div>
+
+    {/* ===== CONTENT SECTION ===== */}
+    <div className="px-6 pb-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Section Header with Button */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
+          <h2 className="text-2xl font-bold text-gray-900">Updates & Memos</h2>
+          <button 
+            onClick={() => setShowMemoModal(true)}
+            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
+          >
+            <Send className="w-5 h-5" />
+            Send Memo
+          </button>
+        </div>
+
+        {/* Mock Memo - Water maintenance */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
+                    <h3 className="text-xl font-bold text-gray-900">Water maintenance</h3>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                      normal
+                    </span>
+                  </div>
+
+                  {/* Message */}
+                  <p className="text-gray-700 mb-4 leading-relaxed">
+                    Water will be shut off tomorrow for a few hours. Please make prior arrangements
+                  </p>
+
+                  {/* Metadata */}
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-gray-400" />
+                      <span>Sent by: Test User</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span>Date: 16/10/2025</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span>Recipients: 10 tenants</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-gray-400" />
+                      <span>Target: Sunset Apartments</span>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 lg:flex-col">
+                  <button 
+                    onClick={() => handleDeleteMemo('mock1')}
+                    className="flex-1 lg:flex-none bg-white border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition text-sm flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </button>
+                </div>
               </div>
-            </>
-          )}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
 
 {/*Calendar View*/}
 {currentView === 'calendar' && (
@@ -2623,10 +2683,7 @@ const handleMessageTenant = (tenant) => {
         
         {/* Section Header with Button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Team Management</h2>
-            <p className="text-sm text-gray-600 mt-1">Manage your property management team</p>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Team Management</h2>
           <button 
             onClick={() => setShowTeamModal(true)}
             className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
@@ -2822,242 +2879,262 @@ const handleMessageTenant = (tenant) => {
   </div>
 )}
 
-          {/* Settings View */}
+{/* Settings View */}
+// SETTINGS PAGE - FULL WIDTH RESPONSIVE LAYOUT (FINAL CORRECTED)
+// Replace your Settings section with this code
+
 {currentView === 'settings' && (
-  <div className="max-w-4xl mx-auto space-y-6 min-h-full">
-    {/* Profile Settings */}
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Profile Settings</h3>
-        <button 
-          onClick={() => setEditingProfile(!editingProfile)}
-          className="px-4 py-2 bg-[#003366] text-white text-sm rounded-lg hover:bg-[#002244] transition"
-        >
-          {editingProfile ? 'Cancel' : 'Edit Profile'}
-        </button>
+  <div className="flex-1 overflow-auto">
+    {/* ===== HEADER SECTION ===== */}
+    <div className="bg-white border-b border-gray-200 px-6 py-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
       </div>
-      
-      {/* Profile Photo */}
-      <div className="flex items-center gap-4 mb-6 pb-6 border-b">
-        <div className="w-20 h-20 bg-[#003366] rounded-full flex items-center justify-center text-white text-2xl font-semibold">
-          {profileSettings.name.split(' ').map(n => n[0]).join('')}
-        </div>
-        <div>
-          <h4 className="font-semibold text-gray-900">{profileSettings.name}</h4>
-          <p className="text-sm text-gray-600">{profileSettings.email}</p>
-          <button className="text-[#003366] text-sm mt-1 hover:underline flex items-center gap-1">
-            <Camera className="w-4 h-4" />
-            Change Photo
-          </button>
-        </div>
-      </div>
-
-      {/* Profile Form */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-          <input
-            type="text"
-            value={profileSettings.name}
-            onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
-            disabled={!editingProfile}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input
-            type="email"
-            value={profileSettings.email}
-            onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
-            disabled={!editingProfile}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-          <input
-            type="tel"
-            value={profileSettings.phone}
-            onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})}
-            disabled={!editingProfile}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-          <input
-            type="text"
-            value={profileSettings.company}
-            onChange={(e) => setProfileSettings({...profileSettings, company: e.target.value})}
-            disabled={!editingProfile}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-          <input
-            type="text"
-            value={profileSettings.address}
-            onChange={(e) => setProfileSettings({...profileSettings, address: e.target.value})}
-            disabled={!editingProfile}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-          />
-        </div>
-      </div>
-
-      {editingProfile && (
-        <div className="mt-6 pt-6 border-t">
-          <button 
-            onClick={handleUpdateProfile}
-            className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
-          >
-            Save Changes
-          </button>
-        </div>
-      )}
     </div>
 
-    {/* Security */}
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Security</h3>
-      
-      <div className="space-y-4">
-        <div className="flex items-center justify-between py-3 border-b">
-          <div>
-            <p className="font-medium text-gray-900">Password</p>
-            <p className="text-sm text-gray-500">Last changed 3 months ago</p>
-          </div>
-          <button 
-            onClick={() => setShowPasswordModal(true)}
-            className="px-4 py-2 border border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition"
-          >
-            Change Password
-          </button>
-        </div>
+    {/* ===== CONTENT SECTION ===== */}
+    <div className="px-6 pb-8">
+      <div className="max-w-7xl mx-auto">
         
-        <div className="flex items-center justify-between py-3">
-          <div>
-            <p className="font-medium text-gray-900">Two-Factor Authentication</p>
-            <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-          </div>
-          <button className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-            Enable
-          </button>
-        </div>
-      </div>
-    </div>
-
-    {/* Notification Preferences */}
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Notification Preferences</h3>
-      
-      <div className="space-y-4">
-        <div className="flex items-center justify-between py-3">
-          <div>
-            <p className="font-medium text-gray-900">Email Notifications</p>
-            <p className="text-sm text-gray-500">Receive updates via email</p>
-          </div>
-          <button
-            onClick={() => handleUpdateNotifications('email')}
-            className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.email ? 'bg-[#003366]' : 'bg-gray-300'}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.email ? 'translate-x-6' : 'translate-x-0'}`}></span>
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between py-3">
-          <div>
-            <p className="font-medium text-gray-900">SMS Notifications</p>
-            <p className="text-sm text-gray-500">Receive updates via text message</p>
-          </div>
-          <button
-            onClick={() => handleUpdateNotifications('sms')}
-            className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.sms ? 'bg-[#003366]' : 'bg-gray-300'}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.sms ? 'translate-x-6' : 'translate-x-0'}`}></span>
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between py-3">
-          <div>
-            <p className="font-medium text-gray-900">Push Notifications</p>
-            <p className="text-sm text-gray-500">Receive browser push notifications</p>
-          </div>
-          <button
-            onClick={() => handleUpdateNotifications('push')}
-            className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.push ? 'bg-[#003366]' : 'bg-gray-300'}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.push ? 'translate-x-6' : 'translate-x-0'}`}></span>
-          </button>
-        </div>
-      </div>
-
-      {/* Alert Types */}
-      <div className="mt-6 pt-6 border-t">
-        <h4 className="font-medium text-gray-900 mb-4">Alert Types</h4>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-700">Payment Alerts</span>
-            <button
-              onClick={() => handleUpdateNotifications('paymentAlerts')}
-              className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.paymentAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
+        {/* ===== PROFILE SETTINGS SECTION ===== */}
+        <div className="mb-8 mt-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Profile Settings</h2>
+            <button 
+              onClick={() => setEditingProfile(true)}
+              className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition"
             >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.paymentAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
+              Edit Profile
             </button>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-700">Maintenance Requests</span>
-            <button
-              onClick={() => handleUpdateNotifications('maintenanceAlerts')}
-              className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.maintenanceAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.maintenanceAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-700">Viewing Bookings</span>
-            <button
-              onClick={() => handleUpdateNotifications('viewingAlerts')}
-              className={`relative w-12 h-6 rounded-full transition ${profileSettings.notifications.viewingAlerts ? 'bg-[#003366]' : 'bg-gray-300'}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${profileSettings.notifications.viewingAlerts ? 'translate-x-6' : 'translate-x-0'}`}></span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    {/* Danger Zone */}
-    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-red-200">
-      <h3 className="text-lg font-semibold text-red-600 mb-6">Danger Zone</h3>
-      
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3 border-b">
-          <div>
-            <p className="font-medium text-gray-900">Deactivate Account</p>
-            <p className="text-sm text-gray-500">Temporarily disable your account</p>
+          <div className="bg-white rounded-xl shadow-md p-6">
+            {/* Profile Avatar and Change Photo */}
+            <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200">
+              <div className="w-20 h-20 bg-[#003366] text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                {userProfile?.name?.charAt(0).toUpperCase() || 'TU'}
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">{userProfile?.name || 'Test User'}</h3>
+                <p className="text-gray-600">{userProfile?.email || 'test@test.com'}</p>
+                <button className="text-[#003366] text-sm mt-2 flex items-center gap-1 hover:underline">
+                  <Camera className="w-4 h-4" />
+                  Change Photo
+                </button>
+              </div>
+            </div>
+
+            {/* Profile Form */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Full Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <input
+                  type="text"
+                  value={userProfile?.name || 'Test User'}
+                  disabled={!editingProfile}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={userProfile?.email || 'test@test.com'}
+                  disabled={!editingProfile}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
+                />
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                <input
+                  type="tel"
+                  value={userProfile?.phone || '+25470000000'}
+                  disabled={!editingProfile}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
+                />
+              </div>
+
+              {/* Company Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                <input
+                  type="text"
+                  value={userProfile?.company || 'Doe Properties Ltd'}
+                  disabled={!editingProfile}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
+                />
+              </div>
+
+              {/* Address */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                <input
+                  type="text"
+                  value={userProfile?.address || 'Westlands, Nairobi'}
+                  disabled={!editingProfile}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-gray-50"
+                />
+              </div>
+            </div>
           </div>
-          <button className="px-4 py-2 border-2 border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition whitespace-nowrap">
-            Deactivate
-          </button>
         </div>
-        
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3">
-          <div>
-            <p className="font-medium text-gray-900">Delete Account</p>
-            <p className="text-sm text-gray-500">Permanently delete your account and all data</p>
+
+        {/* ===== SECURITY SECTION ===== */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Security</h2>
+
+          <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+            {/* Password */}
+            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Password</h3>
+                <p className="text-sm text-gray-600">Last changed 3 months ago</p>
+              </div>
+              <button 
+                onClick={() => setShowPasswordModal(true)}
+                className="px-4 py-2 border border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition"
+              >
+                Change Password
+              </button>
+            </div>
+
+            {/* Two-Factor Authentication */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Two-Factor Authentication</h3>
+                <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
+              </div>
+              <button className="bg-[#003366] text-white px-6 py-2 rounded-lg hover:bg-[#002244] transition">
+                Enable
+              </button>
+            </div>
           </div>
-          <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition whitespace-nowrap">
-            Delete Account
-          </button>
         </div>
+
+        {/* ===== NOTIFICATION PREFERENCES SECTION ===== */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Notification Preferences</h2>
+
+          <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+            {/* Email Notifications */}
+            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Email Notifications</h3>
+                <p className="text-sm text-gray-600">Receive updates via email</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            {/* SMS Notifications */}
+            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">SMS Notifications</h3>
+                <p className="text-sm text-gray-600">Receive updates via text message</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            {/* Push Notifications */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Push Notifications</h3>
+                <p className="text-sm text-gray-600">Receive browser push notifications</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== ALERT TYPES SECTION ===== */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Alert Types</h2>
+
+          <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+            {/* Payment Alerts */}
+            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Payment Alerts</h3>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            {/* Maintenance Requests */}
+            <div className="flex justify-between items-center pb-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Maintenance Requests</h3>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            {/* Viewing Bookings */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Viewing Bookings</h3>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003366]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== DANGER ZONE SECTION ===== */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-red-600 mb-6">Danger Zone</h2>
+
+          <div className="bg-white rounded-xl shadow-md border-2 border-red-200 p-6 space-y-6">
+            {/* Deactivate Account */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Deactivate Account</h3>
+                <p className="text-sm text-gray-600">Temporarily disable your account</p>
+              </div>
+              <button className="px-6 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition whitespace-nowrap">
+                Deactivate
+              </button>
+            </div>
+
+            {/* Delete Account */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+                <p className="text-sm text-gray-600">Permanently delete your account and all data</p>
+              </div>
+              <button className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition whitespace-nowrap">
+                Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 )}
-        </div>
-      </div>
+</div>
+</div>
 
       {/* Add Property Modal */}
       {showPropertyModal && (
