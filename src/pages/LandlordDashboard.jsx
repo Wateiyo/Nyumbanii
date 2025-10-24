@@ -1199,9 +1199,10 @@ const handleMessageTenant = (tenant) => {
   </>
 )}
 
+{/* Properties View */}
 {currentView === 'properties' && (
   <div className="flex-1 overflow-auto">
-    {/* Header Section - Full Width */}
+    {/* ===== HEADER SECTION ===== */}
     <div className="bg-white border-b border-gray-200 px-6 py-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900">Properties</h1>
@@ -1209,21 +1210,18 @@ const handleMessageTenant = (tenant) => {
       </div>
     </div>
 
-    {/* Info Banner - Full Width */}
-    <div className="px-6 py-4">
+    {/* ===== CONTENT SECTION ===== */}
+    <div className="px-6 pb-8">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3">
+        
+        {/* Info Banner */}
+        <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3 mb-6 mt-6">
           <Building className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-gray-700">
             Manage your properties and track occupancy rates
           </p>
         </div>
-      </div>
-    </div>
 
-    {/* Properties Content - Full Width Container */}
-    <div className="px-6 pb-8">
-      <div className="max-w-7xl mx-auto">
         {/* Header with Button */}
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -2071,152 +2069,265 @@ const handleMessageTenant = (tenant) => {
 
          {/* Payments View */}
 {currentView === 'payments' && (
-  <>
-    <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
-      <h2 className="text-xl font-bold text-gray-900">Payment Tracking</h2>
-      <button onClick={() => setShowPaymentModal(true)} className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-        Record Payment
-      </button>
-    </div>
-    
-    {/* Payment Stats Cards */}
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <p className="text-xs  text-gray-600 mb-1">Total Expected</p>
-        <p className="text-lg sm:text-2xl font-bold text-gray-900">KES {paymentStats.expected.toLocaleString()}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <p className="text-xs sm:text-sm text-gray-600 mb-1">Received</p>
-        <p className="text-lg sm:text-2xl font-bold text-green-600">KES {paymentStats.received.toLocaleString()}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <p className="text-xs sm:text-sm text-gray-600 mb-1">Pending</p>
-        <p className="text-lg sm:text-2xl font-bold text-yellow-600">KES {paymentStats.pending.toLocaleString()}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <p className="text-xs sm:text-sm text-gray-600 mb-1">Overdue</p>
-        <p className="text-lg sm:text-2xl font-bold text-red-600">KES {paymentStats.overdue.toLocaleString()}</p>
+  <div className="flex-1 overflow-auto">
+    {/* ===== HEADER SECTION ===== */}
+    <div className="bg-white border-b border-gray-200 px-6 py-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
+        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
       </div>
     </div>
-    
-    {/* Mobile Cards */}
-    <div className="lg:hidden">
-      {payments.length === 0 ? (
-        <div className="bg-white p-12 rounded-xl shadow-sm text-center">
-          <Banknote className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No payment records yet</p>
+
+    {/* ===== CONTENT SECTION ===== */}
+    <div className="px-6 pb-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Section Header with Button */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Payment Tracking</h2>
+            <p className="text-sm text-gray-600 mt-1">Monitor rent payments and outstanding balances</p>
+          </div>
+          <button 
+            onClick={() => setShowPaymentModal(true)}
+            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
+          >
+            <Plus className="w-5 h-5" />
+            Record Payment
+          </button>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {payments.map(payment => (
-            <div key={payment.id} className="bg-white p-4 rounded-xl shadow-sm">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{payment.tenant}</h3>
-                  <p className="text-sm text-gray-600">{payment.property}</p>
-                  <p className="text-xs text-gray-500">Unit {payment.unit}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  payment.status === 'paid' ? 'bg-green-100 text-green-800' :
-                  payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {payment.status}
-                </span>
+
+        {/* Payment Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Total Expected */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Total Expected</span>
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                <Banknote className="w-5 h-5 text-gray-600" />
               </div>
-              
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <p className="text-xs text-gray-500">Amount</p>
-                  <p className="font-semibold text-gray-900">KES {payment.amount?.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Due Date</p>
-                  <p className="font-medium text-gray-700">{payment.dueDate}</p>
-                </div>
-              </div>
-              
-              {payment.status === 'pending' && (
-                <button 
-                  onClick={() => handleRecordPayment(payment.id)}
-                  className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm"
-                >
-                  Mark as Paid
-                </button>
-              )}
-              {payment.status === 'paid' && (
-                <div className="flex items-center gap-2 text-green-600 text-sm">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Paid on {payment.paidDate}</span>
-                </div>
-              )}
             </div>
-          ))}
+            <p className="text-3xl font-bold text-gray-900">
+              KES {payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+            </p>
+          </div>
+
+          {/* Received */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Received</span>
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-green-600">
+              KES {payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+            </p>
+          </div>
+
+          {/* Pending */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Pending</span>
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Clock className="w-5 h-5 text-yellow-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-yellow-600">
+              KES {payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+            </p>
+          </div>
+
+          {/* Overdue */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Overdue</span>
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Ban className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-red-600">
+              KES {payments.filter(p => p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+            </p>
+          </div>
         </div>
-      )}
-    </div>
-    
-    {/* Desktop Table */}
-    <div className="hidden lg:block bg-white rounded-xl shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tenant</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {payments.map(payment => (
-              <tr key={payment.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{payment.tenant}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-600">{payment.property}</div>
-                  <div className="text-xs text-gray-500">Unit {payment.unit}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-semibold text-gray-900">KES {payment.amount?.toLocaleString()}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-600">{payment.dueDate}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    payment.status === 'paid' ? 'bg-green-100 text-green-800' :
-                    payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {payment.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {payment.status === 'pending' && (
-                    <button 
-                      onClick={() => handleRecordPayment(payment.id)}
-                      className="text-[#003366] hover:text-[#002244] font-medium"
-                    >
-                      Mark Paid
-                    </button>
-                  )}
-                  {payment.status === 'paid' && (
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <Download className="w-5 h-5" />
-                    </button>
-                  )}
-                </td>
-              </tr>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3 mb-6">
+          <select 
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
+          >
+            <option value="all">All Statuses</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="overdue">Overdue</option>
+          </select>
+
+          <select 
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
+          >
+            <option value="all">All Properties</option>
+            {properties.map(property => (
+              <option key={property.id} value={property.id}>{property.name}</option>
             ))}
-          </tbody>
-        </table>
+          </select>
+
+          <select 
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
+          >
+            <option value="all">All Time</option>
+            <option value="current">Current Month</option>
+            <option value="last">Last Month</option>
+            <option value="quarter">Last Quarter</option>
+          </select>
+        </div>
+
+        {/* Payments Table */}
+        {loadingPayments ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+            <Banknote className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Payment Records</h3>
+            <p className="text-gray-600 mb-6">Start tracking payments for your properties</p>
+            <button 
+              onClick={() => setShowPaymentModal(true)}
+              className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition inline-flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Record Payment
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            {/* Table Header */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Tenant
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Property
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Due Date
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {payments.map(payment => (
+                    <tr key={payment.id} className="hover:bg-gray-50 transition">
+                      {/* Tenant */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-[#003366] text-white rounded-full flex items-center justify-center font-semibold">
+                            {payment.tenant?.charAt(0) || 'T'}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{payment.tenant}</p>
+                            <p className="text-sm text-gray-500">{payment.unit}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Property */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Building className="w-4 h-4 text-gray-400" />
+                          <span>{payment.property}</span>
+                        </div>
+                      </td>
+
+                      {/* Amount */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="font-bold text-gray-900">
+                          KES {payment.amount?.toLocaleString()}
+                        </p>
+                        {payment.method && (
+                          <p className="text-xs text-gray-500 capitalize">{payment.method}</p>
+                        )}
+                      </td>
+
+                      {/* Due Date */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm">
+                            {new Date(payment.dueDate).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                          payment.status === 'paid' ? 'bg-green-100 text-green-700' :
+                          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {payment.status === 'paid' && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {payment.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
+                          {payment.status === 'overdue' && <Ban className="w-3 h-3 mr-1" />}
+                          {payment.status}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          {payment.status !== 'paid' && (
+                            <button 
+                              onClick={() => handleMarkPaymentPaid(payment.id)}
+                              className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition"
+                              title="Mark as Paid"
+                            >
+                              <CheckCircle className="w-5 h-5" />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleDownloadReceipt(payment.id)}
+                            className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition"
+                            title="Download Receipt"
+                          >
+                            <Download className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeletePayment(payment.id)}
+                            className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
-  </>
+  </div>
 )}
           {/* Memos View */}
           {currentView === 'memos' && (
@@ -2279,12 +2390,9 @@ const handleMessageTenant = (tenant) => {
         
         {/* ===== CALENDAR SECTION ===== */}
         <div className="mb-8">
-          {/* Section Header with Navigation */}
+          {/* Section Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Schedule Calendar</h2>
-              <p className="text-sm text-gray-600 mt-1">View and manage your appointments</p>
-            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Schedule Calendar</h2>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -2308,196 +2416,188 @@ const handleMessageTenant = (tenant) => {
               ))}
             </div>
 
-            {/* Calendar Body - Responsive Grid */}
+            {/* Calendar Body */}
             <div className="grid grid-cols-7 auto-rows-fr">
-              {/* Generate calendar days dynamically */}
-              {(() => {
-                const daysInMonth = 31;
-                const startDay = 3; // 0 = Sunday, 3 = Wednesday for October 1st
-                const days = [];
-                
-                // Empty cells before month starts
-                for (let i = 0; i < startDay; i++) {
-                  days.push(
-                    <div key={`empty-${i}`} className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 bg-gray-50"></div>
-                  );
-                }
-                
-                // Actual days
-                for (let day = 1; day <= daysInMonth; day++) {
-                  const isLastInRow = (day + startDay) % 7 === 0;
-                  
-                  // Count events for this day
-                  const dayViewings = viewings.filter(v => {
-                    const viewingDate = new Date(v.date);
-                    return viewingDate.getDate() === day;
-                  });
-                  
-                  const dayMaintenance = maintenanceRequests.filter(m => {
-                    const maintenanceDate = new Date(m.date);
-                    return maintenanceDate.getDate() === day;
-                  });
-                  
-                  days.push(
-                    <div 
-                      key={day} 
-                      className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer ${!isLastInRow ? 'border-r' : ''}`}
-                    >
-                      <div className="text-sm font-medium text-gray-900 mb-1">{day}</div>
-                      <div className="space-y-1">
-                        {dayViewings.length > 0 && (
-                          <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                            <CalendarCheck className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{dayViewings.length}</span>
-                          </div>
-                        )}
-                        {dayMaintenance.length > 0 && (
-                          <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
-                            <Wrench className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{dayMaintenance.length}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-                
-                // Fill remaining cells in last week
-                const totalCells = days.length;
-                const remainingCells = 35 - totalCells; // 5 weeks * 7 days
-                for (let i = 0; i < remainingCells; i++) {
-                  const isLast = i === remainingCells - 1;
-                  days.push(
-                    <div key={`fill-${i}`} className={`aspect-square min-h-[80px] sm:min-h-[100px] p-2 bg-gray-50 ${!isLast ? 'border-r' : ''}`}></div>
-                  );
-                }
-                
-                return days;
-              })()}
+              {/* Empty cells */}
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 bg-gray-50"></div>
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 bg-gray-50"></div>
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 bg-gray-50"></div>
+              
+              {/* Days 1-4 */}
+              {[1, 2, 3, 4].map(day => (
+                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer ${day !== 4 ? 'border-r' : ''}`}>
+                  <div className="text-sm font-medium text-gray-900">{day}</div>
+                </div>
+              ))}
+
+              {/* Days 5-6 */}
+              {[5, 6].map(day => (
+                <div key={day} className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer">
+                  <div className="text-sm font-medium text-gray-900">{day}</div>
+                </div>
+              ))}
+              
+              {/* Day 7 - With Events */}
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer">
+                <div className="text-sm font-medium text-gray-900 mb-1">7</div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                    <CalendarCheck className="w-3 h-3 flex-shrink-0" />
+                    <span>1</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                    <Wrench className="w-3 h-3 flex-shrink-0" />
+                    <span>1</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Day 8 - With Events */}
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer">
+                <div className="text-sm font-medium text-gray-900 mb-1">8</div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                    <CalendarCheck className="w-3 h-3 flex-shrink-0" />
+                    <span>1</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                    <Wrench className="w-3 h-3 flex-shrink-0" />
+                    <span>1</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Day 9 - With Event */}
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer">
+                <div className="text-sm font-medium text-gray-900 mb-1">9</div>
+                <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                  <Wrench className="w-3 h-3 flex-shrink-0" />
+                  <span>1</span>
+                </div>
+              </div>
+              
+              {/* Days 10-11 */}
+              {[10, 11].map(day => (
+                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer ${day === 10 ? 'border-r' : ''}`}>
+                  <div className="text-sm font-medium text-gray-900">{day}</div>
+                </div>
+              ))}
+
+              {/* Weeks 3-5 */}
+              {[12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map((day, idx) => (
+                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer ${(idx + 5) % 7 !== 6 ? 'border-r' : ''}`}>
+                  <div className="text-sm font-medium text-gray-900">{day}</div>
+                </div>
+              ))}
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] p-2 bg-gray-50"></div>
             </div>
           </div>
         </div>
 
-        {/* ===== UPCOMING EVENTS SECTION ===== */}
+        {/* ===== UPCOMING EVENTS WITH MOCK DATA ===== */}
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Upcoming Events</h2>
-              <p className="text-sm text-gray-600 mt-1">Your scheduled appointments</p>
-            </div>
-            <select 
-              value={viewingFilter}
-              onChange={(e) => setViewingFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm"
-            >
-              <option value="all">All Events</option>
-              <option value="viewings">Viewings Only</option>
-              <option value="maintenance">Maintenance Only</option>
-            </select>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Upcoming Events</h2>
           
-          {/* Events List */}
           <div className="space-y-4">
-            {/* Loading State */}
-            {(loadingViewings || loadingMaintenance) && (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
+            {/* Mock Event 1 - Viewing */}
+            <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6">
+              <div className="flex-shrink-0 text-center">
+                <div className="text-blue-600 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900">7</div>
               </div>
-            )}
+              
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Property Viewing</h3>
+                <p className="text-gray-600 text-sm mb-1">Sarah Johnson - Sunset Apartments</p>
+                <p className="text-gray-500 text-xs">10:00</p>
+              </div>
+              
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <CalendarCheck className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
 
-            {/* Empty State */}
-            {!loadingViewings && !loadingMaintenance && 
-             viewings.length === 0 && maintenanceRequests.length === 0 && (
-              <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Upcoming Events</h3>
-                <p className="text-gray-600">Your calendar is clear</p>
+            {/* Mock Event 2 - Viewing */}
+            <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6">
+              <div className="flex-shrink-0 text-center">
+                <div className="text-blue-600 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900">8</div>
               </div>
-            )}
+              
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Property Viewing</h3>
+                <p className="text-gray-600 text-sm mb-1">Michael Ochieng - Sunset Apartments</p>
+                <p className="text-gray-500 text-xs">14:00</p>
+              </div>
+              
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <CalendarCheck className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
 
-            {/* Viewings */}
-            {!loadingViewings && (viewingFilter === 'all' || viewingFilter === 'viewings') && 
-             viewings.slice(0, 10).map(viewing => (
-              <div 
-                key={viewing.id} 
-                className="bg-white rounded-xl shadow-md p-4 sm:p-6 hover:shadow-xl transition flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 cursor-pointer"
-                onClick={() => setSelectedViewing(viewing)}
-              >
-                <div className="flex-shrink-0 text-center">
-                  <div className="text-blue-600 text-sm font-semibold">
-                    {new Date(viewing.date).toLocaleString('en-US', { month: 'short' })}
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-bold text-gray-900">
-                    {new Date(viewing.date).getDate()}
-                  </div>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Property Viewing</h3>
-                  <p className="text-gray-600 text-sm mb-1 truncate">
-                    {viewing.tenantName} - {viewing.property}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Clock className="w-3 h-3" />
-                    <span>{viewing.time}</span>
-                  </div>
-                </div>
-                
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <CalendarCheck className="w-6 h-6 text-blue-600" />
-                  </div>
+            {/* Mock Event 3 - Maintenance */}
+            <div className="bg-orange-50 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6">
+              <div className="flex-shrink-0 text-center">
+                <div className="text-orange-600 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900">7</div>
+              </div>
+              
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
+                <p className="text-gray-600 text-sm mb-1">Leaking faucet - Sunset Apartments</p>
+                <p className="text-gray-500 text-xs">09:00</p>
+              </div>
+              
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Wrench className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
-            ))}
+            </div>
 
-            {/* Maintenance Requests */}
-            {!loadingMaintenance && (viewingFilter === 'all' || viewingFilter === 'maintenance') && 
-             maintenanceRequests
-               .filter(req => req.scheduledTime)
-               .slice(0, 10)
-               .map(request => (
-              <div 
-                key={request.id} 
-                className="bg-orange-50 rounded-xl shadow-md p-4 sm:p-6 hover:shadow-xl transition flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 cursor-pointer"
-                onClick={() => setSelectedViewing(request)}
-              >
-                <div className="flex-shrink-0 text-center">
-                  <div className="text-orange-600 text-sm font-semibold">
-                    {new Date(request.date).toLocaleString('en-US', { month: 'short' })}
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-bold text-gray-900">
-                    {new Date(request.date).getDate()}
-                  </div>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
-                  <p className="text-gray-600 text-sm mb-1 truncate">
-                    {request.issue} - {request.property}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Clock className="w-3 h-3" />
-                    <span>{request.scheduledTime}</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      request.priority === 'high' ? 'bg-red-100 text-red-700' :
-                      request.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-green-100 text-green-700'
-                    }`}>
-                      {request.priority} priority
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <Wrench className="w-6 h-6 text-orange-600" />
-                  </div>
+            {/* Mock Event 4 - Maintenance */}
+            <div className="bg-orange-50 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6">
+              <div className="flex-shrink-0 text-center">
+                <div className="text-orange-600 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900">8</div>
+              </div>
+              
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
+                <p className="text-gray-600 text-sm mb-1">Broken AC - Garden View</p>
+                <p className="text-gray-500 text-xs">14:00</p>
+              </div>
+              
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Wrench className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Mock Event 5 - Maintenance */}
+            <div className="bg-orange-50 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6">
+              <div className="flex-shrink-0 text-center">
+                <div className="text-orange-600 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900">9</div>
+              </div>
+              
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
+                <p className="text-gray-600 text-sm mb-1">Faulty door lock - Riverside Towers</p>
+                <p className="text-gray-500 text-xs">10:00</p>
+              </div>
+              
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Wrench className="w-6 h-6 text-orange-600" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2508,123 +2608,217 @@ const handleMessageTenant = (tenant) => {
 
           {/* Team View */}
 {currentView === 'team' && (
-    <div className="max-w-7xl mx-auto">
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <h2 className="text-xl font-bold text-gray-900">Team Management</h2>
-      <button onClick={() => setShowTeamModal(true)} className="w-full sm:w-auto px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2">
-        <Users className="w-5 h-5" />
-        Add Team Member
-      </button>
-    </div>
-
-    {/* Team Stats */}
-    <div className="grid md:grid-cols-3 gap-4 mb-6">
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <p className="text-sm text-gray-600 mb-1">Total Team Members</p>
-        <p className="text-2xl font-bold text-gray-900">{teamMembers.length}</p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <p className="text-sm text-gray-600 mb-1">Property Managers</p>
-        <p className="text-2xl font-bold text-blue-600">
-          {teamMembers.filter(m => m.role === 'property_manager').length}
-        </p>
-      </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <p className="text-sm text-gray-600 mb-1">Maintenance Staff</p>
-        <p className="text-2xl font-bold text-orange-600">
-          {teamMembers.filter(m => m.role === 'maintenance').length}
-        </p>
+  <div className="flex-1 overflow-auto">
+    {/* ===== HEADER SECTION ===== */}
+    <div className="bg-white border-b border-gray-200 px-6 py-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900">Team</h1>
+        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
       </div>
     </div>
 
-    {/* Team Members List */}
-    {teamMembers.length === 0 ? (
-      <div className="bg-white p-12 rounded-xl shadow-sm text-center">
-        <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-500 mb-4">No team members yet</p>
-        <button onClick={() => setShowTeamModal(true)} className="px-6 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-          Add First Team Member
-        </button>
-      </div>
-    ) : (
-      <div className="grid gap-4">
-        {teamMembers.map(member => (
-          <div key={member.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-              <div className="flex items-start gap-4 flex-1">
-                <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                  {member.name.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-gray-900 text-lg">{member.name}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      member.role === 'property_manager' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
-                    }`}>
-                      {member.role === 'property_manager' ? 'Property Manager' : 'Maintenance'}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      member.status === 'active' ? 'bg-green-100 text-green-800' :
-                      member.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {member.status}
-                    </span>
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-4 h-4" />
-                      {member.email}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      {member.phone}
-                    </span>
-                  </div>
-                  
-                  {/* Assigned Properties */}
-                  <div>
-                    <p className="text-xs text-gray-600 mb-2">Assigned Properties ({member.assignedProperties?.length || 0})</p>
-                    {member.assignedProperties && member.assignedProperties.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {member.assignedProperties.map(propId => {
-                          const property = properties.find(p => p.id === propId);
-                          return property ? (
-                            <span key={propId} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                              {property.name}
-                            </span>
-                          ) : null;
-                        })}
+    {/* ===== CONTENT SECTION ===== */}
+    <div className="px-6 pb-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Section Header with Button */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Team Management</h2>
+            <p className="text-sm text-gray-600 mt-1">Manage your property management team</p>
+          </div>
+          <button 
+            onClick={() => setShowTeamModal(true)}
+            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
+          >
+            <Users className="w-5 h-5" />
+            Add Team Member
+          </button>
+        </div>
+
+        {/* Team Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          {/* Total Team Members */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Total Team Members</span>
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                <Users className="w-5 h-5 text-gray-600" />
+              </div>
+            </div>
+            <p className="text-4xl font-bold text-gray-900">{teamMembers.length}</p>
+          </div>
+
+          {/* Property Managers */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Property Managers</span>
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Building className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+            <p className="text-4xl font-bold text-blue-600">
+              {teamMembers.filter(m => m.role === 'property_manager').length}
+            </p>
+          </div>
+
+          {/* Maintenance Staff */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Maintenance Staff</span>
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <Wrench className="w-5 h-5 text-orange-600" />
+              </div>
+            </div>
+            <p className="text-4xl font-bold text-orange-600">
+              {teamMembers.filter(m => m.role === 'maintenance').length}
+            </p>
+          </div>
+        </div>
+
+        {/* Team Members List */}
+        {loadingTeam ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
+          </div>
+        ) : teamMembers.length === 0 ? (
+          <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Team Members Yet</h3>
+            <p className="text-gray-600 mb-6">Add your first team member to get started</p>
+            <button 
+              onClick={() => setShowTeamModal(true)}
+              className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition inline-flex items-center gap-2"
+            >
+              <Users className="w-5 h-5" />
+              Add Team Member
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {teamMembers.map(member => (
+              <div 
+                key={member.id}
+                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition"
+              >
+                <div className="p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                    {/* Avatar and Info */}
+                    <div className="flex items-center gap-4 flex-1">
+                      {/* Avatar */}
+                      <div className="w-16 h-16 bg-[#003366] text-white rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0">
+                        {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 italic">No properties assigned</p>
-                    )}
+
+                      {/* Member Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            member.role === 'property_manager' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                          }`}>
+                            {member.role === 'property_manager' ? 'Property Manager' : 'Maintenance'}
+                          </span>
+                          {member.status === 'pending' && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                              pending
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Contact Info */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                            <span className="truncate">{member.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                            <span>{member.phone}</span>
+                          </div>
+                        </div>
+
+                        {/* Assigned Properties */}
+                        {member.assignedProperties && member.assignedProperties.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-sm text-gray-600 mb-2">
+                              Assigned Properties ({member.assignedProperties.length})
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {member.assignedProperties.map(propId => {
+                                const property = properties.find(p => p.id === propId);
+                                return property ? (
+                                  <span 
+                                    key={propId}
+                                    className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                                  >
+                                    {property.name}
+                                  </span>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 lg:flex-col lg:items-end">
+                      <button 
+                        onClick={() => {
+                          setSelectedTeamMember(member);
+                          setShowAssignTeamModal(true);
+                        }}
+                        className="flex-1 lg:flex-none bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                      >
+                        <Building className="w-4 h-4" />
+                        Assign Properties
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveTeamMember(member.id)}
+                        className="flex-1 lg:flex-none bg-white border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition text-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => {
-                    setSelectedTeamMember(member);
-                    setShowAssignTeamModal(true);
-                  }}
-                  className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm"
-                >
-                  Assign Properties
-                </button>
-                <button 
-                  onClick={() => handleDeleteTeamMember(member.id)}
-                  className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm"
-                >
-                  Remove
-                </button>
+            ))}
+          </div>
+        )}
+
+        {/* Info Section */}
+        {teamMembers.length > 0 && (
+          <div className="mt-8 bg-blue-50 rounded-xl p-6">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Team Roles & Permissions</h3>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <p><strong>Property Managers:</strong> Can manage properties, tenants, viewings, and view reports</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-orange-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <p><strong>Maintenance Staff:</strong> Can view and update maintenance requests for assigned properties</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-yellow-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <p><strong>Pending Members:</strong> Have received an invitation email but haven't completed registration yet</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        ))}
+        )}
+
       </div>
-    )}
+    </div>
   </div>
 )}
 
