@@ -2081,13 +2081,6 @@ const handleMessageTenant = (tenant) => {
          {/* Payments View */}
 {currentView === 'payments' && (
   <div className="flex-1 overflow-auto">
-    {/* ===== HEADER SECTION ===== */}
-    <div className="bg-white border-b border-gray-200 px-6 py-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
-        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
-      </div>
-    </div>
 
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
@@ -2341,13 +2334,6 @@ const handleMessageTenant = (tenant) => {
 {/* Memos View */}
 {currentView === 'memos' && (
   <div className="flex-1 overflow-auto">
-    {/* ===== HEADER SECTION ===== */}
-    <div className="bg-white border-b border-gray-200 px-6 py-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">Memos</h1>
-        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
-      </div>
-    </div>
 
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
@@ -2428,13 +2414,6 @@ const handleMessageTenant = (tenant) => {
 {/*Calendar View*/}
 {currentView === 'calendar' && (
   <div className="flex-1 overflow-auto">
-    {/* ===== HEADER SECTION ===== */}
-    <div className="bg-white border-b border-gray-200 px-6 py-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
-        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
-      </div>
-    </div>
 
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
@@ -2662,14 +2641,6 @@ const handleMessageTenant = (tenant) => {
 {/* Team View */}
 {currentView === 'team' && (
   <div className="flex-1 overflow-auto">
-    {/* ===== HEADER SECTION ===== */}
-    <div className="bg-white border-b border-gray-200 px-6 py-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">Team</h1>
-        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
-      </div>
-    </div>
-
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
       <div className="max-w-7xl mx-auto">
@@ -2875,13 +2846,6 @@ const handleMessageTenant = (tenant) => {
 {/* Settings View */}
 {currentView === 'settings' && (
   <div className="flex-1 overflow-auto">
-    {/* ===== HEADER SECTION ===== */}
-    <div className="bg-white border-b border-gray-200 px-6 py-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Welcome back, {userProfile?.name || 'Test'}!</p>
-      </div>
-    </div>
 
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
