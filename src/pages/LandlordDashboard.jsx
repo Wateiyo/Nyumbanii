@@ -1068,21 +1068,22 @@ const handleMessageTenant = (tenant) => {
 {currentView === 'dashboard' && (
   <>
     {/* Stats Cards - Shows 2 cols on mobile, 4 on larger screens */}
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
-      {stats.map((stat, index) => (
-        <div key={index} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-gray-600 text-xs lg:text-sm mb-1 truncate">{stat.label}</p>
-              <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
-            </div>
-            <div className={`w-10 h-10 lg:w-12 lg:h-12 ${stat.color} rounded-lg flex items-center justify-center flex-shrink-0 ml-2`}>
-              <stat.icon className="w-5 h-5 lg:w-6 lg:h-6" />
-            </div>
-          </div>
-        </div>
-      ))}
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
+  {stats.map((stat, index) => (
+    <div key={index} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition">
+      {/* Icon at the top */}
+      <div className={`w-12 h-12 lg:w-14 lg:h-14 ${stat.color} rounded-lg flex items-center justify-center mb-3`}>
+        <stat.icon className="w-6 h-6 lg:w-7 lg:h-7" />
+      </div>
+      
+      {/* Label - now fully visible */}
+      <p className="text-gray-600 text-xs lg:text-sm mb-2">{stat.label}</p>
+      
+      {/* Value */}
+      <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
     </div>
+  ))}
+</div>
 
     {/* Cards Grid - 2 columns even on tablet */}
     <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
