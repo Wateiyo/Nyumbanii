@@ -1497,14 +1497,6 @@ const handleMessageTenant = (tenant) => {
   </>
 )}
 
-// ========================================
-// FIX 1: RESPONSIVE VIEWINGS SECTION
-// ========================================
-// LOCATION: Find line 1501 in your LandlordDashboard.jsx
-// REPLACE: Lines 1501-1641 (the entire viewings section)
-// WITH: The code below
-// ========================================
-
 {currentView === 'viewings' && (
   <div className="max-w-7xl mx-auto">
     {/* Credibility System Info Banner */}
