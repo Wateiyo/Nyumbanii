@@ -1497,20 +1497,27 @@ const handleMessageTenant = (tenant) => {
   </>
 )}
 
-{/* Viewings View */}
+// ========================================
+// FIX 1: RESPONSIVE VIEWINGS SECTION
+// ========================================
+// LOCATION: Find line 1501 in your LandlordDashboard.jsx
+// REPLACE: Lines 1501-1641 (the entire viewings section)
+// WITH: The code below
+// ========================================
+
 {currentView === 'viewings' && (
   <div className="max-w-7xl mx-auto">
     {/* Credibility System Info Banner */}
-    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-lg">
-      <div className="flex items-start gap-3">
+    <div className="bg-blue-50 border-l-4 border-blue-500 p-3 lg:p-4 mb-4 lg:mb-6 rounded-lg">
+      <div className="flex items-start gap-2 lg:gap-3">
         <div className="flex-shrink-0">
-          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-4 h-4 lg:w-5 lg:h-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
         </div>
-        <div className="flex-1">
-          <h3 className="text-sm font-semibold text-blue-900 mb-1">Smart Credibility Filtering Active</h3>
-          <p className="text-sm text-blue-800">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-xs lg:text-sm font-semibold text-blue-900 mb-1">Smart Credibility Filtering Active</h3>
+          <p className="text-xs lg:text-sm text-blue-800">
             Our system automatically scores viewing requests based on user credibility. 
             <span className="font-medium"> High-scoring applicants (80+) are prioritized</span> to help you find reliable tenants quickly. 
             Review the credibility score below each request before approving.
@@ -1519,126 +1526,130 @@ const handleMessageTenant = (tenant) => {
       </div>
     </div>
 
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <h2 className="text-xl font-bold text-gray-900">Viewing Requests</h2>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setViewingFilter('all')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                      viewingFilter === 'all' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button 
-                    onClick={() => setViewingFilter('pending')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                      viewingFilter === 'pending' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Pending
-                  </button>
-                  <button 
-                    onClick={() => setViewingFilter('confirmed')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                      viewingFilter === 'confirmed' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Confirmed
-                  </button>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 lg:gap-4 mb-4 lg:mb-6">
+      <h2 className="text-lg lg:text-xl font-bold text-gray-900">Viewing Requests</h2>
+      <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <button 
+          onClick={() => setViewingFilter('all')}
+          className={`flex-1 sm:flex-none px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition ${
+            viewingFilter === 'all' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          All
+        </button>
+        <button 
+          onClick={() => setViewingFilter('pending')}
+          className={`flex-1 sm:flex-none px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition ${
+            viewingFilter === 'pending' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Pending
+        </button>
+        <button 
+          onClick={() => setViewingFilter('confirmed')}
+          className={`flex-1 sm:flex-none px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition ${
+            viewingFilter === 'confirmed' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Confirmed
+        </button>
+      </div>
+    </div>
+    
+    <div className="grid gap-3 lg:gap-4">
+      {displayViewings.filter(v => viewingFilter === 'all' || v.status === viewingFilter).map(viewing => (
+        <div key={viewing.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition">
+          <div className="flex flex-col gap-4">
+            {/* Header Section - Mobile Optimized */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 text-base lg:text-lg truncate">{viewing.prospectName}</h3>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs lg:text-sm text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <Phone className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
+                    <span className="truncate">{viewing.phone}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Mail className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
+                    <span className="truncate">{viewing.email}</span>
+                  </span>
                 </div>
               </div>
-              
-              <div className="grid gap-4">
-                {displayViewings.filter(v => viewingFilter === 'all' || v.status === viewingFilter).map(viewing => (
-                  <div key={viewing.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 text-lg">{viewing.prospectName}</h3>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                              <span className="flex items-center gap-1">
-                                <Phone className="w-4 h-4" />
-                                {viewing.phone}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Mail className="w-4 h-4" />
-                                {viewing.email}
-                              </span>
-                            </div>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                            viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            viewing.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {viewing.status}
-                          </span>
-                        </div>
-                        
-                        <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Property</p>
-                            <p className="font-medium text-gray-900">{viewing.property}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Viewing Date & Time</p>
-                            <p className="font-medium text-gray-900">{viewing.date} at {viewing.time}</p>
-                          </div>
-                        </div>
-                        
-                        {viewing.credibilityScore && (
-                          <div className="mb-4">
-                            <p className="text-xs text-gray-600 mb-2">Credibility Score</p>
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className={`h-2 rounded-full transition-all ${
-                                    viewing.credibilityScore >= 80 ? 'bg-green-500' :
-                                    viewing.credibilityScore >= 60 ? 'bg-yellow-500' :
-                                    'bg-red-500'
-                                  }`}
-                                  style={{ width: `${viewing.credibilityScore}%` }}
-                                ></div>
-                              </div>
-                              <span className="font-semibold text-gray-900 text-sm">{viewing.credibilityScore}/100</span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        <button 
-                          onClick={() => setSelectedViewing(viewing)}
-                          className="text-[#003366] hover:text-[#002244] text-sm font-medium"
-                        >
-                          View Full Details →
-                        </button>
-                      </div>
-                      
-                      {viewing.status === 'pending' && (
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleUpdateViewingStatus(viewing.id, 'confirmed')}
-                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-2"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Approve
-                          </button>
-                          <button 
-                            onClick={() => handleUpdateViewingStatus(viewing.id, 'declined')}
-                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      )}
-                    </div>
+              <span className={`px-2 lg:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap self-start ${
+                viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                viewing.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {viewing.status}
+              </span>
+            </div>
+            
+            {/* Property & Date Info - Mobile Optimized */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Property</p>
+                <p className="font-medium text-gray-900 text-sm lg:text-base truncate">{viewing.property}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Viewing Date & Time</p>
+                <p className="font-medium text-gray-900 text-sm lg:text-base">{viewing.date} at {viewing.time}</p>
+              </div>
+            </div>
+            
+            {/* Credibility Score - Mobile Optimized */}
+            {viewing.credibilityScore && (
+              <div>
+                <p className="text-xs text-gray-600 mb-2">Credibility Score</p>
+                <div className="flex items-center gap-2 lg:gap-3">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all ${
+                        viewing.credibilityScore >= 80 ? 'bg-green-500' :
+                        viewing.credibilityScore >= 60 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${viewing.credibilityScore}%` }}
+                    ></div>
                   </div>
-                ))}
+                  <span className="font-semibold text-gray-900 text-xs lg:text-sm whitespace-nowrap">{viewing.credibilityScore}/100</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Action Buttons - Mobile Optimized */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-gray-100">
+              <button 
+                onClick={() => setSelectedViewing(viewing)}
+                className="text-[#003366] hover:text-[#002244] text-xs lg:text-sm font-medium text-center sm:text-left"
+              >
+                View Full Details →
+              </button>
+              
+              {viewing.status === 'pending' && (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleUpdateViewingStatus(viewing.id, 'confirmed')}
+                    className="flex-1 sm:flex-none px-3 lg:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center justify-center gap-2 text-xs lg:text-sm"
+                  >
+                    <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4" />
+                    <span>Approve</span>
+                  </button>
+                  <button 
+                    onClick={() => handleUpdateViewingStatus(viewing.id, 'declined')}
+                    className="flex-1 sm:flex-none px-3 lg:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs lg:text-sm"
+                  >
+                    Decline
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
-    </div>
-  )}
+  </div>
+)}
 
 {/* Maintenance View */}
 {currentView === 'maintenance' && (
