@@ -231,6 +231,22 @@ const { teamMembers, loading: loadingTeam } = useTeamMembers(currentUser?.uid);
   const displayMaintenanceRequests = maintenanceRequests.length > 0 ? maintenanceRequests : mockMaintenanceRequests;
   const { notifications, unreadCount } = useNotifications(currentUser?.uid);
 
+  // Helper function to format relative time for notifications
+  const formatRelativeTime = (date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString();
+  };
+
   // Mock viewing bookings
 const mockViewings = [
   {
@@ -874,7 +890,7 @@ const handleUpdateTeamMember = async (memberId, updates) => {
 };
 
 // Delete team member
-const handleDeleteTeamMember = async (memberId) => {
+const handleRemoveTeamMember = async (memberId) => {
   if (window.confirm('Are you sure you want to remove this team member?')) {
     try {
       await deleteDoc(doc(db, 'teamMembers', memberId));
@@ -1046,12 +1062,145 @@ const handleMessageTenant = (tenant) => {
     <div className="flex items-center gap-4 flex-shrink-0">
       <div className="relative">
         <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
-          <Bell className="w-6 h-6 text-gray-600" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-medium">{unreadCount}</span>
-          )}
+  <Bell className="w-6 h-6 text-gray-600" />
+  {unreadCount > 0 && (
+    <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-medium">{unreadCount}</span>
+  )}
+</button>
+
+{/* Notifications Dropdown Panel */}
+{showNotifications && (
+  <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[500px] overflow-hidden flex flex-col">
+    {/* Header */}
+    <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+      <div>
+        <h3 className="text-lg font-bold text-gray-900">Notifications</h3>
+        {unreadCount > 0 && (
+          <p className="text-xs text-gray-600">{unreadCount} unread</p>
+        )}
+      </div>
+      <button 
+        onClick={() => setShowNotifications(false)}
+        className="p-1 hover:bg-gray-200 rounded-lg transition"
+      >
+        <X className="w-5 h-5 text-gray-600" />
+      </button>
+    </div>
+
+    {/* Notifications List */}
+    <div className="overflow-y-auto flex-1">
+      {notifications.length === 0 ? (
+        <div className="p-8 text-center">
+          <Bell className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-600 font-medium">No notifications yet</p>
+          <p className="text-sm text-gray-500 mt-1">
+            You'll see updates about payments, maintenance requests, and viewings here
+          </p>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-100">
+          {notifications.map(notification => (
+            <div
+              key={notification.id}
+              className={`p-4 hover:bg-gray-50 transition cursor-pointer ${
+                !notification.read ? 'bg-blue-50' : ''
+              }`}
+              onClick={async () => {
+                // Mark as read
+                if (!notification.read) {
+                  try {
+                    await updateDoc(doc(db, 'notifications', notification.id), {
+                      read: true,
+                      readAt: serverTimestamp()
+                    });
+                  } catch (error) {
+                    console.error('Error marking notification as read:', error);
+                  }
+                }
+                
+                // Navigate based on notification type
+                if (notification.type === 'payment') {
+                  setCurrentView('payments');
+                } else if (notification.type === 'maintenance') {
+                  setCurrentView('maintenance');
+                } else if (notification.type === 'viewing') {
+                  setCurrentView('viewings');
+                } else if (notification.type === 'tenant') {
+                  setCurrentView('tenants');
+                }
+                
+                setShowNotifications(false);
+              }}
+            >
+              <div className="flex items-start gap-3">
+                {/* Icon based on type */}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  notification.type === 'payment' ? 'bg-green-100' :
+                  notification.type === 'maintenance' ? 'bg-orange-100' :
+                  notification.type === 'viewing' ? 'bg-blue-100' :
+                  notification.type === 'tenant' ? 'bg-purple-100' :
+                  'bg-gray-100'
+                }`}>
+                  {notification.type === 'payment' && <Banknote className="w-5 h-5 text-green-600" />}
+                  {notification.type === 'maintenance' && <Wrench className="w-5 h-5 text-orange-600" />}
+                  {notification.type === 'viewing' && <Eye className="w-5 h-5 text-blue-600" />}
+                  {notification.type === 'tenant' && <Users className="w-5 h-5 text-purple-600" />}
+                  {!notification.type && <Bell className="w-5 h-5 text-gray-600" />}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm mb-1 ${!notification.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                    {notification.title}
+                  </p>
+                  <p className="text-xs text-gray-600 line-clamp-2">
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {notification.createdAt && typeof notification.createdAt.toDate === 'function' 
+                      ? formatRelativeTime(notification.createdAt.toDate())
+                      : 'Just now'}
+                  </p>
+                </div>
+
+                {/* Unread indicator */}
+                {!notification.read && (
+                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
+    {/* Footer */}
+    {notifications.length > 0 && (
+      <div className="p-3 border-t border-gray-200 bg-gray-50">
+        <button
+          onClick={async () => {
+            try {
+              // Mark all as read
+              const unreadNotifs = notifications.filter(n => !n.read);
+              const updatePromises = unreadNotifs.map(notif =>
+                updateDoc(doc(db, 'notifications', notif.id), {
+                  read: true,
+                  readAt: serverTimestamp()
+                })
+              );
+              await Promise.all(updatePromises);
+            } catch (error) {
+              console.error('Error marking all as read:', error);
+            }
+          }}
+          className="w-full text-center text-sm text-[#003366] hover:text-[#002244] font-medium transition"
+        >
+          Mark all as read
         </button>
-        {/* Rest of notifications dropdown stays the same */}
+      </div>
+    )}
+  </div>
+)}
       </div>
       <div className="w-10 h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
         {profileSettings.name.split(' ').map(n => n[0]).join('')}
