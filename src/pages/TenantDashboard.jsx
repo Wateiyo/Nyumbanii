@@ -814,19 +814,20 @@ const TenantDashboard = () => {
       </button>
     </div>
 
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-200">
+    {/* Each message as individual card - like Documents */}
+    <div className="grid gap-4">
       {messages.map((message) => (
-        <div key={message.id} className="p-4 lg:p-6 hover:bg-gray-50 cursor-pointer">
+        <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-semibold text-sm lg:text-base text-gray-900 truncate">{message.subject}</h4>
+                <h4 className="font-semibold text-sm lg:text-base text-gray-900">{message.subject}</h4>
                 {!message.read && (
                   <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
                 )}
               </div>
               <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
-              <p className="text-xs lg:text-sm text-gray-500 truncate">{message.preview}</p>
+              <p className="text-xs lg:text-sm text-gray-500">{message.preview}</p>
             </div>
             <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
           </div>
