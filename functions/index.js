@@ -92,7 +92,7 @@ exports.sendTeamInvitation = onDocumentCreated(
         : 'Maintenance Staff';
 
       const { data, error } = await resend.emails.send({
-        from: 'Nyumbanii <onboarding@resend.dev>',
+        from: 'delivered@resend.dev',
         to: [teamMember.email],
         subject: 'Invitation to Join Nyumbanii Property Management',
         html: `
