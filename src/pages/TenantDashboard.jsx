@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { 
@@ -39,7 +38,6 @@ const functions = getFunctions();
 const db = getFirestore();
 
 const TenantDashboard = () => {
-  const navigate = useNavigate();
   // ============ STATE MANAGEMENT ============
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -844,21 +842,6 @@ const TenantDashboard = () => {
           {/* Available Listings View */}
           {currentView === 'listings' && (
             <div className="space-y-6">
-              {/* Button to Full Listings Page */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Looking for More Properties?</h3>
-                  <p className="text-sm text-gray-600">Browse our complete catalog with advanced filters and detailed information</p>
-                </div>
-                <button
-                  onClick={() => navigate('/listings')}
-                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-                >
-                  <Search className="w-5 h-5" />
-                  View All Listings
-                </button>
-              </div>
-
               <div>
                 <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Available Properties</h3>
                 <div className="relative">
@@ -2012,3 +1995,4 @@ const TenantDashboard = () => {
 };
 
 export default TenantDashboard;
+
