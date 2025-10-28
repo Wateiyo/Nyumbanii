@@ -651,7 +651,7 @@ const TenantDashboard = () => {
           {/* Payments View */}
           {currentView === 'payments' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
                   <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Payment History</h3>
                   <p className="text-sm text-gray-500 mt-1">Track your rent payments and receipts</p>
@@ -711,8 +711,8 @@ const TenantDashboard = () => {
 
       {/* Maintenance View */}
       {currentView === 'maintenance' && (
-  <div className="space-y-6">
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Maintenance Requests</h3>
         <p className="text-sm text-gray-500 mt-1">Report and track maintenance issues</p>
@@ -802,7 +802,7 @@ const TenantDashboard = () => {
     {/* Messages View */}
     {currentView === 'messages' && (
       <div className="space-y-6">
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex flex-col justify-between items-start sm:items-center gap-4">
       <div>
         <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h3>
         <p className="text-sm text-gray-500 mt-1">Communicate with your property manager</p>
