@@ -476,14 +476,7 @@ const TenantDashboard = () => {
           ].map((item) => (
             <button
               key={item.view}
-              onClick={() => { 
-                if (item.view === 'listings') {
-                  navigate('/listings');
-                } else {
-                  setCurrentView(item.view);
-                }
-                setSidebarOpen(false); 
-              }}
+              onClick={() => { setCurrentView(item.view); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                 currentView === item.view ? 'bg-white/20' : 'hover:bg-white/10'
               }`}
@@ -851,6 +844,21 @@ const TenantDashboard = () => {
           {/* Available Listings View */}
           {currentView === 'listings' && (
             <div className="space-y-6">
+              {/* Button to Full Listings Page */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Looking for More Properties?</h3>
+                  <p className="text-sm text-gray-600">Browse our complete catalog with advanced filters and detailed information</p>
+                </div>
+                <button
+                  onClick={() => navigate('/listings')}
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Search className="w-5 h-5" />
+                  View All Listings
+                </button>
+              </div>
+
               <div>
                 <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Available Properties</h3>
                 <div className="relative">
