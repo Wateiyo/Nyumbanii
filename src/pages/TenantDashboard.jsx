@@ -461,13 +461,13 @@ const TenantDashboard = () => {
     { id: 'maintenance', icon: Wrench, label: 'Maintenance' },
     { id: 'documents', icon: FileText, label: 'Documents' },
     { id: 'messages', icon: MessageSquare, label: 'Messages' },
-    { id: 'listings', icon: Search, label: 'Available Listings' },
+    { id: 'listings', icon: Search, label: 'Find Property' },
     { id: 'settings', icon: Settings, label: 'Settings' }
   ];
 
   // ============ RENDER FUNCTIONS ============
   
-  // Sidebar Component - FIXED FOR FULL HEIGHT
+  // Sidebar Component
   const renderSidebar = () => (
     <>
       {/* Mobile Overlay */}
@@ -478,16 +478,16 @@ const TenantDashboard = () => {
         />
       )}
       
-      {/* Sidebar - FULL HEIGHT */}
+      {/* Sidebar */}
       <div className={`
         fixed lg:static inset-y-0 left-0 z-50
         w-64 bg-[#003366] text-white
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        flex flex-col h-screen
+        flex flex-col
       `}>
         {/* Logo Section */}
-        <div className="p-6 border-b border-white/10 flex-shrink-0">
+        <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Home className="w-8 h-8" />
@@ -506,9 +506,9 @@ const TenantDashboard = () => {
         </div>
 
         {/* Profile Section */}
-        <div className="p-6 border-b border-white/10 flex-shrink-0">
+        <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
               <span className="text-lg font-bold">
                 {profileSettings.name.split(' ').map(n => n[0]).join('')}
               </span>
@@ -520,7 +520,7 @@ const TenantDashboard = () => {
           </div>
         </div>
 
-        {/* Navigation - SCROLLABLE */}
+        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map(item => (
             <button
@@ -549,8 +549,8 @@ const TenantDashboard = () => {
           ))}
         </nav>
 
-        {/* Logout Button - FIXED AT BOTTOM */}
-        <div className="p-4 border-t border-white/10 flex-shrink-0">
+        {/* Logout Button */}
+        <div className="p-4 border-t border-white/10">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors duration-200"
@@ -566,7 +566,7 @@ const TenantDashboard = () => {
   // Top Header Component
   const renderHeader = () => (
     <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
-      <div className="flex items-center justify-between p-4 lg:px-8">
+      <div className="flex items-center justify-between p-4 lg:px-6">
         {/* Left: Mobile Menu + Title */}
         <div className="flex items-center gap-4">
           <button
@@ -580,18 +580,12 @@ const TenantDashboard = () => {
               {menuItems.find(item => item.id === currentView)?.label || 'Dashboard'}
             </h2>
             <p className="text-sm text-gray-500 hidden sm:block">
-              {currentView === 'dashboard' && `Welcome back, ${profileSettings.name.split(' ')[0]}!`}
-              {currentView === 'payments' && 'Track all your rent payments'}
-              {currentView === 'maintenance' && 'Report and track maintenance issues'}
-              {currentView === 'documents' && 'Access your lease agreements and receipts'}
-              {currentView === 'messages' && 'Communicate with your property manager'}
-              {currentView === 'listings' && 'Find your perfect home'}
-              {currentView === 'settings' && `Manage your account, ${profileSettings.name.split(' ')[0]}`}
+              Welcome back, {profileSettings.name.split(' ')[0]}!
             </p>
           </div>
         </div>
 
-        {/* Right: Notifications + Profile */}
+        {/* Right: Notifications */}
         <div className="flex items-center gap-3">
           <div className="relative">
             <button
@@ -821,6 +815,10 @@ const TenantDashboard = () => {
   const renderPayments = () => (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
+          <p className="text-sm text-gray-500">Track all your rent payments</p>
+        </div>
         <button
           onClick={() => setShowPaymentModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
@@ -879,6 +877,10 @@ const TenantDashboard = () => {
   const renderMaintenance = () => (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Maintenance Requests</h3>
+          <p className="text-sm text-gray-500">Track and manage your maintenance issues</p>
+        </div>
         <button
           onClick={() => setShowMaintenanceModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
@@ -891,9 +893,9 @@ const TenantDashboard = () => {
       <div className="grid grid-cols-1 gap-4">
         {maintenanceRequests.map(request => (
           <div key={request.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <div className="flex items-center gap-3 mb-2">
                   <h4 className="text-lg font-semibold text-gray-900">{request.issue}</h4>
                   <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
                     request.priority === 'High' 
@@ -920,7 +922,7 @@ const TenantDashboard = () => {
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                <span>Reported on {request.date}</span>
+                <span>{request.date}</span>
               </div>
             </div>
           </div>
@@ -932,7 +934,12 @@ const TenantDashboard = () => {
   // Documents View
   const renderDocuments = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">My Documents</h3>
+        <p className="text-sm text-gray-500">Access your lease agreements and receipts</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {documents.map(doc => (
           <div key={doc.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
             <div className="flex items-start justify-between mb-4">
@@ -958,6 +965,10 @@ const TenantDashboard = () => {
   const renderMessages = () => (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Messages</h3>
+          <p className="text-sm text-gray-500">Communicate with your property manager</p>
+        </div>
         <button
           onClick={() => setShowMessageModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
@@ -972,20 +983,20 @@ const TenantDashboard = () => {
           <div
             key={message.id}
             className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition ${
-              !message.read ? 'bg-blue-50 border-blue-200' : ''
+              !message.read ? 'bg-blue-50' : ''
             }`}
           >
-            <div className="flex items-start justify-between mb-2 gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-1 flex-wrap">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
                   <h4 className="font-semibold text-gray-900">{message.subject}</h4>
                   {!message.read && (
-                    <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                   )}
                 </div>
                 <p className="text-sm text-gray-600">From: {message.from}</p>
               </div>
-              <span className="text-sm text-gray-500 whitespace-nowrap">{message.date}</span>
+              <span className="text-sm text-gray-500">{message.date}</span>
             </div>
             <p className="text-gray-700">{message.preview}</p>
           </div>
@@ -997,6 +1008,11 @@ const TenantDashboard = () => {
   // Listings View
   const renderListings = () => (
     <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">Available Properties</h3>
+        <p className="text-sm text-gray-500">Find your perfect home</p>
+      </div>
+
       {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1029,12 +1045,12 @@ const TenantDashboard = () => {
             <div className="p-6">
               <h4 className="text-lg font-bold text-gray-900 mb-2">{listing.name}</h4>
               <div className="flex items-center gap-2 text-gray-600 mb-4">
-                <MapPin className="w-4 h-4 flex-shrink-0" />
+                <MapPin className="w-4 h-4" />
                 <span className="text-sm">{listing.location}</span>
               </div>
 
               {/* Features */}
-              <div className="flex items-center gap-4 mb-4 text-sm text-gray-600 flex-wrap">
+              <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <Bed className="w-4 h-4" />
                   <span>{listing.bedrooms} Beds</span>
@@ -1103,37 +1119,29 @@ const TenantDashboard = () => {
 
   // Settings View
   const renderSettings = () => (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       {/* Profile Settings */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-[#003366] text-white rounded-full flex items-center justify-center text-2xl font-bold">
-              {profileSettings.name.split(' ').map(n => n[0]).join('')}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{profileSettings.name}</h3>
-              <p className="text-sm text-gray-500">{profileSettings.email}</p>
-            </div>
-          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Profile Information</h3>
           {!editingProfile ? (
             <button
               onClick={() => setEditingProfile(true)}
-              className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
+              className="text-sm text-[#003366] hover:underline"
             >
-              Edit Profile
+              Edit
             </button>
           ) : (
             <div className="flex gap-2">
               <button
                 onClick={() => setEditingProfile(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded"
               >
                 Cancel
               </button>
               <button
                 onClick={handleProfileUpdate}
-                className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
+                className="px-3 py-1 text-sm bg-[#003366] text-white rounded hover:bg-[#002244]"
               >
                 Save
               </button>
@@ -1149,7 +1157,7 @@ const TenantDashboard = () => {
               value={profileSettings.name}
               onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
               disabled={!editingProfile}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
             />
           </div>
 
@@ -1160,7 +1168,7 @@ const TenantDashboard = () => {
               value={profileSettings.email}
               onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
               disabled={!editingProfile}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
             />
           </div>
 
@@ -1171,7 +1179,7 @@ const TenantDashboard = () => {
               value={profileSettings.phone}
               onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})}
               disabled={!editingProfile}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
             />
           </div>
 
@@ -1182,7 +1190,7 @@ const TenantDashboard = () => {
               value={profileSettings.idNumber}
               onChange={(e) => setProfileSettings({...profileSettings, idNumber: e.target.value})}
               disabled={!editingProfile}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
             />
           </div>
 
@@ -1193,7 +1201,7 @@ const TenantDashboard = () => {
               value={profileSettings.emergencyContact}
               onChange={(e) => setProfileSettings({...profileSettings, emergencyContact: e.target.value})}
               disabled={!editingProfile}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50"
             />
           </div>
         </div>
@@ -1202,37 +1210,20 @@ const TenantDashboard = () => {
       {/* Security Settings */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Security</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <p className="font-medium text-gray-900">Password</p>
-              <p className="text-sm text-gray-500">Last changed 3 months ago</p>
-            </div>
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
-            >
-              Change Password
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <p className="font-medium text-gray-900">Two-Factor Authentication</p>
-              <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-            </div>
-            <button className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
-              Enable
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={() => setShowPasswordModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+        >
+          <Settings className="w-4 h-4" />
+          <span>Change Password</span>
+        </button>
       </div>
 
-      {/* Notification Preferences */}
+      {/* Notification Settings */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification Preferences</h3>
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-900">Email Notifications</p>
               <p className="text-sm text-gray-500">Receive updates via email</p>
@@ -1251,10 +1242,10 @@ const TenantDashboard = () => {
             </label>
           </div>
 
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-900">SMS Notifications</p>
-              <p className="text-sm text-gray-500">Receive updates via text message</p>
+              <p className="text-sm text-gray-500">Receive updates via SMS</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -1270,35 +1261,10 @@ const TenantDashboard = () => {
             </label>
           </div>
 
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
-            <div>
-              <p className="font-medium text-gray-900">Push Notifications</p>
-              <p className="text-sm text-gray-500">Receive browser push notifications</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={profileSettings.notifications.push}
-                onChange={(e) => setProfileSettings({
-                  ...profileSettings,
-                  notifications: { ...profileSettings.notifications, push: e.target.checked }
-                })}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* Alert Types */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Alert Types</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-900">Rent Reminders</p>
-              <p className="text-sm text-gray-500">Get notified about upcoming rent payments</p>
+              <p className="text-sm text-gray-500">Get notified before rent is due</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -1314,10 +1280,10 @@ const TenantDashboard = () => {
             </label>
           </div>
 
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-900">Maintenance Updates</p>
-              <p className="text-sm text-gray-500">Updates on your maintenance requests</p>
+              <p className="text-sm text-gray-500">Get updates on your requests</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -1331,51 +1297,6 @@ const TenantDashboard = () => {
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
             </label>
-          </div>
-
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium text-gray-900">Message Alerts</p>
-              <p className="text-sm text-gray-500">Get notified of new messages from landlord</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={profileSettings.notifications.messageAlerts}
-                onChange={(e) => setProfileSettings({
-                  ...profileSettings,
-                  notifications: { ...profileSettings.notifications, messageAlerts: e.target.checked }
-                })}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* Danger Zone */}
-      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-        <h3 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-100">
-            <div>
-              <p className="font-medium text-gray-900">Deactivate Account</p>
-              <p className="text-sm text-gray-500">Temporarily disable your account</p>
-            </div>
-            <button className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition">
-              Deactivate
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-100">
-            <div>
-              <p className="font-medium text-gray-900">Delete Account</p>
-              <p className="text-sm text-gray-500">Permanently delete your account and all data</p>
-            </div>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-              Delete Account
-            </button>
           </div>
         </div>
       </div>
@@ -2157,18 +2078,16 @@ const TenantDashboard = () => {
         {/* Header */}
         {renderHeader()}
 
-        {/* Content Area - FULL WIDTH FIX */}
+        {/* Content Area */}
         <div className="flex-1 overflow-y-auto">
-          <div className="w-full h-full p-4 lg:p-8">
-            <div className="max-w-[1600px] mx-auto h-full">
-              {currentView === 'dashboard' && renderDashboard()}
-              {currentView === 'payments' && renderPayments()}
-              {currentView === 'maintenance' && renderMaintenance()}
-              {currentView === 'documents' && renderDocuments()}
-              {currentView === 'messages' && renderMessages()}
-              {currentView === 'listings' && renderListings()}
-              {currentView === 'settings' && renderSettings()}
-            </div>
+          <div className="max-w-7xl mx-auto p-4 lg:p-6">
+            {currentView === 'dashboard' && renderDashboard()}
+            {currentView === 'payments' && renderPayments()}
+            {currentView === 'maintenance' && renderMaintenance()}
+            {currentView === 'documents' && renderDocuments()}
+            {currentView === 'messages' && renderMessages()}
+            {currentView === 'listings' && renderListings()}
+            {currentView === 'settings' && renderSettings()}
           </div>
         </div>
       </div>
