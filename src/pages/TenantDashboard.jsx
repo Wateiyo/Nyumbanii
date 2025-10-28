@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { 
@@ -38,6 +39,7 @@ const functions = getFunctions();
 const db = getFirestore();
 
 const TenantDashboard = () => {
+  const navigate = useNavigate();
   // ============ STATE MANAGEMENT ============
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -474,7 +476,14 @@ const TenantDashboard = () => {
           ].map((item) => (
             <button
               key={item.view}
-              onClick={() => { setCurrentView(item.view); setSidebarOpen(false); }}
+              onClick={() => { 
+                if (item.view === 'listings') {
+                  navigate('/listings');
+                } else {
+                  setCurrentView(item.view);
+                }
+                setSidebarOpen(false); 
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                 currentView === item.view ? 'bg-white/20' : 'hover:bg-white/10'
               }`}
@@ -1995,4 +2004,3 @@ const TenantDashboard = () => {
 };
 
 export default TenantDashboard;
-
