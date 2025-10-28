@@ -451,13 +451,15 @@ const TenantDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <h1 className="text-xl font-bold">Nyumbanii</h1>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
-            <X className="w-6 h-6" />
-          </button>
+       {/* Sidebar */}
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
+        <div className="p-6">
+          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
+            </div>
+            {sidebarOpen && <span className="text-xl font-bold">Nyumbanii</span>}
+          </a>
         </div>
         
         <nav className="p-4 space-y-2">
@@ -556,7 +558,7 @@ const TenantDashboard = () => {
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-[#003366] to-[#004080] text-white p-6 lg:p-8 rounded-xl shadow-lg">
+              <div className="bg-blue text-white p-6 lg:p-8 rounded-xl shadow-lg">
                 <h3 className="text-lg lg:text-xl font-semibold mb-2">Welcome back, {profileSettings.name}!</h3>
                 <p className="text-sm lg:text-base opacity-90">Here's an overview of your tenancy</p>
               </div>
