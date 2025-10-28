@@ -556,7 +556,7 @@ const TenantDashboard = () => {
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <div className="space-y-6">
-              <div className="bg-blue text-white p-6 lg:p-8 rounded-xl shadow-lg">
+              <div className="bg-gradient-to-r from-[#003366] to-[#004080] text-white p-6 lg:p-8 rounded-xl shadow-lg">
                 <h3 className="text-lg lg:text-xl font-semibold mb-2">Welcome back, {profileSettings.name}!</h3>
                 <p className="text-sm lg:text-base opacity-90">Here's an overview of your tenancy</p>
               </div>
@@ -932,360 +932,74 @@ const TenantDashboard = () => {
 
           {/* Settings View */}
           {currentView === 'settings' && (
-  <div className="min-h-screen bg-gray-50 -m-4 lg:-m-6">
-    {/* Header Section */}
-    <div className="bg-white border-b border-gray-200 mb-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
-            <p className="text-gray-600 mt-1">Welcome back, {profileSettings.name}!</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* Main Content */}
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-      <div className="space-y-6">
-        {/* Profile Settings Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-xl font-bold text-gray-900">Profile Settings</h2>
-            <button
-              onClick={() => setEditingProfile(!editingProfile)}
-              className="px-4 py-2 sm:px-6 sm:py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium text-sm sm:text-base"
-            >
-              {editingProfile ? 'Save Profile' : 'Edit Profile'}
-            </button>
-          </div>
-
-          <div className="p-4 sm:p-6">
-            {/* Profile Photo */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6">
-              <div className="relative">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#003366] rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
-                  {profileSettings.name?.charAt(0)?.toUpperCase() || 'S'}
-                </div>
-                {editingProfile && (
-                  <button className="absolute bottom-0 right-0 w-6 h-6 sm:w-7 sm:h-7 bg-[#003366] rounded-full flex items-center justify-center text-white hover:bg-[#002244] transition">
-                    <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">{profileSettings.name}</h3>
-                <p className="text-sm sm:text-base text-gray-600">{profileSettings.email}</p>
-                {editingProfile && (
-                  <button className="text-[#003366] text-sm mt-1 hover:underline font-medium flex items-center gap-1">
-                    <Camera className="w-4 h-4" />
-                    Change Photo
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Profile Form */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={profileSettings.name}
-                  onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                />
-              </div>
+            <div className="space-y-6">
+              <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Account Settings</h3>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={profileSettings.email}
-                  onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                <input
-                  type="tel"
-                  value={profileSettings.phone}
-                  onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
-                <input
-                  type="text"
-                  value={profileSettings.idNumber}
-                  onChange={(e) => setProfileSettings({...profileSettings, idNumber: e.target.value})}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
-                <input
-                  type="tel"
-                  value={profileSettings.emergencyContact}
-                  onChange={(e) => setProfileSettings({...profileSettings, emergencyContact: e.target.value})}
-                  disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Security Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Security</h2>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-4">
-            {/* Password */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Password</h3>
-                <p className="text-sm text-gray-500 mt-1">Last changed 3 months ago</p>
-              </div>
-              <button
-                onClick={() => setShowPasswordModal(true)}
-                className="px-4 py-2 sm:px-6 sm:py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium whitespace-nowrap text-sm sm:text-base"
-              >
-                Change Password
-              </button>
-            </div>
-
-            {/* Two-Factor Authentication */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500 mt-1">Add an extra layer of security to your account</p>
-              </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium text-sm sm:text-base">
-                Enable
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Notification Preferences Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Notification Preferences</h2>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Email Notifications</h3>
-                <p className="text-sm text-gray-500 mt-1">Receive updates via email</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={profileSettings.notifications.email}
-                  onChange={(e) => setProfileSettings({
-                    ...profileSettings,
-                    notifications: {...profileSettings.notifications, email: e.target.checked}
-                  })}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">SMS Notifications</h3>
-                <p className="text-sm text-gray-500 mt-1">Receive updates via text message</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={profileSettings.notifications.sms}
-                  onChange={(e) => setProfileSettings({
-                    ...profileSettings,
-                    notifications: {...profileSettings.notifications, sms: e.target.checked}
-                  })}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Push Notifications</h3>
-                <p className="text-sm text-gray-500 mt-1">Receive browser push notifications</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={profileSettings.notifications.push}
-                  onChange={(e) => setProfileSettings({
-                    ...profileSettings,
-                    notifications: {...profileSettings.notifications, push: e.target.checked}
-                  })}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Alert Types Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Alert Types</h2>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Rent Reminders</h3>
-                <p className="text-sm text-gray-500 mt-1">Get notified about upcoming rent payments</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={profileSettings.notifications.rentReminders}
-                  onChange={(e) => setProfileSettings({
-                    ...profileSettings,
-                    notifications: {...profileSettings.notifications, rentReminders: e.target.checked}
-                  })}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Maintenance Updates</h3>
-                <p className="text-sm text-gray-500 mt-1">Updates on your maintenance requests</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={profileSettings.notifications.maintenanceUpdates}
-                  onChange={(e) => setProfileSettings({
-                    ...profileSettings,
-                    notifications: {...profileSettings.notifications, maintenanceUpdates: e.target.checked}
-                  })}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Message Alerts</h3>
-                <p className="text-sm text-gray-500 mt-1">Get notified of new messages from landlord</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={profileSettings.notifications.messageAlerts}
-                  onChange={(e) => setProfileSettings({
-                    ...profileSettings,
-                    notifications: {...profileSettings.notifications, messageAlerts: e.target.checked}
-                  })}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Lease Information Card (Tenant-specific) */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Lease Information</h2>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Property</p>
-                <p className="font-semibold text-gray-900">Sunset Apartments - Unit 3B</p>
-              </div>
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Monthly Rent</p>
-                <p className="font-semibold text-gray-900">KES 35,000</p>
-              </div>
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Lease Start</p>
-                <p className="font-semibold text-gray-900">January 1, 2024</p>
-              </div>
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Lease End</p>
-                <p className="font-semibold text-gray-900">December 31, 2024</p>
-              </div>
-            </div>
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="flex items-start gap-3">
-                <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Lease Agreement</h4>
-                  <p className="text-sm text-gray-600 mb-3">View or download your lease agreement</p>
-                  <button className="text-sm text-[#003366] hover:underline font-medium flex items-center gap-1">
-                    <Download className="w-4 h-4" />
-                    Download Lease Agreement
+              <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
+                <h4 className="font-semibold text-base lg:text-lg text-gray-900 mb-4">Personal Information</h4>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={profileSettings.name}
+                        onChange={(e) => setProfileSettings({...profileSettings, name: e.target.value})}
+                        disabled={!editingProfile}
+                        className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-100 text-sm lg:text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={profileSettings.email}
+                        onChange={(e) => setProfileSettings({...profileSettings, email: e.target.value})}
+                        disabled={!editingProfile}
+                        className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-100 text-sm lg:text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <input
+                        type="tel"
+                        value={profileSettings.phone}
+                        onChange={(e) => setProfileSettings({...profileSettings, phone: e.target.value})}
+                        disabled={!editingProfile}
+                        className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-100 text-sm lg:text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
+                      <input
+                        type="text"
+                        value={profileSettings.idNumber}
+                        onChange={(e) => setProfileSettings({...profileSettings, idNumber: e.target.value})}
+                        disabled={!editingProfile}
+                        className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-100 text-sm lg:text-base"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEditingProfile(!editingProfile)}
+                    className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+                  >
+                    {editingProfile ? 'Save Changes' : 'Edit Profile'}
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Danger Zone Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-red-200">
-          <div className="p-4 sm:p-6 border-b border-red-200">
-            <h2 className="text-xl font-bold text-red-600">Danger Zone</h2>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-4">
-            {/* Deactivate Account */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Deactivate Account</h3>
-                <p className="text-sm text-gray-500 mt-1">Temporarily disable your account</p>
+              <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
+                <h4 className="font-semibold text-base lg:text-lg text-gray-900 mb-4">Security</h4>
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm lg:text-base"
+                >
+                  Change Password
+                </button>
               </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition font-medium whitespace-nowrap text-sm sm:text-base">
-                Deactivate
-              </button>
             </div>
-
-            {/* Delete Account */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Delete Account</h3>
-                <p className="text-sm text-gray-500 mt-1">Permanently delete your account and all data</p>
-              </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium text-sm sm:text-base">
-                Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+          )}
         </main>
       </div>
 
