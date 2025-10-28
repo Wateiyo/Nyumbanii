@@ -792,11 +792,11 @@ const TenantDashboard = () => {
           )}
 
           {/* Messages View */}
-          {currentView === 'messages' && (
+  {currentView === 'messages' && (
   <div className="-m-4 lg:-m-8 min-h-screen bg-gray-50">
-    {/* Header Section */}
-    <div className="bg-white border-b border-gray-200 mb-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    {/* Header Section - Full Width */}
+    <div className="bg-white border-b border-gray-200">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">Messages</h3>
@@ -813,8 +813,8 @@ const TenantDashboard = () => {
       </div>
     </div>
 
-    {/* Content */}
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+    {/* Content - Full Width */}
+    <div className="px-4 sm:px-6 lg:px-8 py-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-200">
         {messages.map((message) => (
           <div key={message.id} className="p-4 lg:p-6 hover:bg-gray-50 cursor-pointer">
