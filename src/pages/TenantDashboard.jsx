@@ -709,50 +709,56 @@ const TenantDashboard = () => {
 
       {/* Maintenance View */}
       {currentView === 'maintenance' && (
-    <div className="-m-4 lg:-m-8 min-h-screen bg-gray-50">
-    {/* Header Section */}
-    <div className="bg-white border-b border-gray-200 mb-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">Maintenance Requests</h3>
-            <p className="text-sm text-gray-500 mt-1">Report and track maintenance issues</p>
-          </div>
-          <button
-            onClick={() => setShowMaintenanceModal(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
-          >
-            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
-            New Request
-          </button>
-        </div>
+  <div className="space-y-6">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Maintenance Requests</h3>
+        <p className="text-sm text-gray-500 mt-1">Report and track maintenance issues</p>
       </div>
+      <button
+        onClick={() => setShowMaintenanceModal(true)}
+        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+      >
+        <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+        New Request
+      </button>
     </div>
 
-     {/* Content */}
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-200">
-        {messages.map((message) => (
-          <div key={message.id} className="p-4 lg:p-6 hover:bg-gray-50 cursor-pointer">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold text-sm lg:text-base text-gray-900 truncate">{message.subject}</h4>
-                  {!message.read && (
-                    <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
-                  )}
-                </div>
-                <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
-                <p className="text-xs lg:text-sm text-gray-500 truncate">{message.preview}</p>
+    <div className="grid gap-4">
+      {maintenanceRequests.map((request) => (
+        <div key={request.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <h4 className="font-semibold text-base lg:text-lg text-gray-900">{request.issue}</h4>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  request.priority === 'High' ? 'bg-red-100 text-red-800' :
+                  request.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-green-100 text-green-800'
+                }`}>
+                  {request.priority}
+                </span>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  request.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                  request.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {request.status}
+                </span>
               </div>
-              <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
+              <p className="text-sm text-gray-600 mb-2">{request.description}</p>
+              <p className="text-xs lg:text-sm text-gray-500">Reported on {request.date}</p>
             </div>
+            <button className="self-end lg:self-center text-[#003366] hover:text-[#002244] text-xs lg:text-sm font-medium whitespace-nowrap">
+              View Details
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   </div>
 )}
+
 
 
           {/* Documents View */}
@@ -793,45 +799,39 @@ const TenantDashboard = () => {
 
           {/* Messages View */}
         {currentView === 'messages' && (
-  <div className="-m-4 lg:-m-8 min-h-screen bg-white">
-    {/* Header with button */}
-    <div className="border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">Messages</h3>
-          <p className="text-sm text-gray-500 mt-1">Communicate with your property manager</p>
-        </div>
-        <button
-          onClick={() => setShowMessageModal(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
-        >
-          <Send className="w-4 h-4 lg:w-5 lg:h-5" />
-          New Message
-        </button>
+  <div className="space-y-6">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h3>
+        <p className="text-sm text-gray-500 mt-1">Communicate with your property manager</p>
       </div>
+      <button
+        onClick={() => setShowMessageModal(true)}
+        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+      >
+        <Send className="w-4 h-4 lg:w-5 lg:h-5" />
+        New Message
+      </button>
     </div>
 
-    {/* Messages list */}
-    <div className="px-4 sm:px-6 lg:px-8 py-6">
-      <div className="divide-y divide-gray-200 border border-gray-200 rounded-xl">
-        {messages.map((message) => (
-          <div key={message.id} className="p-4 lg:p-6 hover:bg-gray-50 cursor-pointer">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold text-sm lg:text-base text-gray-900 truncate">{message.subject}</h4>
-                  {!message.read && (
-                    <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
-                  )}
-                </div>
-                <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
-                <p className="text-xs lg:text-sm text-gray-500 truncate">{message.preview}</p>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-200">
+      {messages.map((message) => (
+        <div key={message.id} className="p-4 lg:p-6 hover:bg-gray-50 cursor-pointer">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="font-semibold text-sm lg:text-base text-gray-900 truncate">{message.subject}</h4>
+                {!message.read && (
+                  <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                )}
               </div>
-              <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
+              <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
+              <p className="text-xs lg:text-sm text-gray-500 truncate">{message.preview}</p>
             </div>
+            <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   </div>
 )}
