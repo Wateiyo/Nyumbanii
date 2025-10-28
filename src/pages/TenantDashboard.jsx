@@ -802,7 +802,7 @@ const TenantDashboard = () => {
     {/* Messages View */}
     {currentView === 'messages' && (
       <div className="flex-1 overflow-auto">
-    <div className="flex flex-col justify-between items-start sm:items-center gap-4">
+      <div className="max-w-7xl mx-auto">
       <div>
         <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h3>
         <p className="text-sm text-gray-500 mt-1">Communicate with your property manager</p>
