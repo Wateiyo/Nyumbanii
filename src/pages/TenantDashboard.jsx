@@ -494,7 +494,7 @@ const TenantDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 w-full overflow-hidden">
+      <div className="flex-1 lg:ml-64">
         {/* Top Navigation */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
           <div className="flex items-center justify-between px-4 lg:px-8 py-4">
