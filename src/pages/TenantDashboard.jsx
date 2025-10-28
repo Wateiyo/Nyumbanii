@@ -801,7 +801,7 @@ const TenantDashboard = () => {
 
     {/* Messages View */}
     {currentView === 'messages' && (
-      <div className="space-y-6">
+      <div className="flex-1 overflow-auto">
     <div className="flex flex-col justify-between items-start sm:items-center gap-4">
       <div>
         <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h3>
