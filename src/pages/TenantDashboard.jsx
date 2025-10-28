@@ -494,7 +494,7 @@ const TenantDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64">
+      <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 w-full overflow-hidden">
         {/* Top Navigation */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
           <div className="flex items-center justify-between px-4 lg:px-8 py-4">
@@ -712,7 +712,7 @@ const TenantDashboard = () => {
       {/* Maintenance View */}
       {currentView === 'maintenance' && (
       <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Maintenance Requests</h3>
         <p className="text-sm text-gray-500 mt-1">Report and track maintenance issues</p>
@@ -801,8 +801,8 @@ const TenantDashboard = () => {
 
     {/* Messages View */}
     {currentView === 'messages' && (
-    <>
-    <div className="flex flex-col justify-between items-start sm:items-center gap-4">
+      <div className="space-y-6">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h3>
         <p className="text-sm text-gray-500 mt-1">Communicate with your property manager</p>
@@ -836,7 +836,7 @@ const TenantDashboard = () => {
         </div>
       ))}
     </div>
-  </>
+  </div>
 )}
 
           {/* Available Listings View */}
