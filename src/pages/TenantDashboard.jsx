@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { 
   Home, 
   DollarSign, 
@@ -51,6 +52,7 @@ const TenantDashboard = () => {
   const [selectedListing, setSelectedListing] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const navigate = useNavigate();
   
   // Loading states for Firebase operations
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
@@ -842,6 +844,20 @@ const TenantDashboard = () => {
           {/* Available Listings View */}
           {currentView === 'listings' && (
             <div className="space-y-6">
+              {/* Button to Full Listings Page */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+            <div>
+            <h3 className="font-semibold text-gray-900 mb-1">Looking for More Properties?</h3>
+              <p className="text-sm text-gray-600">Browse our complete catalog with advanced filters</p>
+            </div>
+            <button
+           onClick={() => navigate('/listings')}
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+             >
+            <Search className="w-5 h-5" />
+            View All Listings
+            </button>
+            </div>
               <div>
                 <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Available Properties</h3>
                 <div className="relative">
