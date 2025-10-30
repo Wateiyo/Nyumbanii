@@ -36,12 +36,13 @@ const Register = () => {
   // Validate invitation token on component mount
   useEffect(() => {
     const inviteToken = searchParams.get('invite');
+    const inviteType = searchParams.get('type');
     if (inviteToken) {
-      validateInvitation(inviteToken);
+      validateInvitation(inviteToken, inviteType);
     }
   }, [searchParams]);
 
-  const validateInvitation = async (token) => {
+  const validateInvitation = async (token, type = null) => {
     setValidatingInvite(true);
     try {
       const invitationsQuery = query(
@@ -66,12 +67,26 @@ const Register = () => {
 
         // Set invitation data and pre-fill form
         setInvitationData({ id: inviteDoc.id, ...inviteData });
-        setSelectedRole('tenant');
-        setFormData(prev => ({
-          ...prev,
-          fullName: inviteData.tenantName || '',
-          email: inviteData.email || ''
-        }));
+
+        // Determine role based on invitation type
+        if (inviteData.type === 'team_member') {
+          // Team member invitation (property_manager or maintenance)
+          setSelectedRole(inviteData.role || type || 'property_manager');
+          setFormData(prev => ({
+            ...prev,
+            fullName: inviteData.memberName || '',
+            email: inviteData.email || ''
+          }));
+        } else {
+          // Tenant invitation
+          setSelectedRole('tenant');
+          setFormData(prev => ({
+            ...prev,
+            fullName: inviteData.tenantName || '',
+            email: inviteData.email || ''
+          }));
+        }
+
         setError('');
         return true;
       } else {
@@ -158,24 +173,43 @@ const Register = () => {
         selectedRole
       );
 
-      // If this is a tenant registration with an invitation, update the tenant and invitation records
-      if (selectedRole === 'tenant' && invitationData) {
+      // If this is a registration with an invitation, update the records
+      if (invitationData) {
         try {
-          // Find and update the tenant record with the new user UID
-          const tenantsQuery = query(
-            collection(db, 'tenants'),
-            where('email', '==', formData.email.toLowerCase()),
-            where('landlordId', '==', invitationData.landlordId)
-          );
+          if (selectedRole === 'tenant') {
+            // Find and update the tenant record with the new user UID
+            const tenantsQuery = query(
+              collection(db, 'tenants'),
+              where('email', '==', formData.email.toLowerCase()),
+              where('landlordId', '==', invitationData.landlordId)
+            );
 
-          const tenantSnapshot = await getDocs(tenantsQuery);
-          if (!tenantSnapshot.empty) {
-            const tenantDocRef = doc(db, 'tenants', tenantSnapshot.docs[0].id);
-            await updateDoc(tenantDocRef, {
-              userId: result.user.uid,
-              status: 'active',
-              registeredAt: new Date()
-            });
+            const tenantSnapshot = await getDocs(tenantsQuery);
+            if (!tenantSnapshot.empty) {
+              const tenantDocRef = doc(db, 'tenants', tenantSnapshot.docs[0].id);
+              await updateDoc(tenantDocRef, {
+                userId: result.user.uid,
+                status: 'active',
+                registeredAt: new Date()
+              });
+            }
+          } else if (selectedRole === 'property_manager' || selectedRole === 'maintenance') {
+            // Find and update the team member record with the new user UID
+            const teamQuery = query(
+              collection(db, 'teamMembers'),
+              where('email', '==', formData.email.toLowerCase()),
+              where('landlordId', '==', invitationData.landlordId)
+            );
+
+            const teamSnapshot = await getDocs(teamQuery);
+            if (!teamSnapshot.empty) {
+              const teamDocRef = doc(db, 'teamMembers', teamSnapshot.docs[0].id);
+              await updateDoc(teamDocRef, {
+                userId: result.user.uid,
+                status: 'active',
+                registeredAt: new Date()
+              });
+            }
           }
 
           // Mark invitation as accepted
@@ -185,7 +219,7 @@ const Register = () => {
             acceptedAt: new Date()
           });
         } catch (updateErr) {
-          console.error('Error updating tenant/invitation records:', updateErr);
+          console.error('Error updating records:', updateErr);
           // Continue anyway - user is registered
         }
       }
@@ -195,6 +229,10 @@ const Register = () => {
         navigate('/landlord/dashboard');
       } else if (selectedRole === 'tenant') {
         navigate('/tenant/dashboard');
+      } else if (selectedRole === 'property_manager') {
+        navigate('/property-manager/dashboard');
+      } else if (selectedRole === 'maintenance') {
+        navigate('/maintenance/dashboard');
       }
     } catch (err) {
       let errorMessage = 'An error occurred during registration. Please try again.';
@@ -282,7 +320,11 @@ const Register = () => {
                     <div>
                       <p className="text-white text-sm font-semibold mb-1">Invitation Verified!</p>
                       <p className="text-blue-100 text-xs">
-                        You've been invited by {invitationData.landlordName} to join as a tenant for {invitationData.property}, Unit {invitationData.unit}.
+                        {invitationData.type === 'team_member' ? (
+                          <>You've been invited by {invitationData.landlordName} to join as a {invitationData.role === 'property_manager' ? 'Property Manager' : 'Maintenance Staff'}.</>
+                        ) : (
+                          <>You've been invited by {invitationData.landlordName} to join as a tenant for {invitationData.property}, Unit {invitationData.unit}.</>
+                        )}
                       </p>
                     </div>
                   </div>

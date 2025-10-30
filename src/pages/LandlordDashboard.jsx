@@ -457,20 +457,63 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
   // Image upload handler
   const handleImageUpload = async (files, type = 'property') => {
     if (!files || files.length === 0) return [];
-    
+
+    // Check if storage is properly configured
+    if (!storage) {
+      console.error('Firebase storage is not initialized');
+      alert('Storage configuration error. Please check Firebase setup.');
+      return [];
+    }
+
+    // Check if user is authenticated
+    if (!currentUser || !currentUser.uid) {
+      console.error('User not authenticated');
+      alert('Please log in to upload images.');
+      return [];
+    }
+
     setUploadingImages(true);
     const imageUrls = [];
 
     try {
       for (const file of Array.from(files)) {
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`File ${file.name} is too large. Maximum size is 5MB.`);
+          continue;
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          alert(`File ${file.name} is not an image.`);
+          continue;
+        }
+
+        console.log(`Uploading ${file.name} to ${type}Images/${currentUser.uid}/`);
         const storageRef = ref(storage, `${type}Images/${currentUser.uid}/${Date.now()}_${file.name}`);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
         imageUrls.push(url);
+        console.log(`Successfully uploaded ${file.name}`);
+      }
+
+      if (imageUrls.length > 0) {
+        alert(`Successfully uploaded ${imageUrls.length} image(s)!`);
       }
     } catch (error) {
       console.error('Error uploading images:', error);
-      alert('Error uploading images. Please try again.');
+      console.error('Error details:', error.code, error.message);
+
+      // Provide more specific error messages
+      if (error.code === 'storage/unauthorized') {
+        alert('Permission denied. Please check Firebase Storage rules.');
+      } else if (error.code === 'storage/canceled') {
+        alert('Upload was canceled.');
+      } else if (error.code === 'storage/unknown') {
+        alert('An unknown error occurred. Please check your internet connection and Firebase configuration.');
+      } else {
+        alert(`Error uploading images: ${error.message}. Please try again.`);
+      }
     } finally {
       setUploadingImages(false);
     }
@@ -560,8 +603,15 @@ const handleEditProperty = async () => {
 
   const handleAddTenant = async () => {
   try {
-    if (!newTenant.name || !newTenant.email || !newTenant.property || !newTenant.unit) {
-      alert('Please fill in all required fields');
+    // Validate required fields and provide specific error messages
+    const missingFields = [];
+    if (!newTenant.name) missingFields.push('Full Name');
+    if (!newTenant.email) missingFields.push('Email');
+    if (!newTenant.property) missingFields.push('Property');
+    if (!newTenant.unit) missingFields.push('Unit Number');
+
+    if (missingFields.length > 0) {
+      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
       return;
     }
 
@@ -604,8 +654,8 @@ const handleEditProperty = async () => {
 
       await addDoc(collection(db, 'invitations'), invitationData);
 
-      // Generate invitation link
-      const invitationLink = `${window.location.origin}/register?invite=${invitationToken}`;
+      // Generate invitation link using the correct domain
+      const invitationLink = `https://nyumbanii.web.app/register?invite=${invitationToken}`;
 
       // Copy to clipboard
       try {
@@ -688,30 +738,38 @@ const handleEditProperty = async () => {
 
   // ADD MAINTENANCE REQUEST
   const handleAddMaintenance = async () => {
-    if (newMaintenance.property && newMaintenance.unit && newMaintenance.issue && newMaintenance.tenant) {
-      try {
-        await addDoc(collection(db, 'maintenanceRequests'), {
-          property: newMaintenance.property,
-          unit: newMaintenance.unit,
-          issue: newMaintenance.issue,
-          priority: newMaintenance.priority,
-          tenant: newMaintenance.tenant,
-          status: 'pending',
-          date: new Date().toISOString().split('T')[0],
-          scheduledTime: '09:00',
-          landlordId: currentUser.uid,
-          createdAt: serverTimestamp()
-        });
-        
-        setNewMaintenance({ property: '', unit: '', issue: '', priority: 'medium', tenant: '' });
-        setShowMaintenanceModal(false);
-        alert('Maintenance request added successfully!');
-      } catch (error) {
-        console.error('Error adding maintenance request:', error);
-        alert('Error adding maintenance request. Please try again.');
-      }
-    } else {
-      alert('Please fill in all required fields');
+    // Validate required fields and provide specific error messages
+    const missingFields = [];
+    if (!newMaintenance.property) missingFields.push('Property');
+    if (!newMaintenance.unit) missingFields.push('Unit');
+    if (!newMaintenance.tenant) missingFields.push('Tenant');
+    if (!newMaintenance.issue) missingFields.push('Issue Description');
+
+    if (missingFields.length > 0) {
+      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'maintenanceRequests'), {
+        property: newMaintenance.property,
+        unit: newMaintenance.unit,
+        issue: newMaintenance.issue,
+        priority: newMaintenance.priority,
+        tenant: newMaintenance.tenant,
+        status: 'pending',
+        date: new Date().toISOString().split('T')[0],
+        scheduledTime: '09:00',
+        landlordId: currentUser.uid,
+        createdAt: serverTimestamp()
+      });
+
+      setNewMaintenance({ property: '', unit: '', issue: '', priority: 'medium', tenant: '' });
+      setShowMaintenanceModal(false);
+      alert('Maintenance request added successfully!');
+    } catch (error) {
+      console.error('Error adding maintenance request:', error);
+      alert('Error adding maintenance request. Please try again.');
     }
   };
 
@@ -874,6 +932,9 @@ const handleAddTeamMember = async () => {
       return;
     }
 
+    // Generate a unique invitation token
+    const invitationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
     // Add team member to Firestore
     const teamData = {
       name: newTeamMember.name,
@@ -882,14 +943,40 @@ const handleAddTeamMember = async () => {
       role: newTeamMember.role,
       assignedProperties: newTeamMember.assignedProperties,
       landlordId: currentUser.uid,
+      landlordName: userProfile?.displayName || 'Your Landlord',
       status: 'pending',
+      invitationToken: invitationToken,
       createdAt: serverTimestamp()
     };
 
     await addDoc(collection(db, 'teamMembers'), teamData);
 
-    // The Cloud Function will automatically send the invitation email
-    alert('Team member added and invitation will be sent shortly!');
+    // Create an invitation record
+    const invitationData = {
+      token: invitationToken,
+      email: newTeamMember.email.toLowerCase(),
+      landlordId: currentUser.uid,
+      landlordName: userProfile?.displayName || 'Your Landlord',
+      memberName: newTeamMember.name,
+      role: newTeamMember.role,
+      type: 'team_member', // Distinguish from tenant invitations
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+    };
+
+    await addDoc(collection(db, 'invitations'), invitationData);
+
+    // Generate invitation link using the correct domain
+    const invitationLink = `https://nyumbanii.web.app/register?invite=${invitationToken}&type=${newTeamMember.role}`;
+
+    // Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(invitationLink);
+      alert(`Team member added successfully!\n\nInvitation link copied to clipboard:\n${invitationLink}\n\nShare this link with ${newTeamMember.name} to complete registration.`);
+    } catch (err) {
+      alert(`Team member added successfully!\n\nInvitation link:\n${invitationLink}\n\nPlease share this link with ${newTeamMember.name}.`);
+    }
 
     // Reset form
     setNewTeamMember({
@@ -1539,13 +1626,22 @@ const handleMessageTenant = (tenant) => {
         <h3 className="font-semibold text-gray-900 mb-1">Property Listings</h3>
         <p className="text-sm text-gray-600">Manage your available units for rent</p>
       </div>
-      <button
-        onClick={() => setShowListingModal(true)}
-        className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-      >
-        <Plus className="w-5 h-5" />
-        Create Listing
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => navigate('/listings')}
+          className="px-6 py-3 bg-white border-2 border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition font-semibold whitespace-nowrap flex items-center gap-2"
+        >
+          <Eye className="w-5 h-5" />
+          View Listings
+        </button>
+        <button
+          onClick={() => setShowListingModal(true)}
+          className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Create Listing
+        </button>
+      </div>
     </div>
     
     {listings.length === 0 ? (
@@ -2530,13 +2626,16 @@ const handleMessageTenant = (tenant) => {
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
       <div className="max-w-7xl mx-auto">
-        
-        {/* Section Header with Button */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
-          <h2 className="text-2xl font-bold text-gray-900">Updates & Memos</h2>
-          <button 
+
+        {/* Blue Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-1">Updates & Memos</h3>
+            <p className="text-sm text-gray-600">Send announcements and updates to your tenants</p>
+          </div>
+          <button
             onClick={() => setShowMemoModal(true)}
-            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
           >
             <Send className="w-5 h-5" />
             Send Memo
@@ -2836,13 +2935,16 @@ const handleMessageTenant = (tenant) => {
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
       <div className="max-w-7xl mx-auto">
-        
-        {/* Section Header with Button */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
-          <h2 className="text-2xl font-bold text-gray-900">Team Management</h2>
-          <button 
+
+        {/* Blue Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-1">Team Management</h3>
+            <p className="text-sm text-gray-600">Manage your property management team members</p>
+          </div>
+          <button
             onClick={() => setShowTeamModal(true)}
-            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
           >
             <Users className="w-5 h-5" />
             Add Team Member
