@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { 
   Home, 
@@ -37,6 +38,7 @@ import {
 // Initialize Firebase services
 const functions = getFunctions();
 const db = getFirestore();
+const storage = getStorage();
 
 const TenantDashboard = () => {
   // ============ STATE MANAGEMENT ============
@@ -48,6 +50,8 @@ const TenantDashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showDocumentUploadModal, setShowDocumentUploadModal] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedListing, setSelectedListing] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -156,6 +160,11 @@ const TenantDashboard = () => {
     to: 'Property Manager',
     subject: '',
     message: ''
+  });
+
+  const [newDocument, setNewDocument] = useState({
+    name: '',
+    file: null
   });
 
   const availableListings = [
@@ -432,6 +441,55 @@ const TenantDashboard = () => {
     setMessages([message, ...messages]);
     setShowMessageModal(false);
     setNewMessage({ to: 'Property Manager', subject: '', message: '' });
+  };
+
+  const handleUploadDocument = async () => {
+    if (!newDocument.file) {
+      alert('Please select a file to upload');
+      return;
+    }
+
+    setUploadingDocument(true);
+    try {
+      // Create a storage reference
+      const fileRef = ref(storage, `documents/${Date.now()}_${newDocument.file.name}`);
+
+      // Upload the file
+      await uploadBytes(fileRef, newDocument.file);
+
+      // Get the download URL
+      const downloadURL = await getDownloadURL(fileRef);
+
+      // Add document to the list
+      const document = {
+        id: documents.length + 1,
+        name: newDocument.name || newDocument.file.name,
+        type: newDocument.file.type.includes('pdf') ? 'PDF' : newDocument.file.type.toUpperCase(),
+        date: new Date().toISOString().split('T')[0],
+        size: `${(newDocument.file.size / 1024 / 1024).toFixed(2)} MB`,
+        url: downloadURL
+      };
+
+      setDocuments([document, ...documents]);
+      setShowDocumentUploadModal(false);
+      setNewDocument({ name: '', file: null });
+      alert('Document uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      alert('Failed to upload document. Please try again.');
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
+  const handleDownloadDocument = (doc) => {
+    if (doc.url) {
+      // If document has a URL (uploaded documents), download from Firebase Storage
+      window.open(doc.url, '_blank');
+    } else {
+      // For demo documents without URLs, show an alert
+      alert(`Download functionality for "${doc.name}" - In production, this would download from Firebase Storage.`);
+    }
   };
 
   const handleLogout = () => {
@@ -773,7 +831,10 @@ const TenantDashboard = () => {
                   <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Documents</h3>
                   <p className="text-sm text-gray-500 mt-1">Access your lease agreements and receipts</p>
                 </div>
-                <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base">
+                <button
+                  onClick={() => setShowDocumentUploadModal(true)}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+                >
                   <Upload className="w-4 h-4 lg:w-5 lg:h-5" />
                   Upload Document
                 </button>
@@ -791,7 +852,10 @@ const TenantDashboard = () => {
                       <span>{doc.date}</span>
                       <span>{doc.size}</span>
                     </div>
-                    <button className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 border border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition text-sm">
+                    <button
+                      onClick={() => handleDownloadDocument(doc)}
+                      className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 border border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition text-sm"
+                    >
                       <Download className="w-4 h-4" />
                       Download
                     </button>
@@ -1470,6 +1534,71 @@ const TenantDashboard = () => {
                   className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
                 >
                   Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Upload Modal */}
+      {showDocumentUploadModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Upload Document</h3>
+              <button onClick={() => setShowDocumentUploadModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5 lg:w-6 lg:h-6" />
+              </button>
+            </div>
+            <div className="p-4 lg:p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Document Name (Optional)</label>
+                <input
+                  type="text"
+                  value={newDocument.name}
+                  onChange={(e) => setNewDocument({...newDocument, name: e.target.value})}
+                  placeholder="e.g., Payment Receipt - Dec 2024"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select File</label>
+                <input
+                  type="file"
+                  onChange={(e) => setNewDocument({...newDocument, file: e.target.files[0]})}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#003366] file:text-white hover:file:bg-[#002244]"
+                />
+                <p className="text-xs text-gray-500 mt-1">Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB)</p>
+              </div>
+              {newDocument.file && (
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Selected file:</span> {newDocument.file.name}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Size: {(newDocument.file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              )}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowDocumentUploadModal(false);
+                    setNewDocument({ name: '', file: null });
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm lg:text-base"
+                  disabled={uploadingDocument}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUploadDocument}
+                  disabled={uploadingDocument}
+                  className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {uploadingDocument ? 'Uploading...' : 'Upload'}
                 </button>
               </div>
             </div>
