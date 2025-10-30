@@ -1001,7 +1001,7 @@ const TenantDashboard = () => {
           {currentView === 'listings' && (
             <div className="space-y-6">
               {/* Button to Full Listings Page */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
             <h3 className="font-semibold text-gray-900 mb-1">Looking for More Properties?</h3>
               <p className="text-sm text-gray-600">Browse our complete catalog with advanced filters</p>
