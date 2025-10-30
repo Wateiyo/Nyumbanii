@@ -683,7 +683,8 @@ const handleEditProperty = async () => {
     setShowTenantModal(false);
   } catch (error) {
     console.error('Error adding tenant:', error);
-    alert('Failed to add tenant. Please try again.');
+    console.error('Error details:', error.message, error.code);
+    alert(`Failed to add tenant: ${error.message}\n\nPlease try again or contact support if the issue persists.`);
   }
 };
 
@@ -2209,8 +2210,8 @@ const handleMessageTenant = (tenant) => {
               </div>
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:flex-initial">
+                <div className="flex gap-2 w-full">
+                  <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="text"
@@ -2230,10 +2231,6 @@ const handleMessageTenant = (tenant) => {
                       <option key={prop.id} value={prop.name}>{prop.name}</option>
                     ))}
                   </select>
-                  <button onClick={() => setShowTenantModal(true)} className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition whitespace-nowrap flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Add Tenant
-                  </button>
                 </div>
               </div>
               
