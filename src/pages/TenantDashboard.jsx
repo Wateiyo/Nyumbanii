@@ -654,7 +654,7 @@ const TenantDashboard = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className={currentView === 'listings' ? '' : 'p-4 lg:p-8'}>
+        <main className="p-4 lg:p-8">
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <div className="space-y-6">
@@ -1001,7 +1001,7 @@ const TenantDashboard = () => {
           {currentView === 'listings' && (
             <div className="space-y-6">
               {/* Button to Full Listings Page */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mx-4 lg:mx-8 mt-4 lg:mt-8 flex items-center justify-between">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
             <div>
             <h3 className="font-semibold text-gray-900 mb-1">Looking for More Properties?</h3>
               <p className="text-sm text-gray-600">Browse our complete catalog with advanced filters</p>
@@ -1014,7 +1014,7 @@ const TenantDashboard = () => {
             View All Listings
             </button>
             </div>
-              <div className="px-4 lg:px-8">
+              <div>
                 <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Available Properties</h3>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1029,11 +1029,11 @@ const TenantDashboard = () => {
               </div>
 
               {loadingListings ? (
-                <div className="flex justify-center items-center py-20 px-4 lg:px-8">
+                <div className="flex justify-center items-center py-20">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
                 </div>
               ) : filteredListings.length === 0 ? (
-                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200 mx-4 lg:mx-8 mb-8">
+                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200 mb-8">
                   <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No Listings Available</h3>
                   <p className="text-gray-600 mb-6">
@@ -1043,7 +1043,7 @@ const TenantDashboard = () => {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 px-4 lg:px-8 pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 pb-8">
                   {filteredListings.map((listing) => (
                   <div key={listing.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition group">
                     <div className="relative h-48 lg:h-56 overflow-hidden">
