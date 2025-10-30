@@ -786,6 +786,21 @@ const handleEditProperty = async () => {
     }
   };
 
+  // DELETE MAINTENANCE REQUEST
+  const handleDeleteMaintenanceRequest = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this maintenance request? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'maintenanceRequests', id));
+      alert('Maintenance request deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting maintenance request:', error);
+      alert('Error deleting maintenance request. Please try again.');
+    }
+  };
+
   // ADD LISTING with images
   const handleAddListing = async () => {
     if (newListing.property && newListing.unit && newListing.bedrooms && newListing.rent) {
@@ -1952,7 +1967,7 @@ const handleMessageTenant = (tenant) => {
             <option value="completed">Completed</option>
           </select>
 
-          <select 
+          <select
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
           >
             <option value="all">All Priorities</option>
@@ -1960,232 +1975,117 @@ const handleMessageTenant = (tenant) => {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
+        </div>
 
-          <select 
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white"
-          >
-            <option value="all">All Properties</option>
-            {properties.map(property => (
-              <option key={property.id} value={property.id}>{property.name}</option>
+        {/* Maintenance Requests */}
+        {loadingMaintenance ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
+          </div>
+        ) : maintenanceRequests.length === 0 ? (
+          <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+            <Wrench className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Maintenance Requests</h3>
+            <p className="text-gray-600 mb-6">No maintenance requests have been submitted yet.</p>
+            <button
+              onClick={() => setShowMaintenanceModal(true)}
+              className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition inline-flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Add Request
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {maintenanceRequests.map((request) => (
+              <div key={request.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
+                <div className="p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          request.priority === 'high' ? 'bg-red-100' :
+                          request.priority === 'medium' ? 'bg-yellow-100' :
+                          'bg-gray-100'
+                        }`}>
+                          <Wrench className={`w-5 h-5 ${
+                            request.priority === 'high' ? 'text-red-600' :
+                            request.priority === 'medium' ? 'text-yellow-600' :
+                            'text-gray-600'
+                          }`} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">{request.issue}</h3>
+
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Building className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{request.property} - Unit {request.unit}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{request.tenant}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 flex-shrink-0" />
+                              <span>{request.date} at {request.scheduledTime || '09:00'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        request.priority === 'high' ? 'bg-red-100 text-red-700' :
+                        request.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {request.priority}
+                      </span>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        request.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        request.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {request.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                    {request.status === 'pending' && (
+                      <button
+                        onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm"
+                      >
+                        <Wrench className="w-4 h-4" />
+                        Start Work
+                      </button>
+                    )}
+                    {request.status === 'in-progress' && (
+                      <button
+                        onClick={() => handleUpdateMaintenanceStatus(request.id, 'completed')}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Mark Complete
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDeleteMaintenanceRequest(request.id)}
+                      className="bg-white border border-red-300 text-red-700 px-4 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-2 text-sm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))}
-          </select>
-        </div>
-
-        {/* Mock Maintenance Requests - Always show these */}
-        <div className="space-y-4">
-          {/* Request 1 - Leaking faucet */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
-            <div className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-yellow-100">
-                      <Wrench className="w-5 h-5 text-yellow-600" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Leaking faucet</h3>
-                      
-                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">Sunset Apartments - Unit 2B</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">John Doe</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 flex-shrink-0" />
-                          <span>2025-10-07 at 09:00</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                    medium
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                    pending
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm">
-                  <Wrench className="w-4 h-4" />
-                  Start Work
-                </button>
-                <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4" />
-                  Contact Tenant
-                </button>
-              </div>
-            </div>
           </div>
-
-          {/* Request 2 - Broken AC */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
-            <div className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-red-100">
-                      <Wrench className="w-5 h-5 text-red-600" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Broken AC</h3>
-                      
-                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">Garden View - Unit 4A</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">Jane Smith</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 flex-shrink-0" />
-                          <span>2025-10-08 at 14:00</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                    high
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                    in-progress
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4" />
-                  Mark Complete
-                </button>
-                <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4" />
-                  Contact Tenant
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Request 3 - Faulty door lock */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
-            <div className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-red-100">
-                      <Wrench className="w-5 h-5 text-red-600" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Faulty door lock</h3>
-                      
-                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">Riverside Towers - Unit 8C</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">Peter Kamau</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 flex-shrink-0" />
-                          <span>2025-10-09 at 10:00</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                    high
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                    pending
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm">
-                  <Wrench className="w-4 h-4" />
-                  Start Work
-                </button>
-                <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4" />
-                  Contact Tenant
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Request 4 - Water heater not working */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
-            <div className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-green-100">
-                      <Wrench className="w-5 h-5 text-green-600" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Water heater not working</h3>
-                      
-                      <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">Sunset Apartments - Unit 5D</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">Grace Njeri</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 flex-shrink-0" />
-                          <span>2025-10-02 at 11:00</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 flex-wrap lg:flex-col lg:items-end">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                    medium
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                    completed
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4" />
-                  Contact Tenant
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        )}
       </div>
     </div>
   </div>
