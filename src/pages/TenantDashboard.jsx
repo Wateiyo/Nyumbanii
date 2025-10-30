@@ -556,7 +556,7 @@ const TenantDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 lg:ml-64">
         {/* Top Navigation */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <header className="bg-transparent sticky top-0 z-40">
           <div className="flex items-center justify-between px-4 lg:px-8 py-4">
             <div className="flex items-center gap-4">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
@@ -625,11 +625,11 @@ const TenantDashboard = () => {
                   <p className="text-sm text-gray-600">Here's an overview of your tenancy</p>
                 </div>
                 <button
-                  onClick={() => setCurrentView('listings')}
+                  onClick={() => setShowPaymentModal(true)}
                   className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
                 >
-                  <Search className="w-5 h-5" />
-                  Browse Properties
+                  <DollarSign className="w-5 h-5" />
+                  Pay Rent
                 </button>
               </div>
 
@@ -668,6 +668,48 @@ const TenantDashboard = () => {
                   </div>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900">{messages.filter(m => !m.read).length}</p>
                   <p className="text-xs lg:text-sm text-gray-500 mt-1">Unread</p>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200">
+                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => setShowMaintenanceModal(true)}
+                    className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-md"
+                  >
+                    <Wrench className="w-8 h-8 mb-3" />
+                    <span className="font-semibold text-base">Add Maintenance Request</span>
+                    <span className="text-xs opacity-90 mt-1">Report an issue</span>
+                  </button>
+
+                  <button
+                    onClick={() => setCurrentView('documents')}
+                    className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105 shadow-md"
+                  >
+                    <FileText className="w-8 h-8 mb-3" />
+                    <span className="font-semibold text-base">View Documents</span>
+                    <span className="text-xs opacity-90 mt-1">Access files</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#003366] to-[#004080] text-white rounded-xl hover:from-[#002244] hover:to-[#003366] transition-all transform hover:scale-105 shadow-md"
+                  >
+                    <DollarSign className="w-8 h-8 mb-3" />
+                    <span className="font-semibold text-base">Pay Rent</span>
+                    <span className="text-xs opacity-90 mt-1">Record payment</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowMessageModal(true)}
+                    className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-md"
+                  >
+                    <MessageSquare className="w-8 h-8 mb-3" />
+                    <span className="font-semibold text-base">Message Landlord</span>
+                    <span className="text-xs opacity-90 mt-1">Send message</span>
+                  </button>
                 </div>
               </div>
 
