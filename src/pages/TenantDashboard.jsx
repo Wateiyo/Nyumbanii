@@ -71,6 +71,10 @@ const TenantDashboard = () => {
   const [availableListings, setAvailableListings] = useState([]);
   const [loadingListings, setLoadingListings] = useState(true);
 
+  // Navbar scroll state
+  const [showNavbar, setShowNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
   const [passwordData, setPasswordData] = useState({
     current: '',
     new: '',
@@ -223,6 +227,32 @@ const TenantDashboard = () => {
 
     return () => unsubscribe();
   }, [tenantData]);
+
+  // Handle navbar auto-hide on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY < 10) {
+        // At the top, always show navbar
+        setShowNavbar(true);
+      } else if (currentScrollY > lastScrollY) {
+        // Scrolling down, hide navbar
+        setShowNavbar(false);
+      } else {
+        // Scrolling up, show navbar
+        setShowNavbar(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
 
   // ============ FIREBASE FUNCTIONS ============
   
@@ -566,7 +596,7 @@ const TenantDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 lg:ml-64">
         {/* Top Navigation */}
-        <header className="bg-transparent sticky top-0 z-40">
+        <header className={`bg-transparent sticky top-0 z-40 transition-transform duration-300 ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between px-4 lg:px-8 py-4">
             <div className="flex items-center gap-4">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
@@ -969,9 +999,9 @@ const TenantDashboard = () => {
 
           {/* Available Listings View */}
           {currentView === 'listings' && (
-            <div className="space-y-6 p-4 lg:p-8">
+            <div className="space-y-6">
               {/* Button to Full Listings Page */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mx-4 lg:mx-8 mt-4 lg:mt-8 flex items-center justify-between">
             <div>
             <h3 className="font-semibold text-gray-900 mb-1">Looking for More Properties?</h3>
               <p className="text-sm text-gray-600">Browse our complete catalog with advanced filters</p>
@@ -984,7 +1014,7 @@ const TenantDashboard = () => {
             View All Listings
             </button>
             </div>
-              <div>
+              <div className="px-4 lg:px-8">
                 <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Available Properties</h3>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -999,11 +1029,11 @@ const TenantDashboard = () => {
               </div>
 
               {loadingListings ? (
-                <div className="flex justify-center items-center py-20">
+                <div className="flex justify-center items-center py-20 px-4 lg:px-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
                 </div>
               ) : filteredListings.length === 0 ? (
-                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
+                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200 mx-4 lg:mx-8 mb-8">
                   <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No Listings Available</h3>
                   <p className="text-gray-600 mb-6">
@@ -1013,7 +1043,7 @@ const TenantDashboard = () => {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 px-4 lg:px-8 pb-8">
                   {filteredListings.map((listing) => (
                   <div key={listing.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition group">
                     <div className="relative h-48 lg:h-56 overflow-hidden">
