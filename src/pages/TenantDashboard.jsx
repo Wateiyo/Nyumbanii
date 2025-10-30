@@ -624,7 +624,7 @@ const TenantDashboard = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="p-4 lg:p-8">
+        <main className={currentView === 'listings' ? '' : 'p-4 lg:p-8'}>
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <div className="space-y-6">
@@ -969,7 +969,7 @@ const TenantDashboard = () => {
 
           {/* Available Listings View */}
           {currentView === 'listings' && (
-            <div className="space-y-6">
+            <div className="space-y-6 p-4 lg:p-8">
               {/* Button to Full Listings Page */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
             <div>
