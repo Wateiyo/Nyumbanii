@@ -659,18 +659,11 @@ const TenantDashboard = () => {
           {currentView === 'dashboard' && (
             <div className="space-y-6">
               {/* Blue Banner */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-1">Welcome back, {profileSettings.name}!</h3>
                   <p className="text-sm text-gray-600">Here's an overview of your tenancy</p>
                 </div>
-                <button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-                >
-                  <DollarSign className="w-5 h-5" />
-                  Pay Rent
-                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">

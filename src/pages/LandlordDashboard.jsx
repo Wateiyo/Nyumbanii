@@ -1245,6 +1245,21 @@ const handleMessageTenant = (tenant) => {
 {/* Dashboard View */}
 {currentView === 'dashboard' && (
   <>
+    {/* Blue Banner */}
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6">
+      <div>
+        <h3 className="font-semibold text-gray-900 mb-1">Welcome back, {profileSettings.name}!</h3>
+        <p className="text-sm text-gray-600">Here's an overview of your properties</p>
+      </div>
+      <button
+        onClick={() => setShowPropertyModal(true)}
+        className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+      >
+        <Plus className="w-5 h-5" />
+        Add Property
+      </button>
+    </div>
+
     {/* Stats Cards - Shows 2 cols on mobile, 4 on larger screens */}
 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
   {stats.map((stat, index) => (
@@ -1384,13 +1399,20 @@ const handleMessageTenant = (tenant) => {
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
       <div className="max-w-7xl mx-auto">
-        
-        {/* Info Banner */}
-        <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3 mb-6 mt-6">
-          <Building className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-gray-700">
-            Manage your properties and track occupancy rates
-          </p>
+
+        {/* Blue Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-1">Property Management</h3>
+            <p className="text-sm text-gray-600">Manage your properties and track occupancy rates</p>
+          </div>
+          <button
+            onClick={() => setShowPropertyModal(true)}
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Add Property
+          </button>
         </div>
 
         {/* Header with Button */}
@@ -1533,10 +1555,25 @@ const handleMessageTenant = (tenant) => {
 {/* Listings View */}
 {currentView === 'listings' && (
   <>
+    {/* Blue Banner */}
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6">
+      <div>
+        <h3 className="font-semibold text-gray-900 mb-1">Property Listings</h3>
+        <p className="text-sm text-gray-600">Manage your available units for rent</p>
+      </div>
+      <button
+        onClick={() => setShowListingModal(true)}
+        className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+      >
+        <Plus className="w-5 h-5" />
+        Create Listing
+      </button>
+    </div>
+
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
   <div>
-    <h2 className="text-xl font-bold text-gray-900">Property Listings</h2>
-    <p className="text-sm text-gray-600">Manage your available units for rent</p>
+    <h2 className="text-xl font-bold text-gray-900">All Listings</h2>
+    <p className="text-sm text-gray-600">Browse and manage property listings</p>
   </div>
   <div className="flex gap-2 w-full sm:w-auto">
     <button 
@@ -1677,6 +1714,14 @@ const handleMessageTenant = (tenant) => {
 
 {currentView === 'viewings' && (
   <div className="max-w-7xl mx-auto">
+    {/* Blue Banner */}
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6">
+      <div>
+        <h3 className="font-semibold text-gray-900 mb-1">Viewing Requests</h3>
+        <p className="text-sm text-gray-600">Manage property viewing appointments and requests</p>
+      </div>
+    </div>
+
     {/* Credibility System Info Banner */}
     <div className="bg-blue-50 border-l-4 border-blue-500 p-3 lg:p-4 mb-4 lg:mb-6 rounded-lg">
       <div className="flex items-start gap-2 lg:gap-3">
@@ -1688,8 +1733,8 @@ const handleMessageTenant = (tenant) => {
         <div className="flex-1 min-w-0">
           <h3 className="text-xs lg:text-sm font-semibold text-blue-900 mb-1">Smart Credibility Filtering Active</h3>
           <p className="text-xs lg:text-sm text-blue-800">
-            Our system automatically scores viewing requests based on user credibility. 
-            <span className="font-medium"> High-scoring applicants (80+) are prioritized</span> to help you find reliable tenants quickly. 
+            Our system automatically scores viewing requests based on user credibility.
+            <span className="font-medium"> High-scoring applicants (80+) are prioritized</span> to help you find reliable tenants quickly.
             Review the credibility score below each request before approving.
           </p>
         </div>
@@ -1828,11 +1873,26 @@ const handleMessageTenant = (tenant) => {
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
       <div className="max-w-7xl mx-auto">
-        
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
+
+        {/* Blue Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Maintenance Requests</h2>
+            <h3 className="font-semibold text-gray-900 mb-1">Maintenance Requests</h3>
+            <p className="text-sm text-gray-600">Track and manage property maintenance issues</p>
+          </div>
+          <button
+            onClick={() => setShowMaintenanceModal(true)}
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            New Request
+          </button>
+        </div>
+
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">All Requests</h2>
             <p className="text-sm text-gray-600 mt-1">Manage and track maintenance issues</p>
           </div>
           <button 
@@ -2097,8 +2157,23 @@ const handleMessageTenant = (tenant) => {
           {/* Tenants View */}
           {currentView === 'tenants' && (
             <>
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Tenant Directory</h3>
+                  <p className="text-sm text-gray-600">Manage and communicate with your tenants</p>
+                </div>
+                <button
+                  onClick={() => setShowTenantModal(true)}
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Tenant
+                </button>
+              </div>
+
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Tenant Directory</h2>
+                <h2 className="text-xl font-bold text-gray-900">All Tenants</h2>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <div className="relative flex-1 sm:flex-initial">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -2260,13 +2335,16 @@ const handleMessageTenant = (tenant) => {
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
       <div className="max-w-7xl mx-auto">
-        
-        {/* Section Header with Button */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
-          <h2 className="text-2xl font-bold text-gray-900">Payment Tracking</h2>
-          <button 
+
+        {/* Blue Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-1">Payment Tracking</h3>
+            <p className="text-sm text-gray-600">Monitor rent payments and track outstanding balances</p>
+          </div>
+          <button
             onClick={() => setShowPaymentModal(true)}
-            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
             Record Payment
@@ -3026,6 +3104,20 @@ const handleMessageTenant = (tenant) => {
     {/* Main Content */}
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       <div className="space-y-6">
+        {/* Blue Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-1">Account Settings</h3>
+            <p className="text-sm text-gray-600">Manage your profile, security, and preferences</p>
+          </div>
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+          >
+            <Settings className="w-5 h-5" />
+            Change Password
+          </button>
+        </div>
         {/* Profile Settings Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
