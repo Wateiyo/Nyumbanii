@@ -122,7 +122,7 @@ exports.sendTeamInvitation = onDocumentCreated(
                 
                 <p>Click the button below to create your account and get started:</p>
                 <center>
-                  <a href="https://nyumbanii.co.ke/signup?invite=${memberId}" class="button">
+                  <a href="https://nyumbanii.web.app/register?invite=${teamMember.invitationToken}&type=${teamMember.role}" class="button">
                     Accept Invitation
                   </a>
                 </center>
@@ -149,7 +149,12 @@ exports.sendTeamInvitation = onDocumentCreated(
       });
 
       if (error) {
-        logger.error('Error sending invitation email:', error);
+        logger.error('Error sending invitation email:', {
+          error: error,
+          message: error.message,
+          statusCode: error.statusCode,
+          name: error.name
+        });
         return;
       }
 
@@ -263,7 +268,7 @@ exports.sendTenantInvitation = onDocumentCreated(
                 
                 <p>Click the button below to create your account and access your portal:</p>
                 <center>
-                  <a href="https://nyumbanii.co.ke/tenant-signup?invite=${tenantId}" class="button">
+                  <a href="https://nyumbanii.web.app/register?invite=${tenant.invitationToken}" class="button">
                     Create Your Account
                   </a>
                 </center>
@@ -282,7 +287,12 @@ exports.sendTenantInvitation = onDocumentCreated(
       });
 
       if (error) {
-        logger.error('Error sending tenant invitation email:', error);
+        logger.error('Error sending tenant invitation email:', {
+          error: error,
+          message: error.message,
+          statusCode: error.statusCode,
+          name: error.name
+        });
         return;
       }
 
