@@ -565,6 +565,9 @@ const handleEditProperty = async () => {
       return;
     }
 
+    // Generate a unique invitation token
+    const invitationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
     // Add tenant to Firestore
     const tenantData = {
       name: newTenant.name,
@@ -576,15 +579,41 @@ const handleEditProperty = async () => {
       leaseStart: newTenant.leaseStart,
       leaseEnd: newTenant.leaseEnd,
       landlordId: currentUser.uid,
+      landlordName: userProfile?.displayName || 'Your Landlord',
       status: newTenant.sendInvitation ? 'pending' : 'active', // pending if sending invitation
+      invitationToken: newTenant.sendInvitation ? invitationToken : null,
       createdAt: serverTimestamp()
     };
 
     await addDoc(collection(db, 'tenants'), tenantData);
 
-    // The Cloud Function will automatically send the invitation email
+    // If sending invitation, create an invitation record
     if (newTenant.sendInvitation) {
-      alert('Tenant added and invitation will be sent shortly!');
+      const invitationData = {
+        token: invitationToken,
+        email: newTenant.email.toLowerCase(),
+        landlordId: currentUser.uid,
+        landlordName: userProfile?.displayName || 'Your Landlord',
+        tenantName: newTenant.name,
+        property: newTenant.property,
+        unit: newTenant.unit,
+        status: 'pending', // pending, accepted, expired
+        createdAt: serverTimestamp(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+      };
+
+      await addDoc(collection(db, 'invitations'), invitationData);
+
+      // Generate invitation link
+      const invitationLink = `${window.location.origin}/register?invite=${invitationToken}`;
+
+      // Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(invitationLink);
+        alert(`Tenant added successfully!\n\nInvitation link copied to clipboard:\n${invitationLink}\n\nShare this link with ${newTenant.name} to complete registration.`);
+      } catch (err) {
+        alert(`Tenant added successfully!\n\nInvitation link:\n${invitationLink}\n\nPlease share this link with ${newTenant.name}.`);
+      }
     } else {
       alert('Tenant added successfully!');
     }

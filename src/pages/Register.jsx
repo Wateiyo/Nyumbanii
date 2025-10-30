@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Home, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Home, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+
+const db = getFirestore();
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register, signInWithGoogle } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -12,6 +16,11 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [invitationData, setInvitationData] = useState(null);
+  const [validatingInvite, setValidatingInvite] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [invitationCode, setInvitationCode] = useState('');
+  const [validatingCode, setValidatingCode] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -22,6 +31,79 @@ const Register = () => {
 
   const handleNavigateHome = () => {
     navigate('/');
+  };
+
+  // Validate invitation token on component mount
+  useEffect(() => {
+    const inviteToken = searchParams.get('invite');
+    if (inviteToken) {
+      validateInvitation(inviteToken);
+    }
+  }, [searchParams]);
+
+  const validateInvitation = async (token) => {
+    setValidatingInvite(true);
+    try {
+      const invitationsQuery = query(
+        collection(db, 'invitations'),
+        where('token', '==', token),
+        where('status', '==', 'pending')
+      );
+
+      const snapshot = await getDocs(invitationsQuery);
+
+      if (!snapshot.empty) {
+        const inviteDoc = snapshot.docs[0];
+        const inviteData = inviteDoc.data();
+
+        // Check if invitation has expired
+        const expiresAt = inviteData.expiresAt?.toDate();
+        if (expiresAt && expiresAt < new Date()) {
+          setError('This invitation has expired. Please contact your landlord for a new invitation.');
+          setValidatingInvite(false);
+          return false;
+        }
+
+        // Set invitation data and pre-fill form
+        setInvitationData({ id: inviteDoc.id, ...inviteData });
+        setSelectedRole('tenant');
+        setFormData(prev => ({
+          ...prev,
+          fullName: inviteData.tenantName || '',
+          email: inviteData.email || ''
+        }));
+        setError('');
+        return true;
+      } else {
+        setError('Invalid or expired invitation link. Please contact your landlord.');
+        return false;
+      }
+    } catch (err) {
+      console.error('Error validating invitation:', err);
+      setError('Error validating invitation. Please try again.');
+      return false;
+    } finally {
+      setValidatingInvite(false);
+    }
+  };
+
+  const handleManualCodeEntry = async () => {
+    if (!invitationCode.trim()) {
+      setError('Please enter an invitation code.');
+      return;
+    }
+
+    setValidatingCode(true);
+    setError('');
+
+    const isValid = await validateInvitation(invitationCode.trim());
+
+    if (isValid) {
+      setShowCodeModal(false);
+      setInvitationCode('');
+    }
+
+    setValidatingCode(false);
   };
 
   const handleSubmit = async (e) => {
@@ -68,13 +150,45 @@ const Register = () => {
     }
 
     try {
-      await register(
+      const result = await register(
         formData.email,
         formData.password,
         formData.fullName,
         formData.phone,
         selectedRole
       );
+
+      // If this is a tenant registration with an invitation, update the tenant and invitation records
+      if (selectedRole === 'tenant' && invitationData) {
+        try {
+          // Find and update the tenant record with the new user UID
+          const tenantsQuery = query(
+            collection(db, 'tenants'),
+            where('email', '==', formData.email.toLowerCase()),
+            where('landlordId', '==', invitationData.landlordId)
+          );
+
+          const tenantSnapshot = await getDocs(tenantsQuery);
+          if (!tenantSnapshot.empty) {
+            const tenantDocRef = doc(db, 'tenants', tenantSnapshot.docs[0].id);
+            await updateDoc(tenantDocRef, {
+              userId: result.user.uid,
+              status: 'active',
+              registeredAt: new Date()
+            });
+          }
+
+          // Mark invitation as accepted
+          const invitationDocRef = doc(db, 'invitations', invitationData.id);
+          await updateDoc(invitationDocRef, {
+            status: 'accepted',
+            acceptedAt: new Date()
+          });
+        } catch (updateErr) {
+          console.error('Error updating tenant/invitation records:', updateErr);
+          // Continue anyway - user is registered
+        }
+      }
 
       // Redirect based on role
       if (selectedRole === 'landlord') {
@@ -155,6 +269,26 @@ const Register = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="bg-white/15 backdrop-blur-md rounded-3xl shadow-2xl p-8 border border-white/20 max-h-[600px] overflow-y-auto">
+              {validatingInvite && (
+                <div className="mb-6 p-4 bg-blue-500/20 border-l-4 border-blue-400 rounded-lg backdrop-blur-sm">
+                  <p className="text-white text-sm font-medium">Validating invitation...</p>
+                </div>
+              )}
+
+              {invitationData && !validatingInvite && (
+                <div className="mb-6 p-4 bg-green-500/20 border-l-4 border-green-400 rounded-lg backdrop-blur-sm">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-300 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-white text-sm font-semibold mb-1">Invitation Verified!</p>
+                      <p className="text-blue-100 text-xs">
+                        You've been invited by {invitationData.landlordName} to join as a tenant for {invitationData.property}, Unit {invitationData.unit}.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div className="mb-6 p-4 bg-red-500/20 border-l-4 border-red-400 rounded-lg backdrop-blur-sm">
                   <p className="text-white text-sm font-medium">{error}</p>
@@ -162,52 +296,56 @@ const Register = () => {
               )}
 
               <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-3">
-                    I am a:
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      type="button"
-                      onClick={() => !loading && setSelectedRole('landlord')}
-                      disabled={loading}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        selectedRole === 'landlord'
-                          ? 'border-white bg-white/20'
-                          : 'border-white/20 hover:border-white/40'
-                      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <Home className={`w-8 h-8 mx-auto mb-2 ${
-                        selectedRole === 'landlord' ? 'text-white' : 'text-blue-200'
-                      }`} />
-                      <div className={`font-semibold ${
-                        selectedRole === 'landlord' ? 'text-white' : 'text-blue-200'
-                      }`}>
-                        Landlord
+                {!invitationData && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-white mb-3">
+                        I am a:
+                      </label>
+                      <div className="grid grid-cols-1 gap-4">
+                        <button
+                          type="button"
+                          onClick={() => !loading && setSelectedRole('landlord')}
+                          disabled={loading}
+                          className={`p-4 rounded-xl border-2 transition-all ${
+                            selectedRole === 'landlord'
+                              ? 'border-white bg-white/20'
+                              : 'border-white/20 hover:border-white/40'
+                          } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <Home className={`w-8 h-8 mx-auto mb-2 ${
+                            selectedRole === 'landlord' ? 'text-white' : 'text-blue-200'
+                          }`} />
+                          <div className={`font-semibold ${
+                            selectedRole === 'landlord' ? 'text-white' : 'text-blue-200'
+                          }`}>
+                            Landlord
+                          </div>
+                        </button>
                       </div>
-                    </button>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => !loading && setSelectedRole('tenant')}
-                      disabled={loading}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        selectedRole === 'tenant'
-                          ? 'border-white bg-white/20'
-                          : 'border-white/20 hover:border-white/40'
-                      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <User className={`w-8 h-8 mx-auto mb-2 ${
-                        selectedRole === 'tenant' ? 'text-white' : 'text-blue-200'
-                      }`} />
-                      <div className={`font-semibold ${
-                        selectedRole === 'tenant' ? 'text-white' : 'text-blue-200'
-                      }`}>
-                        Tenant
+                    <div className="p-4 bg-blue-500/10 border border-blue-400/30 rounded-xl">
+                      <div className="flex items-start gap-3 mb-3">
+                        <User className="w-5 h-5 text-blue-300 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-white text-sm font-semibold mb-1">Are you a Tenant?</p>
+                          <p className="text-blue-100 text-xs">
+                            Tenants can only register through a landlord invitation. Ask your landlord for an invitation link or enter your invitation code below.
+                          </p>
+                        </div>
                       </div>
-                    </button>
-                  </div>
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowCodeModal(true)}
+                        disabled={loading}
+                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Enter Invitation Code
+                      </button>
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-white mb-2">
@@ -239,9 +377,9 @@ const Register = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3 border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-white/50 focus:border-white/40 outline-none transition-all bg-white/10 backdrop-blur-sm text-white placeholder-blue-200"
+                      className="w-full pl-12 pr-4 py-3 border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-white/50 focus:border-white/40 outline-none transition-all bg-white/10 backdrop-blur-sm text-white placeholder-blue-200 disabled:opacity-60 disabled:cursor-not-allowed"
                       placeholder="john@example.com"
-                      disabled={loading}
+                      disabled={loading || !!invitationData}
                       required
                     />
                   </div>
@@ -417,6 +555,80 @@ const Register = () => {
           </div>
         </div>
       </div>
+
+      {/* Invitation Code Modal */}
+      {showCodeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-900">Enter Invitation Code</h3>
+                <button
+                  onClick={() => {
+                    setShowCodeModal(false);
+                    setInvitationCode('');
+                    setError('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition"
+                  disabled={validatingCode}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <p className="text-gray-600 text-sm mb-4">
+                Enter the invitation code provided by your landlord to register as a tenant.
+              </p>
+
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Invitation Code
+                </label>
+                <input
+                  type="text"
+                  value={invitationCode}
+                  onChange={(e) => setInvitationCode(e.target.value.trim())}
+                  placeholder="e.g., a7f3k9m2x8b4"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
+                  disabled={validatingCode}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleManualCodeEntry();
+                    }
+                  }}
+                />
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded">
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCodeModal(false);
+                    setInvitationCode('');
+                    setError('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  disabled={validatingCode}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleManualCodeEntry}
+                  disabled={validatingCode || !invitationCode.trim()}
+                  className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {validatingCode ? 'Validating...' : 'Verify Code'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
