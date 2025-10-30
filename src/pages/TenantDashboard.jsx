@@ -618,9 +618,19 @@ const TenantDashboard = () => {
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-[#003366] to-[#004080] text-white p-6 lg:p-8 rounded-xl shadow-lg">
-                <h3 className="text-lg lg:text-xl font-semibold mb-2">Welcome back, {profileSettings.name}!</h3>
-                <p className="text-sm lg:text-base opacity-90">Here's an overview of your tenancy</p>
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Welcome back, {profileSettings.name}!</h3>
+                  <p className="text-sm text-gray-600">Here's an overview of your tenancy</p>
+                </div>
+                <button
+                  onClick={() => setCurrentView('listings')}
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Search className="w-5 h-5" />
+                  Browse Properties
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
@@ -711,16 +721,17 @@ const TenantDashboard = () => {
           {/* Payments View */}
           {currentView === 'payments' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Payment History</h3>
-                  <p className="text-sm text-gray-500 mt-1">Track your rent payments and receipts</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">Payment History</h3>
+                  <p className="text-sm text-gray-600">Track your rent payments and receipts</p>
                 </div>
                 <button
                   onClick={() => setShowPaymentModal(true)}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
                 >
-                  <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                  <Plus className="w-5 h-5" />
                   Record Payment
                 </button>
               </div>
@@ -772,19 +783,20 @@ const TenantDashboard = () => {
       {/* Maintenance View */}
       {currentView === 'maintenance' && (
     <div className="space-y-6">
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div>
-        <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Maintenance Requests</h3>
-        <p className="text-sm text-gray-500 mt-1">Report and track maintenance issues</p>
+      {/* Blue Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-gray-900 mb-1">Maintenance Requests</h3>
+          <p className="text-sm text-gray-600">Report and track maintenance issues</p>
+        </div>
+        <button
+          onClick={() => setShowMaintenanceModal(true)}
+          className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          New Request
+        </button>
       </div>
-      <button
-        onClick={() => setShowMaintenanceModal(true)}
-        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
-      >
-        <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
-        New Request
-      </button>
-    </div>
 
     <div className="grid gap-4">
       {maintenanceRequests.map((request) => (
@@ -826,16 +838,17 @@ const TenantDashboard = () => {
           {/* Documents View */}
           {currentView === 'documents' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Documents</h3>
-                  <p className="text-sm text-gray-500 mt-1">Access your lease agreements and receipts</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">Documents</h3>
+                  <p className="text-sm text-gray-600">Access your lease agreements and receipts</p>
                 </div>
                 <button
                   onClick={() => setShowDocumentUploadModal(true)}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
                 >
-                  <Upload className="w-4 h-4 lg:w-5 lg:h-5" />
+                  <Upload className="w-5 h-5" />
                   Upload Document
                 </button>
               </div>
@@ -868,19 +881,20 @@ const TenantDashboard = () => {
     {/* Messages View */}
     {currentView === 'messages' && (
       <div className="space-y-6">
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div>
-        <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h3>
-        <p className="text-sm text-gray-500 mt-1">Communicate with your property manager</p>
-      </div>
-      <button
-        onClick={() => setShowMessageModal(true)}
-        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
-      >
-        <Send className="w-4 h-4 lg:w-5 lg:h-5" />
-        New Message
-      </button>
-    </div>
+        {/* Blue Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-1">Messages</h3>
+            <p className="text-sm text-gray-600">Communicate with your property manager</p>
+          </div>
+          <button
+            onClick={() => setShowMessageModal(true)}
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+          >
+            <Send className="w-5 h-5" />
+            New Message
+          </button>
+        </div>
 
     {/* Each message as individual card - like Documents */}
     <div className="grid gap-4">
@@ -1034,6 +1048,20 @@ const TenantDashboard = () => {
     {/* Main Content */}
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       <div className="space-y-6">
+        {/* Blue Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-1">Account Settings</h3>
+            <p className="text-sm text-gray-600">Manage your profile, security, and preferences</p>
+          </div>
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+          >
+            <Settings className="w-5 h-5" />
+            Change Password
+          </button>
+        </div>
         {/* Profile Settings Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
