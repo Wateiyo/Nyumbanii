@@ -1246,18 +1246,11 @@ const handleMessageTenant = (tenant) => {
 {currentView === 'dashboard' && (
   <>
     {/* Blue Banner */}
-    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between mb-6">
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
       <div>
         <h3 className="font-semibold text-gray-900 mb-1">Welcome back, {profileSettings.name}!</h3>
         <p className="text-sm text-gray-600">Here's an overview of your properties</p>
       </div>
-      <button
-        onClick={() => setShowPropertyModal(true)}
-        className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-      >
-        <Plus className="w-5 h-5" />
-        Add Property
-      </button>
     </div>
 
     {/* Stats Cards - Shows 2 cols on mobile, 4 on larger screens */}
@@ -1415,21 +1408,6 @@ const handleMessageTenant = (tenant) => {
           </button>
         </div>
 
-        {/* Header with Button */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">My Properties</h2>
-            <p className="text-gray-600 text-sm mt-1">Manage your property portfolio</p>
-          </div>
-          <button 
-            onClick={() => setShowPropertyModal(true)}
-            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Add Property
-          </button>
-        </div>
-
         {/* Properties Grid - Responsive Full Width */}
         {loadingProps ? (
           <div className="flex justify-center items-center py-20">
@@ -1569,29 +1547,6 @@ const handleMessageTenant = (tenant) => {
         Create Listing
       </button>
     </div>
-
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-  <div>
-    <h2 className="text-xl font-bold text-gray-900">All Listings</h2>
-    <p className="text-sm text-gray-600">Browse and manage property listings</p>
-  </div>
-  <div className="flex gap-2 w-full sm:w-auto">
-    <button 
-      onClick={() => navigate('/listings')} 
-      className="flex-1 sm:flex-initial px-4 py-2 bg-white border-2 border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition flex items-center justify-center gap-2"
-    >
-      <Eye className="w-5 h-5" />
-      View Listings
-    </button>
-    <button 
-      onClick={() => setShowListingModal(true)} 
-      className="flex-1 sm:flex-initial px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2"
-    >
-      <Plus className="w-5 h-5" />
-      Add Listing
-    </button>
-  </div>
-</div>
     
     {listings.length === 0 ? (
       <div className="bg-white p-12 rounded-xl shadow-sm text-center">
@@ -1889,21 +1844,6 @@ const handleMessageTenant = (tenant) => {
           </button>
         </div>
 
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">All Requests</h2>
-            <p className="text-sm text-gray-600 mt-1">Manage and track maintenance issues</p>
-          </div>
-          <button 
-            onClick={() => setShowMaintenanceModal(true)}
-            className="bg-[#003366] text-white px-6 py-3 rounded-lg hover:bg-[#002244] transition flex items-center gap-2 shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Add Request
-          </button>
-        </div>
-
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">
           <select 
@@ -2173,7 +2113,6 @@ const handleMessageTenant = (tenant) => {
               </div>
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900">All Tenants</h2>
                 <div className="flex gap-2 w-full sm:w-auto">
                   <div className="relative flex-1 sm:flex-initial">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
