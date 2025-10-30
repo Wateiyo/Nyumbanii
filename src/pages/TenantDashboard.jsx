@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   Home, 
   DollarSign, 
@@ -41,6 +42,10 @@ const db = getFirestore();
 const storage = getStorage();
 
 const TenantDashboard = () => {
+  // ============ AUTH & NAVIGATION ============
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
   // ============ STATE MANAGEMENT ============
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -56,11 +61,15 @@ const TenantDashboard = () => {
   const [selectedListing, setSelectedListing] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const navigate = useNavigate();
-  
+
   // Loading states for Firebase operations
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isSendingVerification, setIsSendingVerification] = useState(false);
+
+  // Real-time data states
+  const [tenantData, setTenantData] = useState(null);
+  const [availableListings, setAvailableListings] = useState([]);
+  const [loadingListings, setLoadingListings] = useState(true);
 
   const [passwordData, setPasswordData] = useState({
     current: '',
@@ -167,52 +176,53 @@ const TenantDashboard = () => {
     file: null
   });
 
-  const availableListings = [
-    { 
-      id: 1, 
-      name: 'Garden View Apartments', 
-      location: 'Kilimani, Nairobi', 
-      rent: 38000, 
-      bedrooms: 2, 
-      bathrooms: 2, 
-      area: 85, 
-      amenities: ['Parking', 'Security', 'Water'],
-      images: [
-        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
-        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
-        'https://images.unsplash.com/photo-1556912173-3bb406ef7e77?w=800'
-      ]
-    },
-    { 
-      id: 2, 
-      name: 'Sunset Heights', 
-      location: 'Westlands, Nairobi', 
-      rent: 45000, 
-      bedrooms: 3, 
-      bathrooms: 2, 
-      area: 95, 
-      amenities: ['Gym', 'Pool', 'Security'],
-      images: [
-        'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800',
-        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800'
-      ]
-    },
-    { 
-      id: 3, 
-      name: 'Riverside Residences', 
-      location: 'Karen, Nairobi', 
-      rent: 52000, 
-      bedrooms: 3, 
-      bathrooms: 3, 
-      area: 110, 
-      amenities: ['Garden', 'Parking', 'Security', 'Pool'],
-      images: [
-        'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800',
-        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800'
-      ]
+  // ============ FIREBASE REALTIME DATA ============
+
+  // Fetch tenant data to get their landlordId
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const tenantsQuery = query(
+      collection(db, 'tenants'),
+      where('email', '==', currentUser.email.toLowerCase())
+    );
+
+    const unsubscribe = onSnapshot(tenantsQuery, (snapshot) => {
+      if (!snapshot.empty) {
+        const tenantDoc = snapshot.docs[0];
+        setTenantData({ id: tenantDoc.id, ...tenantDoc.data() });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Fetch listings filtered by tenant's landlordId
+  useEffect(() => {
+    if (!tenantData?.landlordId) {
+      setLoadingListings(false);
+      return;
     }
-  ];
+
+    const listingsQuery = query(
+      collection(db, 'listings'),
+      where('landlordId', '==', tenantData.landlordId)
+    );
+
+    const unsubscribe = onSnapshot(listingsQuery, (snapshot) => {
+      const listingsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setAvailableListings(listingsData);
+      setLoadingListings(false);
+    }, (error) => {
+      console.error('Error fetching listings:', error);
+      setLoadingListings(false);
+    });
+
+    return () => unsubscribe();
+  }, [tenantData]);
 
   // ============ FIREBASE FUNCTIONS ============
   
@@ -988,8 +998,23 @@ const TenantDashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-                {filteredListings.map((listing) => (
+              {loadingListings ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
+                </div>
+              ) : filteredListings.length === 0 ? (
+                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
+                  <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Listings Available</h3>
+                  <p className="text-gray-600 mb-6">
+                    {searchTerm
+                      ? "No listings match your search. Try different keywords."
+                      : "Your landlord hasn't posted any available listings yet."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                  {filteredListings.map((listing) => (
                   <div key={listing.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition group">
                     <div className="relative h-48 lg:h-56 overflow-hidden">
                       <img 
@@ -1063,7 +1088,8 @@ const TenantDashboard = () => {
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
