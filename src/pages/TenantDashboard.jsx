@@ -798,7 +798,7 @@ const TenantDashboard = () => {
         </button>
       </div>
 
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
       {maintenanceRequests.map((request) => (
         <div key={request.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -897,7 +897,7 @@ const TenantDashboard = () => {
         </div>
 
     {/* Each message as individual card - like Documents */}
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
       {messages.map((message) => (
         <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
           <div className="flex items-start justify-between gap-4">
