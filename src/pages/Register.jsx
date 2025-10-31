@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Home, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
+import { Home, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
 
