@@ -688,6 +688,21 @@ const handleEditProperty = async () => {
   }
 };
 
+  // DELETE TENANT
+  const handleDeleteTenant = async (tenantId, tenantName) => {
+    if (!window.confirm(`Are you sure you want to delete ${tenantName} from your tenant directory? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'tenants', tenantId));
+      alert('Tenant deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting tenant:', error);
+      alert('Error deleting tenant. Please try again.');
+    }
+  };
+
   // ADD PAYMENT
   const handleAddPayment = async () => {
     if (newPayment.tenant && newPayment.amount && newPayment.dueDate) {
@@ -2175,7 +2190,7 @@ const handleMessageTenant = (tenant) => {
                       </div>
 
                       {/* Tenants Grid */}
-                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {propertyTenants.map(tenant => (
                           <div key={tenant.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
                             <div className="flex items-start gap-4 mb-4">
@@ -2222,7 +2237,7 @@ const handleMessageTenant = (tenant) => {
                               <button className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm">
                                 View Details
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleMessageTenant(tenant)}
                                 className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm relative">
                                 Message
@@ -2231,6 +2246,11 @@ const handleMessageTenant = (tenant) => {
                                  {unreadMessages[tenant.id]}
                                 </span>
                                   )}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTenant(tenant.id, tenant.name)}
+                                className="px-4 py-2 bg-white border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition text-sm flex items-center gap-2">
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </div>
