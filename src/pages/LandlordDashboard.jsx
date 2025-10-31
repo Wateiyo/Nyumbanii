@@ -26,12 +26,13 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { 
-  Home, 
-  Users, 
-  Banknote, 
-  Bell, 
-  Settings, 
+import {
+  Home,
+  Users,
+  User,
+  Banknote,
+  Bell,
+  Settings,
   LogOut,
   X,
   Building,
@@ -53,7 +54,7 @@ import {
   ChevronRight,
   Bed,
   Bath,
-  Square, 
+  Square,
   Menu,
   Upload,
   Image as ImageIcon,
