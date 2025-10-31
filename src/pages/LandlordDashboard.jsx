@@ -603,6 +603,12 @@ const handleEditProperty = async () => {
 
   const handleAddTenant = async () => {
   try {
+    // Check if user is authenticated
+    if (!currentUser || !currentUser.uid) {
+      alert('Authentication error. Please log out and log back in.');
+      return;
+    }
+
     // Validate required fields and provide specific error messages
     const missingFields = [];
     if (!newTenant.name) missingFields.push('Full Name');
@@ -617,6 +623,8 @@ const handleEditProperty = async () => {
 
     // Generate a unique invitation token
     const invitationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    console.log('Adding tenant with currentUser.uid:', currentUser.uid);
 
     // Add tenant to Firestore
     const tenantData = {
@@ -635,7 +643,11 @@ const handleEditProperty = async () => {
       createdAt: serverTimestamp()
     };
 
+    console.log('Tenant data to be added:', tenantData);
+
     await addDoc(collection(db, 'tenants'), tenantData);
+
+    console.log('Tenant added successfully to Firestore');
 
     // If sending invitation, create an invitation record
     if (newTenant.sendInvitation) {

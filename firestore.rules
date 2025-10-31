@@ -61,16 +61,24 @@ service cloud.firestore {
     match /teamMembers/{memberId} {
       allow read, write: if isAuthenticated();
     }
-    
+
+    // Invitations collection
+    match /invitations/{invitationId} {
+      allow read: if true; // Allow reading invitations for validation
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
     // Messages collection
     match /messages/{messageId} {
       allow read, write: if isAuthenticated();
     }
-    
+
     // Conversations collection
     match /conversations/{conversationId} {
       allow read, write: if isAuthenticated();
-      
+
       // Messages subcollection
       match /messages/{messageId} {
         allow read, write: if isAuthenticated();
