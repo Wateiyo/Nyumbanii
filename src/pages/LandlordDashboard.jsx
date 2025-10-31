@@ -720,30 +720,40 @@ const handleEditProperty = async () => {
 
   // ADD PAYMENT
   const handleAddPayment = async () => {
-    if (newPayment.tenant && newPayment.amount && newPayment.dueDate) {
-      try {
-        await addDoc(collection(db, 'payments'), {
-          tenant: newPayment.tenant,
-          property: newPayment.property,
-          unit: newPayment.unit,
-          amount: parseInt(newPayment.amount),
-          dueDate: newPayment.dueDate,
-          paidDate: null,
-          status: 'pending',
-          method: newPayment.method || null,
-          landlordId: currentUser.uid,
-          createdAt: serverTimestamp()
-        });
-        
-        setNewPayment({ tenant: '', property: '', unit: '', amount: '', dueDate: '', method: '' });
-        setShowPaymentModal(false);
-        alert('Payment record added successfully!');
-      } catch (error) {
-        console.error('Error adding payment:', error);
-        alert('Error adding payment. Please try again.');
-      }
-    } else {
-      alert('Please fill in all required fields');
+    console.log('Payment data:', newPayment);
+
+    // Validate required fields
+    const missingFields = [];
+    if (!newPayment.tenant) missingFields.push('Tenant');
+    if (!newPayment.amount) missingFields.push('Amount');
+    if (!newPayment.dueDate) missingFields.push('Due Date');
+
+    if (missingFields.length > 0) {
+      console.log('Missing fields:', missingFields);
+      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'payments'), {
+        tenant: newPayment.tenant,
+        property: newPayment.property,
+        unit: newPayment.unit,
+        amount: parseInt(newPayment.amount),
+        dueDate: newPayment.dueDate,
+        paidDate: null,
+        status: 'pending',
+        method: newPayment.method || 'Cash',
+        landlordId: currentUser.uid,
+        createdAt: serverTimestamp()
+      });
+
+      setNewPayment({ tenant: '', property: '', unit: '', amount: '', dueDate: '', method: '' });
+      setShowPaymentModal(false);
+      alert('Payment record added successfully!');
+    } catch (error) {
+      console.error('Error adding payment:', error);
+      alert('Error adding payment. Please try again.');
     }
   };
 
