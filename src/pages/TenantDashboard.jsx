@@ -658,13 +658,39 @@ const TenantDashboard = () => {
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <div className="space-y-6">
-              {/* Blue Banner */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Welcome back, {profileSettings.name}!</h3>
-                  <p className="text-sm text-gray-600">Here's an overview of your tenancy</p>
+              {/* No Tenant Data Warning */}
+              {!tenantData && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                  <div className="flex items-start gap-4">
+                    <Bell className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Tenant Profile Not Found</h3>
+                      <p className="text-sm text-gray-700 mb-3">
+                        We couldn't find your tenant profile. This usually happens if:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1 mb-4">
+                        <li>You haven't been added to a property by your landlord yet</li>
+                        <li>You registered with a different email than the one your landlord used</li>
+                        <li>Your landlord invitation is still pending</li>
+                      </ul>
+                      <p className="text-sm text-gray-700">
+                        <strong>What to do:</strong> Contact your landlord and ask them to send you an invitation link.
+                        Make sure to register using the exact email address they have on file.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Blue Banner */}
+              {tenantData && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Welcome back, {profileSettings.name}!</h3>
+                    <p className="text-sm text-gray-600">Here's an overview of your tenancy</p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                 <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">

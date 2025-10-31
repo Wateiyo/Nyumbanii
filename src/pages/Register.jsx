@@ -45,6 +45,8 @@ const Register = () => {
   const validateInvitation = async (token, type = null) => {
     setValidatingInvite(true);
     try {
+      console.log('Validating invitation token:', token);
+
       const invitationsQuery = query(
         collection(db, 'invitations'),
         where('token', '==', token),
@@ -52,10 +54,12 @@ const Register = () => {
       );
 
       const snapshot = await getDocs(invitationsQuery);
+      console.log('Invitation query results:', snapshot.size, 'documents found');
 
       if (!snapshot.empty) {
         const inviteDoc = snapshot.docs[0];
         const inviteData = inviteDoc.data();
+        console.log('Invitation data:', inviteData);
 
         // Check if invitation has expired
         const expiresAt = inviteData.expiresAt?.toDate();
@@ -71,6 +75,7 @@ const Register = () => {
         // Determine role based on invitation type
         if (inviteData.type === 'team_member') {
           // Team member invitation (property_manager or maintenance)
+          console.log('Team member invitation detected, role:', inviteData.role);
           setSelectedRole(inviteData.role || type || 'property_manager');
           setFormData(prev => ({
             ...prev,
@@ -79,6 +84,7 @@ const Register = () => {
           }));
         } else {
           // Tenant invitation
+          console.log('Tenant invitation detected');
           setSelectedRole('tenant');
           setFormData(prev => ({
             ...prev,
@@ -90,12 +96,14 @@ const Register = () => {
         setError('');
         return true;
       } else {
+        console.log('No invitation found with token and pending status');
         setError('Invalid or expired invitation link. Please contact your landlord.');
         return false;
       }
     } catch (err) {
       console.error('Error validating invitation:', err);
-      setError('Error validating invitation. Please try again.');
+      console.error('Error details:', err.message, err.code);
+      setError(`Error validating invitation: ${err.message}. Please try again.`);
       return false;
     } finally {
       setValidatingInvite(false);
