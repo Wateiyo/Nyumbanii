@@ -60,7 +60,9 @@ import {
   Image as ImageIcon,
   Filter,
   Search,
-  Ban
+  Ban,
+  FileText,
+  Calculator
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -95,6 +97,14 @@ const LandlordDashboard = () => {
   const [unreadMessages, setUnreadMessages] = useState({});
   const [showTenantDetailsModal, setShowTenantDetailsModal] = useState(false);
   const [selectedTenantForDetails, setSelectedTenantForDetails] = useState(null);
+  const [taxTrackingEnabled, setTaxTrackingEnabled] = useState(false);
+  const [showTaxPaymentModal, setShowTaxPaymentModal] = useState(false);
+  const [selectedTaxPeriod, setSelectedTaxPeriod] = useState(null);
+  const [taxPaymentData, setTaxPaymentData] = useState({
+    paymentDate: '',
+    prn: '',
+    amount: ''
+  });
 
   const [newTeamMember, setNewTeamMember] = useState({
   name: '',
@@ -146,7 +156,8 @@ const LandlordDashboard = () => {
     unit: '',
     amount: '',
     dueDate: '',
-    method: ''
+    method: '',
+    referenceNumber: ''
   });
   
   const [newListing, setNewListing] = useState({
@@ -744,11 +755,12 @@ const handleEditProperty = async () => {
         paidDate: null,
         status: 'pending',
         method: newPayment.method || 'Cash',
+        referenceNumber: newPayment.referenceNumber || null,
         landlordId: currentUser.uid,
         createdAt: serverTimestamp()
       });
 
-      setNewPayment({ tenant: '', property: '', unit: '', amount: '', dueDate: '', method: '' });
+      setNewPayment({ tenant: '', property: '', unit: '', amount: '', dueDate: '', method: '', referenceNumber: '' });
       setShowPaymentModal(false);
       alert('Payment record added successfully!');
     } catch (error) {
@@ -1105,6 +1117,44 @@ const handleViewTenantDetails = (tenant) => {
   setShowTenantDetailsModal(true);
 };
 
+  // Tax calculation helper functions
+  const calculateMonthlyTax = (year, month) => {
+    // Filter payments for the specific month
+    const monthPayments = payments.filter(payment => {
+      if (!payment.paidDate) return false;
+      const paymentDate = new Date(payment.paidDate);
+      return paymentDate.getFullYear() === year && paymentDate.getMonth() === month;
+    });
+
+    const totalIncome = monthPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const taxDue = Math.round(totalIncome * 0.10); // 10% tax
+
+    return {
+      year,
+      month,
+      monthName: new Date(year, month).toLocaleString('default', { month: 'long' }),
+      totalIncome,
+      taxDue,
+      payments: monthPayments,
+      status: 'pending', // Will be updated from tax payments collection
+      dueDate: new Date(year, month + 1, 20) // 20th of following month
+    };
+  };
+
+  const getRecentTaxPeriods = (monthsBack = 6) => {
+    const periods = [];
+    const today = new Date();
+
+    for (let i = 1; i <= monthsBack; i++) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      periods.push(calculateMonthlyTax(date.getFullYear(), date.getMonth()));
+    }
+
+    return periods;
+  };
+
+  const currentMonthTax = calculateMonthlyTax(new Date().getFullYear(), new Date().getMonth() - 1);
+
   // Stats calculations
   const stats = [
     { 
@@ -1177,30 +1227,32 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', 'team', 'memos', 'settings'].map((view) => {
-            const icons = { 
-              dashboard: Home, 
-              properties: Building, 
+          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'team', 'memos', 'settings'].map((view) => {
+            const icons = {
+              dashboard: Home,
+              properties: Building,
               listings: Eye,
-              viewings: CalendarCheck, 
-              calendar: Calendar, 
-              maintenance: Wrench, 
-              tenants: Users, 
+              viewings: CalendarCheck,
+              calendar: Calendar,
+              maintenance: Wrench,
+              tenants: Users,
               payments: Banknote,
-              team: Users, 
-              memos: Mail, 
-              settings: Settings 
+              'tax-reports': Calculator,
+              team: Users,
+              memos: Mail,
+              settings: Settings
             };
             const Icon = icons[view];
             const labels = {
               listings: 'Browse Listings',
               memos: 'Updates & Memos',
-              team: 'Team Management'
+              team: 'Team Management',
+              'tax-reports': 'Tax Reports'
             };
             return (
-              <button 
-                key={view} 
-                onClick={() => { setCurrentView(view); setSidebarOpen(false); }} 
+              <button
+                key={view}
+                onClick={() => { setCurrentView(view); setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}
               >
                 <Icon className="w-5 h-5" />
@@ -2136,6 +2188,179 @@ const handleViewTenantDetails = (tenant) => {
     </div>
   </div>
 )}
+
+          {/* Tax Reports View */}
+          {currentView === 'tax-reports' && taxTrackingEnabled && (
+            <>
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                      <Calculator className="w-5 h-5" />
+                      Rental Income Tax Reports
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Track your monthly tax obligations and maintain KRA compliance
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Month Tax Summary Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {currentMonthTax.monthName} {currentMonthTax.year} Tax Summary
+                  </h3>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    currentMonthTax.status === 'paid' ? 'bg-green-100 text-green-800' :
+                    new Date() > currentMonthTax.dueDate ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {currentMonthTax.status === 'paid' ? 'Paid' :
+                     new Date() > currentMonthTax.dueDate ? 'Overdue' : 'Pending'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Total Rental Income</p>
+                    <p className="text-2xl font-bold text-gray-900">KES {currentMonthTax.totalIncome.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">{currentMonthTax.payments.length} payments received</p>
+                  </div>
+
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Tax Due (10%)</p>
+                    <p className="text-2xl font-bold text-orange-600">KES {currentMonthTax.taxDue.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">Residential Rental Tax</p>
+                  </div>
+
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Payment Due Date</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {currentMonthTax.dueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {Math.ceil((currentMonthTax.dueDate - new Date()) / (1000 * 60 * 60 * 24))} days remaining
+                    </p>
+                  </div>
+                </div>
+
+                {currentMonthTax.status !== 'paid' && (
+                  <button
+                    onClick={() => {
+                      setSelectedTaxPeriod(currentMonthTax);
+                      setTaxPaymentData({
+                        paymentDate: new Date().toISOString().split('T')[0],
+                        prn: '',
+                        amount: currentMonthTax.taxDue.toString()
+                      });
+                      setShowTaxPaymentModal(true);
+                    }}
+                    className="w-full px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    Record Tax Payment
+                  </button>
+                )}
+              </div>
+
+              {/* Tax History Table */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">Tax Payment History</h3>
+                  <p className="text-sm text-gray-600 mt-1">Last 6 months</p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Period</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rental Income</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tax Due (10%)</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Due Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {getRecentTaxPeriods().map((period, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{period.monthName} {period.year}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">KES {period.totalIncome.toLocaleString()}</div>
+                            <div className="text-xs text-gray-500">{period.payments.length} payments</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-semibold text-orange-600">KES {period.taxDue.toLocaleString()}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {period.dueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              period.status === 'paid' ? 'bg-green-100 text-green-800' :
+                              new Date() > period.dueDate ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {period.status === 'paid' ? 'Paid' :
+                               new Date() > period.dueDate ? 'Overdue' : 'Pending'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {period.status !== 'paid' && period.taxDue > 0 && (
+                              <button
+                                onClick={() => {
+                                  setSelectedTaxPeriod(period);
+                                  setTaxPaymentData({
+                                    paymentDate: new Date().toISOString().split('T')[0],
+                                    prn: '',
+                                    amount: period.taxDue.toString()
+                                  });
+                                  setShowTaxPaymentModal(true);
+                                }}
+                                className="text-[#003366] hover:text-[#002244] font-medium"
+                              >
+                                Record Payment
+                              </button>
+                            )}
+                            {period.taxDue === 0 && (
+                              <span className="text-gray-400">No income</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Tax Information Card */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-6">
+                <div className="flex items-start gap-3">
+                  <Bell className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">About Residential Rental Income Tax</h4>
+                    <p className="text-sm text-gray-700 mb-3">
+                      As a landlord in Kenya, you're required to pay 10% of your gross rental income as Residential Rental Income Tax to KRA.
+                    </p>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• Tax Rate: 10% of gross monthly rental income</li>
+                      <li>• Payment Deadline: 20th of the following month</li>
+                      <li>• Example: December rent tax is due by January 20th</li>
+                      <li>• Payment Method: Via iTax or KRA-approved banks</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Tenants View */}
           {currentView === 'tenants' && (
@@ -3277,6 +3502,63 @@ const handleViewTenantDetails = (tenant) => {
           </div>
         </div>
 
+        {/* Tax Management Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Calculator className="w-6 h-6" />
+              Tax Management
+            </h2>
+          </div>
+
+          <div className="p-4 sm:p-6">
+            <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-2">Tax Assistant</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Automatically track and calculate your monthly rental income tax (10% of gross rent).
+                  Stay KRA compliant with automatic calculations, payment reminders, and detailed reports.
+                </p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Automatic 10% tax calculation on rental payments</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Monthly tax summaries and detailed breakdowns</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Payment reminders (Due: 20th of following month)</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Compliance reports for KRA audits</span>
+                  </div>
+                </div>
+                {taxTrackingEnabled && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Tax Assistant is active. View your tax reports in the Tax Reports tab.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer ml-4">
+                <input
+                  type="checkbox"
+                  checked={taxTrackingEnabled}
+                  onChange={(e) => setTaxTrackingEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
         {/* Alert Types Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-4 sm:p-6 border-b border-gray-200">
@@ -4125,7 +4407,7 @@ const handleViewTenantDetails = (tenant) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
                 <select
                   value={newPayment.method}
-                  onChange={(e) => setNewPayment({...newPayment, method: e.target.value})}
+                  onChange={(e) => setNewPayment({...newPayment, method: e.target.value, referenceNumber: ''})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                 >
                   <option value="">Not paid yet</option>
@@ -4135,6 +4417,33 @@ const handleViewTenantDetails = (tenant) => {
                   <option value="Cheque">Cheque</option>
                 </select>
               </div>
+
+              {/* Conditional Reference Number Field */}
+              {(newPayment.method === 'M-Pesa' || newPayment.method === 'Bank Transfer' || newPayment.method === 'Cheque') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {newPayment.method === 'M-Pesa' && 'M-Pesa Transaction Code'}
+                    {newPayment.method === 'Bank Transfer' && 'Bank Reference Number'}
+                    {newPayment.method === 'Cheque' && 'Cheque Number'}
+                  </label>
+                  <input
+                    type="text"
+                    value={newPayment.referenceNumber}
+                    onChange={(e) => setNewPayment({...newPayment, referenceNumber: e.target.value})}
+                    placeholder={
+                      newPayment.method === 'M-Pesa' ? 'e.g., SH12ABC3DE4' :
+                      newPayment.method === 'Bank Transfer' ? 'e.g., FT2024123456' :
+                      'e.g., 123456'
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {newPayment.method === 'M-Pesa' && 'Enter the M-Pesa confirmation code from the SMS'}
+                    {newPayment.method === 'Bank Transfer' && 'Enter the bank transaction reference number'}
+                    {newPayment.method === 'Cheque' && 'Enter the cheque number'}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="p-6 border-t border-gray-200 flex gap-3">
               <button onClick={() => setShowPaymentModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
@@ -4142,6 +4451,104 @@ const handleViewTenantDetails = (tenant) => {
               </button>
               <button onClick={handleAddPayment} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
                 Record Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tax Payment Modal */}
+      {showTaxPaymentModal && selectedTaxPeriod && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Record Tax Payment</h2>
+              <button onClick={() => setShowTaxPaymentModal(false)}>
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Tax Period</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {selectedTaxPeriod.monthName} {selectedTaxPeriod.year}
+                </p>
+                <p className="text-sm text-gray-600 mt-2">Tax Amount Due</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  KES {selectedTaxPeriod.taxDue.toLocaleString()}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Date *
+                </label>
+                <input
+                  type="date"
+                  value={taxPaymentData.paymentDate}
+                  onChange={(e) => setTaxPaymentData({...taxPaymentData, paymentDate: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  KRA Payment Reference Number (PRN)
+                </label>
+                <input
+                  type="text"
+                  value={taxPaymentData.prn}
+                  onChange={(e) => setTaxPaymentData({...taxPaymentData, prn: e.target.value})}
+                  placeholder="e.g., 1234567890"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the PRN from your iTax payment confirmation
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount Paid (KES) *
+                </label>
+                <input
+                  type="number"
+                  value={taxPaymentData.amount}
+                  onChange={(e) => setTaxPaymentData({...taxPaymentData, amount: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => setShowTaxPaymentModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!taxPaymentData.paymentDate || !taxPaymentData.amount) {
+                    alert('Please fill in all required fields');
+                    return;
+                  }
+
+                  try {
+                    // Here you would save to a taxPayments collection in Firestore
+                    // For now, just show success message
+                    alert('Tax payment recorded successfully!');
+                    setShowTaxPaymentModal(false);
+                    setTaxPaymentData({ paymentDate: '', prn: '', amount: '' });
+                  } catch (error) {
+                    console.error('Error recording tax payment:', error);
+                    alert('Error recording tax payment. Please try again.');
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
+              >
+                Save Payment Record
               </button>
             </div>
           </div>

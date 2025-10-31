@@ -184,7 +184,12 @@ const TenantDashboard = () => {
 
   // Fetch tenant data to get their landlordId
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('No current user');
+      return;
+    }
+
+    console.log('Fetching tenant data for email:', currentUser.email);
 
     const tenantsQuery = query(
       collection(db, 'tenants'),
@@ -192,10 +197,17 @@ const TenantDashboard = () => {
     );
 
     const unsubscribe = onSnapshot(tenantsQuery, (snapshot) => {
+      console.log('Tenant query returned:', snapshot.size, 'documents');
       if (!snapshot.empty) {
         const tenantDoc = snapshot.docs[0];
-        setTenantData({ id: tenantDoc.id, ...tenantDoc.data() });
+        const data = { id: tenantDoc.id, ...tenantDoc.data() };
+        console.log('Tenant data found:', data);
+        setTenantData(data);
+      } else {
+        console.log('No tenant data found for email:', currentUser.email.toLowerCase());
       }
+    }, (error) => {
+      console.error('Error fetching tenant data:', error);
     });
 
     return () => unsubscribe();
