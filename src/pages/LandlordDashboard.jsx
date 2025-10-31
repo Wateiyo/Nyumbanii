@@ -972,7 +972,7 @@ const handleAddTeamMember = async () => {
       email: newTeamMember.email.toLowerCase(),
       phone: newTeamMember.phone,
       role: newTeamMember.role,
-      assignedProperties: newTeamMember.assignedProperties,
+      assignedProperties: newTeamMember.assignedProperties || [],
       landlordId: currentUser.uid,
       landlordName: userProfile?.displayName || 'Your Landlord',
       status: 'pending',
@@ -1001,15 +1001,7 @@ const handleAddTeamMember = async () => {
     // Generate invitation link using the correct domain
     const invitationLink = `https://nyumbanii.web.app/register?invite=${invitationToken}&type=${newTeamMember.role}`;
 
-    // Copy to clipboard
-    try {
-      await navigator.clipboard.writeText(invitationLink);
-      alert(`Team member added successfully!\n\nInvitation link copied to clipboard:\n${invitationLink}\n\nShare this link with ${newTeamMember.name} to complete registration.`);
-    } catch (err) {
-      alert(`Team member added successfully!\n\nInvitation link:\n${invitationLink}\n\nPlease share this link with ${newTeamMember.name}.`);
-    }
-
-    // Reset form
+    // Reset form first
     setNewTeamMember({
       name: '',
       email: '',
@@ -1018,9 +1010,19 @@ const handleAddTeamMember = async () => {
       assignedProperties: []
     });
     setShowTeamModal(false);
+
+    // Copy to clipboard and show success message
+    try {
+      await navigator.clipboard.writeText(invitationLink);
+      alert(`Team member added successfully!\n\nInvitation link copied to clipboard:\n${invitationLink}\n\nAn invitation email has been sent to ${newTeamMember.name}.`);
+    } catch (err) {
+      console.log('Clipboard error:', err);
+      alert(`Team member added successfully!\n\nInvitation link:\n${invitationLink}\n\nAn invitation email has been sent to ${newTeamMember.name}.`);
+    }
   } catch (error) {
     console.error('Error adding team member:', error);
-    alert('Failed to add team member. Please try again.');
+    console.error('Error details:', error.message, error.code);
+    alert(`Failed to add team member: ${error.message}\n\nPlease try again.`);
   }
 };
 
