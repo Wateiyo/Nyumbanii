@@ -91,8 +91,10 @@ const LandlordDashboard = () => {
   const [showEditPropertyModal, setShowEditPropertyModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedTenantForMessage, setSelectedTenantForMessage] = useState(null);
-  const [unreadMessages, setUnreadMessages] = useState({}); 
-  
+  const [unreadMessages, setUnreadMessages] = useState({});
+  const [showTenantDetailsModal, setShowTenantDetailsModal] = useState(false);
+  const [selectedTenantForDetails, setSelectedTenantForDetails] = useState(null);
+
   const [newTeamMember, setNewTeamMember] = useState({
   name: '',
   email: '',
@@ -1087,6 +1089,10 @@ const handleMessageTenant = (tenant) => {
   setShowMessageModal(true);
 };
 
+const handleViewTenantDetails = (tenant) => {
+  setSelectedTenantForDetails(tenant);
+  setShowTenantDetailsModal(true);
+};
 
   // Stats calculations
   const stats = [
@@ -2248,7 +2254,9 @@ const handleMessageTenant = (tenant) => {
                             </div>
 
                             <div className="flex gap-2">
-                              <button className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm">
+                              <button
+                                onClick={() => handleViewTenantDetails(tenant)}
+                                className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm">
                                 View Details
                               </button>
                               <button
@@ -4562,6 +4570,128 @@ const handleMessageTenant = (tenant) => {
     </div>
   </div>
 )}
+
+{/* Tenant Details Modal */}
+{showTenantDetailsModal && selectedTenantForDetails && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+        <h3 className="text-2xl font-bold text-gray-900">Tenant Details</h3>
+        <button
+          onClick={() => {
+            setShowTenantDetailsModal(false);
+            setSelectedTenantForDetails(null);
+          }}
+          className="text-gray-400 hover:text-gray-600 transition"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="p-6 space-y-6">
+        {/* Personal Information */}
+        <div>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <User className="w-5 h-5" />
+            Personal Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+            <div>
+              <label className="text-sm font-medium text-gray-600">Full Name</label>
+              <p className="text-base font-semibold text-gray-900">{selectedTenantForDetails.name}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Email</label>
+              <p className="text-base text-gray-900">{selectedTenantForDetails.email}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Phone</label>
+              <p className="text-base text-gray-900">{selectedTenantForDetails.phone}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Status</label>
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                selectedTenantForDetails.status === 'active' ? 'bg-green-100 text-green-800' :
+                selectedTenantForDetails.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {selectedTenantForDetails.status}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Property Information */}
+        <div>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Home className="w-5 h-5" />
+            Property Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+            <div>
+              <label className="text-sm font-medium text-gray-600">Property</label>
+              <p className="text-base font-semibold text-gray-900">{selectedTenantForDetails.property}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Unit Number</label>
+              <p className="text-base text-gray-900">{selectedTenantForDetails.unit}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Monthly Rent</label>
+              <p className="text-base font-semibold text-gray-900">KES {selectedTenantForDetails.rent?.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Lease Information */}
+        <div>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            Lease Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+            <div>
+              <label className="text-sm font-medium text-gray-600">Lease Start Date</label>
+              <p className="text-base text-gray-900">{selectedTenantForDetails.leaseStart}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Lease End Date</label>
+              <p className="text-base text-gray-900">{selectedTenantForDetails.leaseEnd}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={() => {
+              setShowTenantDetailsModal(false);
+              handleMessageTenant(selectedTenantForDetails);
+            }}
+            className="flex-1 px-4 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2"
+          >
+            <Mail className="w-5 h-5" />
+            Send Message
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete ${selectedTenantForDetails.name}?`)) {
+                handleDeleteTenant(selectedTenantForDetails.id, selectedTenantForDetails.name);
+                setShowTenantDetailsModal(false);
+                setSelectedTenantForDetails(null);
+              }
+            }}
+            className="px-4 py-3 bg-white border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition flex items-center gap-2"
+          >
+            <Trash2 className="w-5 h-5" />
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 {/* Message Modal */}
 {showMessageModal && selectedTenantForMessage && (
   <MessageModal
