@@ -557,8 +557,8 @@ const TenantDashboard = () => {
   };
 
   const filteredListings = availableListings.filter(listing =>
-    listing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    listing.location.toLowerCase().includes(searchTerm.toLowerCase())
+    (listing.name && listing.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (listing.location && listing.location.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
