@@ -43,7 +43,7 @@ const storage = getStorage();
 
 const TenantDashboard = () => {
   // ============ AUTH & NAVIGATION ============
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
   // ============ STATE MANAGEMENT ============
@@ -693,9 +693,15 @@ const TenantDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
-      console.log('Logging out...');
+      try {
+        await logout();
+        navigate('/');
+      } catch (error) {
+        console.error('Logout error:', error);
+        alert('Failed to logout. Please try again.');
+      }
     }
   };
 
