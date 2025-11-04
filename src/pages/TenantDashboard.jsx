@@ -1100,7 +1100,7 @@ const TenantDashboard = () => {
           {currentView === 'payments' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
-              <div className="bg-blue-50 dark:bg-blue-900/30 border-y border-blue-200 dark:border-blue-800 -mx-4 lg:-mx-6 px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-6xl mx-auto">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Payment History</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Track your rent payments and receipts</p>
@@ -1114,7 +1114,7 @@ const TenantDashboard = () => {
                 </button>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden max-w-6xl mx-auto">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
@@ -1247,7 +1247,7 @@ const TenantDashboard = () => {
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   {documents.map((doc) => (
-                    <div key={doc.id} className="bg-white dark:bg-gray-800 p-5 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition flex items-center gap-4">
+                    <div key={doc.id} className="bg-white dark:bg-gray-800 p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition flex items-center gap-4 lg:gap-6 min-h-[120px] lg:min-h-[140px]">
                       <FileText className="w-12 h-12 lg:w-14 lg:h-14 text-[#003366] dark:text-blue-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-3 mb-2">
