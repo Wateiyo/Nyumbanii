@@ -718,7 +718,7 @@ const TenantDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
         <div className="p-6">
@@ -1515,25 +1515,6 @@ const TenantDashboard = () => {
 
             <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">SMS Notifications</h3>
-                <p className="text-sm text-gray-500 mt-1">Receive updates via text message</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={profileSettings.notifications.sms}
-                  onChange={(e) => setProfileSettings({
-                    ...profileSettings,
-                    notifications: {...profileSettings.notifications, sms: e.target.checked}
-                  })}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">Push Notifications</h3>
                 <p className="text-sm text-gray-500 mt-1">Receive browser push notifications</p>
               </div>
@@ -1615,6 +1596,127 @@ const TenantDashboard = () => {
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
               </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Preferences Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Preferences</h2>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">Dark Mode</h3>
+                <p className="text-sm text-gray-500 mt-1">Switch to dark theme for better viewing at night</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">Auto-Pay Reminders</h3>
+                <p className="text-sm text-gray-500 mt-1">Remind me 3 days before rent is due</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">Compact View</h3>
+                <p className="text-sm text-gray-500 mt-1">Show more information in less space</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Language & Region Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Language & Region</h2>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
+              <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white">
+                <option>English</option>
+                <option>Swahili</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+              <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white">
+                <option>KES (Kenyan Shilling)</option>
+                <option>USD (US Dollar)</option>
+                <option>EUR (Euro)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date Format</label>
+              <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white">
+                <option>DD/MM/YYYY</option>
+                <option>MM/DD/YYYY</option>
+                <option>YYYY-MM-DD</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Privacy & Data Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Privacy & Data</h2>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">Share Usage Data</h3>
+                <p className="text-sm text-gray-500 mt-1">Help us improve by sharing anonymous usage data</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="p-4 border border-gray-200 rounded-lg">
+              <div className="flex-1 mb-3">
+                <h3 className="font-semibold text-gray-900">Download Your Data</h3>
+                <p className="text-sm text-gray-500 mt-1">Get a copy of all your data stored with us</p>
+              </div>
+              <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm">
+                Request Data Export
+              </button>
             </div>
           </div>
         </div>

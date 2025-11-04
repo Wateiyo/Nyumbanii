@@ -99,7 +99,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-900 flex items-center justify-center py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-blue-900 flex items-center justify-center py-12 px-4 relative overflow-x-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-64 h-64 bg-blue-800 rounded-full opacity-30 -translate-x-1/2 -translate-y-1/2"></div>
@@ -272,12 +272,12 @@ const Login = () => {
           </div>
 
           {/* Right Side - Image */}
-          <div className="hidden lg:block">
+          <div className="hidden lg:block overflow-hidden">
             <div className="relative">
-              <img 
-                src="/images/login.png" 
-                alt="Property Management" 
-                className="w-full h-auto rounded-3xl shadow-2xl"
+              <img
+                src="/images/login.png"
+                alt="Property Management"
+                className="w-full h-auto rounded-3xl shadow-2xl object-cover"
               />
             </div>
           </div>
