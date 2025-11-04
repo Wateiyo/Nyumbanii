@@ -1245,32 +1245,34 @@ const TenantDashboard = () => {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   {documents.map((doc) => (
-                    <div key={doc.id} className="bg-white dark:bg-gray-800 p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition">
-                      <div className="flex items-start justify-between mb-4">
-                        <FileText className="w-12 h-12 lg:w-14 lg:h-14 text-[#003366] dark:text-blue-400 flex-shrink-0" />
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{doc.type}</span>
-                          <button
-                            onClick={() => handleDeleteDocument(doc)}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                            title="Delete document"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                    <div key={doc.id} className="bg-white dark:bg-gray-800 p-5 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition flex items-center gap-4">
+                      <FileText className="w-12 h-12 lg:w-14 lg:h-14 text-[#003366] dark:text-blue-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white truncate">{doc.name}</h4>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{doc.type}</span>
+                            <button
+                              onClick={() => handleDeleteDocument(doc)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                              title="Delete document"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white mb-3">{doc.name}</h4>
-                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        <span>{doc.date}</span>
-                        <span>{doc.size}</span>
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                          <span>{doc.date}</span>
+                          <span>{doc.size}</span>
+                        </div>
                       </div>
                       <button
                         onClick={() => handleDownloadDocument(doc)}
-                        className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white transition text-sm font-medium"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white transition text-sm font-medium flex-shrink-0"
                       >
-                        <Download className="w-5 h-5" />
+                        <Download className="w-4 h-4" />
                         Download
                       </button>
                     </div>
