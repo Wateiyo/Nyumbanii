@@ -752,8 +752,8 @@ const TenantDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 lg:ml-64">
         {/* Top Navigation */}
-        <header className={`bg-transparent sticky top-0 z-40 transition-transform duration-300 ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
-          <div className="flex items-center justify-between px-4 lg:px-8 py-4">
+        <header className={`bg-white border-b border-gray-200 sticky top-0 z-40 transition-transform duration-300 ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
+          <div className="flex items-center justify-between px-4 lg:px-6 py-4">
             <div className="flex items-center gap-4">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
                 <Menu className="w-6 h-6" />
@@ -810,7 +810,7 @@ const TenantDashboard = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="p-4 lg:p-8">
+        <main className="px-4 lg:px-6 py-4 lg:py-6">
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <div className="space-y-6">
@@ -1047,58 +1047,58 @@ const TenantDashboard = () => {
             </div>
           )}
 
-      {/* Maintenance View */}
-      {currentView === 'maintenance' && (
-    <div className="space-y-6">
-      {/* Blue Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-gray-900 mb-1">Maintenance Requests</h3>
-          <p className="text-sm text-gray-600">Report and track maintenance issues</p>
-        </div>
-        <button
-          onClick={() => setShowMaintenanceModal(true)}
-          className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          New Request
-        </button>
-      </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-      {maintenanceRequests.map((request) => (
-        <div key={request.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h4 className="font-semibold text-base lg:text-lg text-gray-900">{request.issue}</h4>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  request.priority === 'High' ? 'bg-red-100 text-red-800' :
-                  request.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-green-100 text-green-800'
-                }`}>
-                  {request.priority}
-                </span>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  request.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                  request.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {request.status}
-                </span>
+          {/* Maintenance View */}
+          {currentView === 'maintenance' && (
+            <div className="space-y-6">
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Maintenance Requests</h3>
+                  <p className="text-sm text-gray-600">Report and track maintenance issues</p>
+                </div>
+                <button
+                  onClick={() => setShowMaintenanceModal(true)}
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  New Request
+                </button>
               </div>
-              <p className="text-sm text-gray-600 mb-2">{request.description}</p>
-              <p className="text-xs lg:text-sm text-gray-500">Reported on {request.date}</p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {maintenanceRequests.map((request) => (
+                  <div key={request.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-base lg:text-lg text-gray-900">{request.issue}</h4>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            request.priority === 'High' ? 'bg-red-100 text-red-800' :
+                            request.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {request.priority}
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            request.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                            request.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {request.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{request.description}</p>
+                        <p className="text-xs lg:text-sm text-gray-500">Reported on {request.date}</p>
+                      </div>
+                      <button className="self-end lg:self-center text-[#003366] hover:text-[#002244] text-xs lg:text-sm font-medium whitespace-nowrap">
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <button className="self-end lg:self-center text-[#003366] hover:text-[#002244] text-xs lg:text-sm font-medium whitespace-nowrap">
-              View Details
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+          )}
 
 
 
@@ -1145,46 +1145,46 @@ const TenantDashboard = () => {
             </div>
           )}
 
-    {/* Messages View */}
-    {currentView === 'messages' && (
-      <div className="space-y-6">
-        {/* Blue Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Messages</h3>
-            <p className="text-sm text-gray-600">Communicate with your property manager</p>
-          </div>
-          <button
-            onClick={() => setShowMessageModal(true)}
-            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-          >
-            <Send className="w-5 h-5" />
-            New Message
-          </button>
-        </div>
-
-    {/* Each message as individual card - like Documents */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-      {messages.map((message) => (
-        <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-semibold text-sm lg:text-base text-gray-900">{message.subject}</h4>
-                {!message.read && (
-                  <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
-                )}
+          {/* Messages View */}
+          {currentView === 'messages' && (
+            <div className="space-y-6">
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Messages</h3>
+                  <p className="text-sm text-gray-600">Communicate with your property manager</p>
+                </div>
+                <button
+                  onClick={() => setShowMessageModal(true)}
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Send className="w-5 h-5" />
+                  New Message
+                </button>
               </div>
-              <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
-              <p className="text-xs lg:text-sm text-gray-500">{message.preview}</p>
+
+              {/* Each message as individual card - like Documents */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                {messages.map((message) => (
+                  <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold text-sm lg:text-base text-gray-900">{message.subject}</h4>
+                          {!message.read && (
+                            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                          )}
+                        </div>
+                        <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
+                        <p className="text-xs lg:text-sm text-gray-500">{message.preview}</p>
+                      </div>
+                      <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+          )}
 
           {/* Available Listings View */}
           {currentView === 'listings' && (
