@@ -696,21 +696,32 @@ const TenantDashboard = () => {
       return;
     }
 
+    if (!currentUser) {
+      alert('You must be logged in to upload documents');
+      return;
+    }
+
     if (!tenantData?.id) {
       alert('Unable to upload: Tenant data not found');
       return;
     }
 
     setUploadingDocument(true);
+    console.log('Starting document upload for tenant:', tenantData.id);
+    console.log('Current user:', currentUser.uid);
+
     try {
       // Create a storage reference
       const fileRef = ref(storage, `documents/${tenantData.id}/${Date.now()}_${newDocument.file.name}`);
+      console.log('Uploading to storage path:', fileRef.fullPath);
 
       // Upload the file
       await uploadBytes(fileRef, newDocument.file);
+      console.log('File uploaded to storage successfully');
 
       // Get the download URL
       const downloadURL = await getDownloadURL(fileRef);
+      console.log('Got download URL:', downloadURL);
 
       // Add document to Firestore
       const documentData = {
@@ -720,16 +731,21 @@ const TenantDashboard = () => {
         size: `${(newDocument.file.size / 1024 / 1024).toFixed(2)} MB`,
         url: downloadURL,
         tenantId: tenantData.id,
-        uploadedAt: serverTimestamp()
+        uploadedAt: serverTimestamp(),
+        uploadedBy: currentUser.uid
       };
 
+      console.log('Adding document to Firestore:', documentData);
       await addDoc(collection(db, 'documents'), documentData);
+      console.log('Document added to Firestore successfully');
 
       setShowDocumentUploadModal(false);
       setNewDocument({ name: '', file: null });
       alert('Document uploaded successfully!');
     } catch (error) {
       console.error('Error uploading document:', error);
+      console.error('Error code:', error.code);
+      console.error('Error details:', error);
       alert(`Failed to upload document: ${error.message}`);
     } finally {
       setUploadingDocument(false);
