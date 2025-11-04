@@ -32,8 +32,9 @@ import {
   Camera,
   Clock,
   ChevronLeft,
-  ChevronRight, 
-  Menu
+  ChevronRight,
+  Menu,
+  Trash2
 } from 'lucide-react';
 
 // Initialize Firebase services
@@ -762,6 +763,35 @@ const TenantDashboard = () => {
     }
   };
 
+  const handleDeleteDocument = async (doc) => {
+    if (!window.confirm(`Are you sure you want to delete "${doc.name}"?`)) {
+      return;
+    }
+
+    try {
+      const { deleteDoc, doc: docRef } = await import('firebase/firestore');
+      const { ref: storageRef, deleteObject } = await import('firebase/storage');
+
+      // Delete from Firestore
+      await deleteDoc(docRef(db, 'documents', doc.id));
+
+      // If document has a storage URL, delete from storage
+      if (doc.url) {
+        try {
+          const fileRef = storageRef(storage, doc.url);
+          await deleteObject(fileRef);
+        } catch (storageError) {
+          console.error('Error deleting file from storage:', storageError);
+        }
+      }
+
+      alert('Document deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert(`Failed to delete document: ${error.message}`);
+    }
+  };
+
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
       try {
@@ -1215,23 +1245,32 @@ const TenantDashboard = () => {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
                   {documents.map((doc) => (
-                    <div key={doc.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
-                      <div className="flex items-start justify-between mb-3">
-                        <FileText className="w-8 h-8 lg:w-10 lg:h-10 text-[#003366] dark:text-blue-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{doc.type}</span>
+                    <div key={doc.id} className="bg-white dark:bg-gray-800 p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition">
+                      <div className="flex items-start justify-between mb-4">
+                        <FileText className="w-12 h-12 lg:w-14 lg:h-14 text-[#003366] dark:text-blue-400 flex-shrink-0" />
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{doc.type}</span>
+                          <button
+                            onClick={() => handleDeleteDocument(doc)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                            title="Delete document"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                      <h4 className="font-semibold text-sm lg:text-base text-gray-900 dark:text-white mb-2">{doc.name}</h4>
-                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white mb-3">{doc.name}</h4>
+                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
                         <span>{doc.date}</span>
                         <span>{doc.size}</span>
                       </div>
                       <button
                         onClick={() => handleDownloadDocument(doc)}
-                        className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white transition text-sm"
+                        className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white transition text-sm font-medium"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-5 h-5" />
                         Download
                       </button>
                     </div>
