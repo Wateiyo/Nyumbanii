@@ -1065,7 +1065,7 @@ const TenantDashboard = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                 {maintenanceRequests.map((request) => (
                   <div key={request.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -1164,25 +1164,42 @@ const TenantDashboard = () => {
               </div>
 
               {/* Each message as individual card - like Documents */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                {messages.map((message) => (
-                  <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-sm lg:text-base text-gray-900">{message.subject}</h4>
-                          {!message.read && (
-                            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
-                          )}
+              {messages.length === 0 ? (
+                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
+                  <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Messages Yet</h3>
+                  <p className="text-gray-600 mb-6">
+                    You haven't received any messages from your property manager yet.
+                  </p>
+                  <button
+                    onClick={() => setShowMessageModal(true)}
+                    className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
+                  >
+                    <Send className="w-5 h-5" />
+                    Send Your First Message
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                  {messages.map((message) => (
+                    <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-sm lg:text-base text-gray-900">{message.subject}</h4>
+                            {!message.read && (
+                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                            )}
+                          </div>
+                          <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
+                          <p className="text-xs lg:text-sm text-gray-500">{message.preview}</p>
                         </div>
-                        <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
-                        <p className="text-xs lg:text-sm text-gray-500">{message.preview}</p>
+                        <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
                       </div>
-                      <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
