@@ -831,7 +831,7 @@ const TenantDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64 w-full max-w-full">
+      <div className="flex-1 lg:ml-64 w-full max-w-full overflow-x-hidden">
         {/* Top Navigation */}
         <header className={`bg-gray-50 dark:bg-gray-900 sticky top-0 z-40 transition-all duration-300 ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between px-4 lg:px-6 py-4">
@@ -891,10 +891,10 @@ const TenantDashboard = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="w-full px-4 lg:px-6 py-4 lg:py-6">
+        <main className="w-full max-w-full py-4 lg:py-6 overflow-x-hidden">
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
-            <div className="space-y-6 w-full max-w-full">
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* No Tenant Data Warning */}
               {!tenantData && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
@@ -1068,7 +1068,7 @@ const TenantDashboard = () => {
 
           {/* Payments View */}
           {currentView === 'payments' && (
-            <div className="space-y-6 w-full max-w-full">
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -1130,7 +1130,7 @@ const TenantDashboard = () => {
 
           {/* Maintenance View */}
           {currentView === 'maintenance' && (
-            <div className="space-y-6 w-full max-w-full">
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
                 <div>
@@ -1185,7 +1185,7 @@ const TenantDashboard = () => {
 
           {/* Documents View */}
           {currentView === 'documents' && (
-            <div className="space-y-6 w-full max-w-full">
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -1243,7 +1243,7 @@ const TenantDashboard = () => {
 
           {/* Messages View */}
           {currentView === 'messages' && (
-            <div className="space-y-6 w-full max-w-full">
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
                 <div>
@@ -1301,7 +1301,7 @@ const TenantDashboard = () => {
 
           {/* Available Listings View */}
           {currentView === 'listings' && (
-            <div className="space-y-6 w-full max-w-full">
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Button to Full Listings Page */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -1347,22 +1347,22 @@ const TenantDashboard = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 pb-8">
                   {filteredListings.map((listing) => (
-                  <div key={listing.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition group">
+                  <div key={listing.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition group">
                     <div className="relative h-48 lg:h-56 overflow-hidden">
                       <img
                         src={listing.images?.[0] || '/images/placeholder.jpg'}
                         alt={listing.property}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
-                      <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full shadow-md">
-                        <span className="font-bold text-[#003366] text-sm lg:text-base">KES {listing.rent?.toLocaleString()}/mo</span>
+                      <div className="absolute top-3 right-3 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-md border border-gray-200 dark:border-gray-600">
+                        <span className="font-bold text-[#003366] dark:text-blue-400 text-sm lg:text-base">KES {listing.rent?.toLocaleString()}/mo</span>
                       </div>
                     </div>
 
                     <div className="p-4 lg:p-6">
-                      <h4 className="font-bold text-base lg:text-lg text-gray-900 mb-2">{listing.property} - {listing.unit}</h4>
-                      <p className="text-xs lg:text-sm text-gray-600 mb-4 line-clamp-2">{listing.description}</p>
-                      
+                      <h4 className="font-bold text-base lg:text-lg text-gray-900 dark:text-white mb-2">{listing.property} - {listing.unit}</h4>
+                      <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{listing.description}</p>
+
                       <div className="flex items-center gap-4 mb-4 text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <Bed className="w-4 h-4" />
@@ -1380,24 +1380,24 @@ const TenantDashboard = () => {
 
                       <div className="flex flex-wrap gap-2 mb-4">
                         {listing.amenities?.map((amenity, index) => (
-                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                          <span key={index} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
                             {amenity}
                           </span>
                         ))}
                       </div>
 
                       <div className="flex gap-2">
-                        <button 
+                        <button
                           onClick={() => {
                             setSelectedListing(listing);
                             setCurrentImageIndex(0);
                           }}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
                         >
                           <Eye className="w-4 h-4" />
                           View
                         </button>
-                        <button 
+                        <button
                           onClick={() => {
                             setSelectedListing(listing);
                             setShowBookingModal(true);
@@ -1408,7 +1408,7 @@ const TenantDashboard = () => {
                               phone: profileSettings.phone
                             });
                           }}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm"
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition text-sm"
                         >
                           <Calendar className="w-4 h-4" />
                           Book
@@ -1423,9 +1423,9 @@ const TenantDashboard = () => {
           )}
 
           {/* Settings View */}
-          
+
 {currentView === 'settings' && (
-  <div className="space-y-6 w-full max-w-full">
+  <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
         {/* Blue Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
