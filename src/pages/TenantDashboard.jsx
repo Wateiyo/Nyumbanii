@@ -1482,7 +1482,7 @@ const TenantDashboard = () => {
           </button>
         </div>
         {/* Profile Settings Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Settings</h2>
             <button
@@ -1579,7 +1579,7 @@ const TenantDashboard = () => {
         </div>
 
         {/* Security Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Security</h2>
           </div>
@@ -1613,7 +1613,7 @@ const TenantDashboard = () => {
         </div>
 
         {/* Notification Preferences Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Notification Preferences</h2>
           </div>
@@ -1660,7 +1660,7 @@ const TenantDashboard = () => {
         </div>
 
         {/* Alert Types Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Alert Types</h2>
           </div>
@@ -1726,7 +1726,7 @@ const TenantDashboard = () => {
         </div>
 
         {/* Preferences Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Preferences</h2>
           </div>
@@ -1783,7 +1783,7 @@ const TenantDashboard = () => {
         </div>
 
         {/* Language & Region Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Language & Region</h2>
           </div>
@@ -1830,7 +1830,7 @@ const TenantDashboard = () => {
         </div>
 
         {/* Privacy & Data Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Privacy & Data</h2>
           </div>
