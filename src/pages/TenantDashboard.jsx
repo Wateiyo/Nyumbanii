@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -58,6 +59,7 @@ const TenantDashboard = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showDocumentUploadModal, setShowDocumentUploadModal] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedListing, setSelectedListing] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -127,24 +129,14 @@ const TenantDashboard = () => {
     }
   }, [preferences.darkMode]);
 
-  // ENHANCED BOOKING DATA WITH CREDIBILITY FIELDS
+  // BASIC BOOKING DATA FOR LOGGED-IN TENANTS
   const [bookingData, setBookingData] = useState({
     date: '',
     time: '',
     name: profileSettings.name,
     email: profileSettings.email,
     phone: profileSettings.phone,
-    message: '',
-    emailVerified: false,
-    employmentStatus: '',
-    employerName: '',
-    employerPhone: '',
-    monthlyIncome: '',
-    occupation: '',
-    motivation: '',
-    moveInDate: '',
-    currentResidence: '',
-    references: ''
+    message: ''
   });
 
   const [verificationCodes, setVerificationCodes] = useState({
@@ -800,6 +792,225 @@ const TenantDashboard = () => {
       } catch (error) {
         console.error('Logout error:', error);
         alert('Failed to logout. Please try again.');
+      }
+    }
+  };
+
+  // Profile Settings Save Handler
+  const handleSaveProfile = async () => {
+    if (!tenantData?.id) {
+      alert('Unable to save: Tenant data not found');
+      return;
+    }
+
+    try {
+      const tenantRef = doc(db, 'tenants', tenantData.id);
+      await updateDoc(tenantRef, {
+        name: profileSettings.name,
+        email: profileSettings.email,
+        phone: profileSettings.phone,
+        idNumber: profileSettings.idNumber,
+        emergencyContact: profileSettings.emergencyContact,
+        updatedAt: serverTimestamp()
+      });
+
+      setEditingProfile(false);
+      alert('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert(`Failed to update profile: ${error.message}`);
+    }
+  };
+
+  // Password Change Handler
+  const handlePasswordChange = async () => {
+    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
+      alert('Please fill in all password fields');
+      return;
+    }
+
+    if (passwordData.new !== passwordData.confirm) {
+      alert('New passwords do not match!');
+      return;
+    }
+
+    if (passwordData.new.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      // Re-authenticate user before changing password
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        passwordData.current
+      );
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // Update password
+      await updatePassword(currentUser, passwordData.new);
+
+      setShowPasswordModal(false);
+      setPasswordData({ current: '', new: '', confirm: '' });
+      alert('Password updated successfully!');
+    } catch (error) {
+      console.error('Error changing password:', error);
+      if (error.code === 'auth/wrong-password') {
+        alert('Current password is incorrect');
+      } else if (error.code === 'auth/weak-password') {
+        alert('New password is too weak');
+      } else {
+        alert(`Failed to change password: ${error.message}`);
+      }
+    }
+  };
+
+  // Photo Upload Handler
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    if (!tenantData?.id) {
+      alert('Unable to upload: Tenant data not found');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      // Upload to Firebase Storage
+      const fileRef = ref(storage, `profile-photos/${tenantData.id}/${Date.now()}_${file.name}`);
+      await uploadBytes(fileRef, file);
+      const downloadURL = await getDownloadURL(fileRef);
+
+      // Update tenant profile with photo URL
+      const tenantRef = doc(db, 'tenants', tenantData.id);
+      await updateDoc(tenantRef, {
+        photoURL: downloadURL,
+        updatedAt: serverTimestamp()
+      });
+
+      setProfileSettings({ ...profileSettings, photoURL: downloadURL });
+      alert('Photo uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert(`Failed to upload photo: ${error.message}`);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // Data Export Handler
+  const handleDataExport = async () => {
+    if (!tenantData?.id) {
+      alert('Unable to export: Tenant data not found');
+      return;
+    }
+
+    try {
+      // Gather all user data
+      const exportData = {
+        profile: profileSettings,
+        tenantData: tenantData,
+        preferences: preferences,
+        exportDate: new Date().toISOString()
+      };
+
+      // Convert to JSON and create download
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `tenant-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert('Data exported successfully!');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert(`Failed to export data: ${error.message}`);
+    }
+  };
+
+  // Account Deactivation Handler
+  const handleDeactivateAccount = async () => {
+    if (!window.confirm('Are you sure you want to deactivate your account? You can reactivate it by logging in again.')) {
+      return;
+    }
+
+    if (!tenantData?.id) {
+      alert('Unable to deactivate: Tenant data not found');
+      return;
+    }
+
+    try {
+      const tenantRef = doc(db, 'tenants', tenantData.id);
+      await updateDoc(tenantRef, {
+        accountStatus: 'deactivated',
+        deactivatedAt: serverTimestamp()
+      });
+
+      alert('Account deactivated successfully. You will be logged out.');
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error deactivating account:', error);
+      alert(`Failed to deactivate account: ${error.message}`);
+    }
+  };
+
+  // Account Deletion Handler
+  const handleDeleteAccount = async () => {
+    const confirmation = window.prompt(
+      'Are you sure you want to permanently delete your account? This action cannot be undone.\n\nType "DELETE" to confirm:'
+    );
+
+    if (confirmation !== 'DELETE') {
+      if (confirmation !== null) {
+        alert('Account deletion cancelled. You must type "DELETE" to confirm.');
+      }
+      return;
+    }
+
+    if (!tenantData?.id) {
+      alert('Unable to delete: Tenant data not found');
+      return;
+    }
+
+    try {
+      // Delete tenant document from Firestore
+      const tenantRef = doc(db, 'tenants', tenantData.id);
+      await deleteDoc(tenantRef);
+
+      // Delete user's documents
+      // Note: In production, you might want to use a Cloud Function to handle cascading deletes
+
+      // Delete Firebase Auth user
+      await deleteUser(currentUser);
+
+      alert('Account deleted successfully.');
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      if (error.code === 'auth/requires-recent-login') {
+        alert('For security, please log out and log back in before deleting your account.');
+      } else {
+        alert(`Failed to delete account: ${error.message}`);
       }
     }
   };
@@ -1487,7 +1698,13 @@ const TenantDashboard = () => {
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Settings</h2>
             <button
-              onClick={() => setEditingProfile(!editingProfile)}
+              onClick={() => {
+                if (editingProfile) {
+                  handleSaveProfile();
+                } else {
+                  setEditingProfile(true);
+                }
+              }}
               className="px-4 py-2 sm:px-6 sm:py-2.5 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-medium text-sm sm:text-base"
             >
               {editingProfile ? 'Save Profile' : 'Edit Profile'}
@@ -1498,23 +1715,45 @@ const TenantDashboard = () => {
             {/* Profile Photo */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6">
               <div className="relative">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#003366] dark:bg-blue-600 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
-                  {profileSettings.name?.charAt(0)?.toUpperCase() || 'S'}
-                </div>
+                {profileSettings.photoURL ? (
+                  <img
+                    src={profileSettings.photoURL}
+                    alt="Profile"
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#003366] dark:bg-blue-600 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
+                    {profileSettings.name?.charAt(0)?.toUpperCase() || 'S'}
+                  </div>
+                )}
                 {editingProfile && (
-                  <button className="absolute bottom-0 right-0 w-6 h-6 sm:w-7 sm:h-7 bg-[#003366] dark:bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-[#002244] dark:hover:bg-blue-700 transition">
+                  <label htmlFor="photo-upload" className="absolute bottom-0 right-0 w-6 h-6 sm:w-7 sm:h-7 bg-[#003366] dark:bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-[#002244] dark:hover:bg-blue-700 transition cursor-pointer">
                     <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
                 )}
               </div>
               <div className="flex-1">
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{profileSettings.name}</h3>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{profileSettings.email}</p>
                 {editingProfile && (
-                  <button className="text-[#003366] dark:text-blue-400 text-sm mt-1 hover:underline font-medium flex items-center gap-1">
+                  <label htmlFor="photo-upload-text" className="text-[#003366] dark:text-blue-400 text-sm mt-1 hover:underline font-medium flex items-center gap-1 cursor-pointer">
                     <Camera className="w-4 h-4" />
                     Change Photo
-                  </button>
+                    <input
+                      id="photo-upload-text"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
                 )}
               </div>
             </div>
@@ -1871,7 +2110,7 @@ const TenantDashboard = () => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Get a copy of all your data stored with us</p>
               </div>
               <button
-                onClick={() => alert('Data export will be sent to your email within 24 hours.')}
+                onClick={handleDataExport}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium text-sm"
               >
                 Request Data Export
@@ -1895,7 +2134,10 @@ const TenantDashboard = () => {
                 <h3 className="font-semibold text-gray-900 dark:text-white">Deactivate Account</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Temporarily disable your account</p>
               </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition font-medium whitespace-nowrap text-sm sm:text-base">
+              <button
+                onClick={handleDeactivateAccount}
+                className="px-4 py-2 sm:px-6 sm:py-2.5 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition font-medium whitespace-nowrap text-sm sm:text-base"
+              >
                 Deactivate
               </button>
             </div>
@@ -1906,7 +2148,10 @@ const TenantDashboard = () => {
                 <h3 className="font-semibold text-gray-900 dark:text-white">Delete Account</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Permanently delete your account and all data</p>
               </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition font-medium text-sm sm:text-base">
+              <button
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 sm:px-6 sm:py-2.5 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition font-medium text-sm sm:text-base"
+              >
                 Delete Account
               </button>
             </div>
@@ -2236,15 +2481,7 @@ const TenantDashboard = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    if (passwordData.new === passwordData.confirm) {
-                      alert('Password updated successfully!');
-                      setShowPasswordModal(false);
-                      setPasswordData({ current: '', new: '', confirm: '' });
-                    } else {
-                      alert('Passwords do not match!');
-                    }
-                  }}
+                  onClick={handlePasswordChange}
                   className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
                 >
                   Update
@@ -2360,343 +2597,78 @@ const TenantDashboard = () => {
         </div>
       )}
 
-      {/* ENHANCED BOOKING MODAL WITH EMAIL VERIFICATION */}
+      {/* BASIC BOOKING MODAL FOR LOGGED-IN TENANTS */}
       {showBookingModal && selectedListing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl w-full max-w-3xl my-8">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 rounded-t-xl z-10">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md">
+            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 rounded-t-xl">
               <div className="flex justify-between items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1">Book a Viewing</h3>
-                  <p className="text-xs lg:text-sm text-gray-600 truncate">{selectedListing.name} - {selectedListing.location}</p>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Book a Viewing</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedListing.name} - {selectedListing.location}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     setShowBookingModal(false);
                     setSelectedListing(null);
-                  }} 
-                  className="text-gray-500 hover:text-gray-700 flex-shrink-0"
+                  }}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 >
-                  <X className="w-5 h-5 lg:w-6 lg:h-6" />
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
-              {/* Credibility Score Indicator */}
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs lg:text-sm font-medium text-gray-700 dark:text-gray-300">Application Strength</span>
-                  <span className={`text-sm lg:text-base font-bold ${
-                    calculateCredibilityScore() >= 75 ? 'text-green-600' :
-                    calculateCredibilityScore() >= 50 ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {calculateCredibilityScore()}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all ${
-                      calculateCredibilityScore() >= 75 ? 'bg-green-600' :
-                      calculateCredibilityScore() >= 50 ? 'bg-yellow-600' :
-                      'bg-red-600'
-                    }`}
-                    style={{ width: `${calculateCredibilityScore()}%` }}
-                  ></div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                  <div className={`flex items-center gap-2 ${bookingData.emailVerified ? 'text-green-700' : 'text-gray-500'}`}>
-                    <CheckCircle className={`w-4 h-4 flex-shrink-0 ${bookingData.emailVerified ? 'text-green-600' : 'text-gray-400'}`} />
-                    <span>Email Verified</span>
-                  </div>
-                  <div className={`flex items-center gap-2 ${(bookingData.employmentStatus && bookingData.employerName) ? 'text-green-700' : 'text-gray-500'}`}>
-                    <CheckCircle className={`w-4 h-4 flex-shrink-0 ${(bookingData.employmentStatus && bookingData.employerName) ? 'text-green-600' : 'text-gray-400'}`} />
-                    <span>Employment Info</span>
-                  </div>
-                  <div className={`flex items-center gap-2 ${bookingData.motivation.length >= 50 ? 'text-green-700' : 'text-gray-500'}`}>
-                    <CheckCircle className={`w-4 h-4 flex-shrink-0 ${bookingData.motivation.length >= 50 ? 'text-green-600' : 'text-gray-400'}`} />
-                    <span>Motivation Provided</span>
-                  </div>
-                  <div className={`flex items-center gap-2 ${bookingData.references ? 'text-green-700' : 'text-gray-500'}`}>
-                    <CheckCircle className={`w-4 h-4 flex-shrink-0 ${bookingData.references ? 'text-green-600' : 'text-gray-400'}`} />
-                    <span>References</span>
-                  </div>
-                </div>
+            </div>
+
+            <div className="px-6 py-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Viewing Date *</label>
+                <input
+                  type="date"
+                  value={bookingData.date}
+                  onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Viewing Time *</label>
+                <select
+                  value={bookingData.time}
+                  onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="">Select Time</option>
+                  <option value="09:00">09:00 AM</option>
+                  <option value="10:00">10:00 AM</option>
+                  <option value="11:00">11:00 AM</option>
+                  <option value="14:00">02:00 PM</option>
+                  <option value="15:00">03:00 PM</option>
+                  <option value="16:00">04:00 PM</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message (Optional)</label>
+                <textarea
+                  value={bookingData.message}
+                  onChange={(e) => setBookingData({...bookingData, message: e.target.value})}
+                  rows="3"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Any specific questions or requests?"
+                />
               </div>
             </div>
 
-            <div className="px-4 lg:px-6 py-6 max-h-[calc(90vh-180px)] overflow-y-auto">
-              <div className="space-y-6">
-                {/* Section 1: Contact & Verification */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2 text-sm lg:text-base">
-                    <span className="w-6 h-6 bg-[#003366] text-white rounded-full flex items-center justify-center text-xs lg:text-sm flex-shrink-0">1</span>
-                    Contact Information & Email Verification
-                    <span className="text-xs text-gray-500 font-normal">(Required - 25%)</span>
-                  </h4>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                        <input
-                          type="text"
-                          value={bookingData.name}
-                          onChange={(e) => setBookingData({...bookingData, name: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                        <input
-                          type="tel"
-                          value={bookingData.phone}
-                          onChange={(e) => setBookingData({...bookingData, phone: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                          placeholder="+254 7XX XXX XXX"
-                        />
-                      </div>
-                    </div>
-
-                    {/* EMAIL VERIFICATION SECTION */}
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-start gap-3">
-                        <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-medium text-gray-900 mb-2 text-sm lg:text-base">Email Verification Required</h5>
-                          <p className="text-xs lg:text-sm text-gray-600 mb-3">Verify your email to increase your application strength by 25%</p>
-                          
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Email Address *</label>
-                              <div className="flex gap-2">
-                                <input
-                                  type="email"
-                                  value={bookingData.email}
-                                  onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
-                                  disabled={bookingData.emailVerified}
-                                  className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-100"
-                                  placeholder="your.email@example.com"
-                                />
-                                {!bookingData.emailVerified && !verificationSent.email && (
-                                  <button
-                                    onClick={sendEmailVerificationCode}
-                                    disabled={isSendingVerification || !bookingData.email}
-                                    className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm font-medium whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {isSendingVerification ? 'Sending...' : 'Send Code'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {verificationSent.email && !bookingData.emailVerified && (
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Enter 6-Digit Code</label>
-                                <div className="flex gap-2">
-                                  <input
-                                    type="text"
-                                    maxLength="6"
-                                    placeholder="000000"
-                                    className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                                    onInput={(e) => {
-                                      const code = e.target.value;
-                                      if (code.length === 6) {
-                                        verifyEmailCode(code);
-                                      }
-                                    }}
-                                  />
-                                  <button
-                                    onClick={sendEmailVerificationCode}
-                                    disabled={isSendingVerification}
-                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium whitespace-nowrap"
-                                  >
-                                    {isSendingVerification ? 'Sending...' : 'Resend'}
-                                  </button>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Check your email inbox (and spam folder)</p>
-                              </div>
-                            )}
-
-                            {bookingData.emailVerified && (
-                              <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-2 rounded-lg">
-                                <CheckCircle className="w-5 h-5 text-green-600" />
-                                <span className="text-sm font-medium">Email verified successfully!</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Viewing Date *</label>
-                        <input
-                          type="date"
-                          value={bookingData.date}
-                          onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
-                          min={new Date().toISOString().split('T')[0]}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Viewing Time *</label>
-                        <input
-                          type="time"
-                          value={bookingData.time}
-                          onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 2: Employment Information */}
-                <div className="border-t pt-6">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2 text-sm lg:text-base">
-                    <span className="w-6 h-6 bg-[#003366] text-white rounded-full flex items-center justify-center text-xs lg:text-sm flex-shrink-0">2</span>
-                    Employment Information
-                    <span className="text-xs text-gray-500 font-normal">(Increases strength by 25%)</span>
-                  </h4>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Employment Status</label>
-                        <select
-                          value={bookingData.employmentStatus}
-                          onChange={(e) => setBookingData({...bookingData, employmentStatus: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                        >
-                          <option value="">Select status</option>
-                          <option value="employed">Employed</option>
-                          <option value="self-employed">Self-Employed</option>
-                          <option value="student">Student</option>
-                          <option value="retired">Retired</option>
-                          <option value="unemployed">Unemployed</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Occupation/Job Title</label>
-                        <input
-                          type="text"
-                          value={bookingData.occupation}
-                          onChange={(e) => setBookingData({...bookingData, occupation: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                          placeholder="e.g. Software Engineer"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Employer/Company Name</label>
-                        <input
-                          type="text"
-                          value={bookingData.employerName}
-                          onChange={(e) => setBookingData({...bookingData, employerName: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                          placeholder="Company name"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Employer Phone (Optional)</label>
-                        <input
-                          type="tel"
-                          value={bookingData.employerPhone}
-                          onChange={(e) => setBookingData({...bookingData, employerPhone: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                          placeholder="+254 7XX XXX XXX"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Monthly Income Range</label>
-                        <select
-                          value={bookingData.monthlyIncome}
-                          onChange={(e) => setBookingData({...bookingData, monthlyIncome: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                        >
-                          <option value="">Select range</option>
-                          <option value="0-30k">Less than KES 30,000</option>
-                          <option value="30-50k">KES 30,000 - 50,000</option>
-                          <option value="50-100k">KES 50,000 - 100,000</option>
-                          <option value="100-200k">KES 100,000 - 200,000</option>
-                          <option value="200k+">Above KES 200,000</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Current Residence</label>
-                        <input
-                          type="text"
-                          value={bookingData.currentResidence}
-                          onChange={(e) => setBookingData({...bookingData, currentResidence: e.target.value})}
-                          className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                          placeholder="Current area/estate"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 3: Motivation */}
-                <div className="border-t pt-6">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2 text-sm lg:text-base">
-                    <span className="w-6 h-6 bg-[#003366] text-white rounded-full flex items-center justify-center text-xs lg:text-sm flex-shrink-0">3</span>
-                    Why This Property?
-                    <span className="text-xs text-gray-500 font-normal">(Increases strength by 25%)</span>
-                  </h4>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
-                        Tell us why you're interested in this property
-                        <span className="text-xs text-gray-500 ml-2">({bookingData.motivation.length}/50 min characters)</span>
-                      </label>
-                      <textarea
-                        value={bookingData.motivation}
-                        onChange={(e) => setBookingData({...bookingData, motivation: e.target.value})}
-                        rows="4"
-                        className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                        placeholder="Share details about your interest, planned duration of stay, family size, pets, etc. (minimum 50 characters for full score)"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">References (Optional)</label>
-                      <input
-                        type="text"
-                        value={bookingData.references}
-                        onChange={(e) => setBookingData({...bookingData, references: e.target.value})}
-                        className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                        placeholder="Previous landlord contact or character reference"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
-                      <textarea
-                        value={bookingData.message}
-                        onChange={(e) => setBookingData({...bookingData, message: e.target.value})}
-                        rows="3"
-                        className="w-full px-3 lg:px-4 py-2 text-sm lg:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
-                        placeholder="Any specific questions or requests?"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="sticky bottom-0 bg-gray-50 px-4 lg:px-6 py-4 border-t flex gap-3 rounded-b-xl">
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 rounded-b-xl">
               <button
                 onClick={() => {
                   setShowBookingModal(false);
                   setSelectedListing(null);
                 }}
                 disabled={isSubmittingBooking}
-                className="flex-1 px-3 lg:px-4 py-2 lg:py-3 text-sm lg:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-3 lg:px-4 py-2 lg:py-3 text-sm lg:text-base border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
