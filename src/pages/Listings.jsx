@@ -93,7 +93,17 @@ const Listings = () => {
     email: '',
     phone: '',
     date: '',
-    time: ''
+    time: '',
+    message: '',
+    employmentStatus: '',
+    employerName: '',
+    employerPhone: '',
+    monthlyIncome: '',
+    occupation: '',
+    motivation: '',
+    moveInDate: '',
+    currentResidence: '',
+    references: ''
   });
   const navigate = useNavigate();
   const { currentUser } = useAuth(); 
@@ -224,16 +234,11 @@ const Listings = () => {
             </a>
 
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={() => navigate('/login')}
-                className="text-gray-900 hover:text-[#003366] font-semibold transition-colors">
+                className="bg-[#003366] hover:bg-[#002244] text-white px-6 py-2 rounded-lg font-semibold transition-colors">
                   Login
               </button>
-                <button 
-                  onClick={() => navigate('/register')}
-                  className="bg-[#003366] hover:bg-[#002244] text-white px-6 py-2 rounded-lg font-semibold transition-colors">
-                  Register
-                </button>
             </div>
           </div>
         </div>
@@ -477,97 +482,229 @@ const Listings = () => {
         </div>
       )}
 
-      {/* Booking Modal */}
+      {/* Comprehensive Booking Modal for Public Users */}
       {showBookingModal && selectedProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Book Site Viewing</h3>
-              <button onClick={() => setShowBookingModal(false)}>
-                <X className="w-6 h-6 text-gray-500 hover:text-gray-700" />
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full my-8">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900">Book a Site Viewing</h3>
+                  <p className="text-sm text-gray-600 mt-1">{selectedProperty.propertyName} - {selectedProperty.location}</p>
+                </div>
+                <button onClick={() => setShowBookingModal(false)}>
+                  <X className="w-6 h-6 text-gray-500 hover:text-gray-700" />
+                </button>
+              </div>
             </div>
 
-            <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-              <p className="font-semibold text-gray-900">{selectedProperty.propertyName}</p>
-              <p className="text-sm text-gray-600">{selectedProperty.location}</p>
-              {selectedProperty.unit && (
-                <p className="text-xs text-gray-500 mt-1">Unit: {selectedProperty.unit}</p>
-              )}
+            <div className="px-6 py-6 max-h-[70vh] overflow-y-auto space-y-6">
+              {/* Section 1: Contact Information */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-[#003366] text-white rounded-full flex items-center justify-center text-sm">1</span>
+                  Contact Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={bookingData.name}
+                      onChange={(e) => setBookingData({...bookingData, name: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <input
+                      type="email"
+                      value={bookingData.email}
+                      onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="john@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                    <input
+                      type="tel"
+                      value={bookingData.phone}
+                      onChange={(e) => setBookingData({...bookingData, phone: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="+254 7XX XXX XXX"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Residence *</label>
+                    <input
+                      type="text"
+                      value={bookingData.currentResidence}
+                      onChange={(e) => setBookingData({...bookingData, currentResidence: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="Nairobi, Kenya"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Viewing Date *</label>
+                    <input
+                      type="date"
+                      value={bookingData.date}
+                      onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Viewing Time *</label>
+                    <select
+                      value={bookingData.time}
+                      onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    >
+                      <option value="">Select Time</option>
+                      <option value="09:00">09:00 AM</option>
+                      <option value="10:00">10:00 AM</option>
+                      <option value="11:00">11:00 AM</option>
+                      <option value="14:00">02:00 PM</option>
+                      <option value="15:00">03:00 PM</option>
+                      <option value="16:00">04:00 PM</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Employment Information */}
+              <div className="border-t pt-6">
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-[#003366] text-white rounded-full flex items-center justify-center text-sm">2</span>
+                  Employment Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Employment Status *</label>
+                    <select
+                      value={bookingData.employmentStatus}
+                      onChange={(e) => setBookingData({...bookingData, employmentStatus: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    >
+                      <option value="">Select Status</option>
+                      <option value="employed">Employed</option>
+                      <option value="self-employed">Self-Employed</option>
+                      <option value="student">Student</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Occupation *</label>
+                    <input
+                      type="text"
+                      value={bookingData.occupation}
+                      onChange={(e) => setBookingData({...bookingData, occupation: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="Software Engineer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Employer Name</label>
+                    <input
+                      type="text"
+                      value={bookingData.employerName}
+                      onChange={(e) => setBookingData({...bookingData, employerName: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="Company Name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Employer Contact</label>
+                    <input
+                      type="tel"
+                      value={bookingData.employerPhone}
+                      onChange={(e) => setBookingData({...bookingData, employerPhone: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="+254 7XX XXX XXX"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Income *</label>
+                    <input
+                      type="number"
+                      value={bookingData.monthlyIncome}
+                      onChange={(e) => setBookingData({...bookingData, monthlyIncome: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="50000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Expected Move-in Date</label>
+                    <input
+                      type="date"
+                      value={bookingData.moveInDate}
+                      onChange={(e) => setBookingData({...bookingData, moveInDate: e.target.value})}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Additional Information */}
+              <div className="border-t pt-6">
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-[#003366] text-white rounded-full flex items-center justify-center text-sm">3</span>
+                  Additional Information
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Why are you interested in this property? *</label>
+                    <textarea
+                      value={bookingData.motivation}
+                      onChange={(e) => setBookingData({...bookingData, motivation: e.target.value})}
+                      rows="3"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="Tell us why you're interested in this property..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">References (Optional)</label>
+                    <textarea
+                      value={bookingData.references}
+                      onChange={(e) => setBookingData({...bookingData, references: e.target.value})}
+                      rows="2"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="Previous landlord contact, employer reference, etc."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Additional Message (Optional)</label>
+                    <textarea
+                      value={bookingData.message}
+                      onChange={(e) => setBookingData({...bookingData, message: e.target.value})}
+                      rows="2"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      placeholder="Any additional information you'd like to share..."
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={bookingData.name}
-                  onChange={(e) => setBookingData({...bookingData, name: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={bookingData.email}
-                  onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
-                  placeholder="john@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  value={bookingData.phone}
-                  onChange={(e) => setBookingData({...bookingData, phone: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
-                  placeholder="+254 712 345 678"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Date</label>
-                <input
-                  type="date"
-                  value={bookingData.date}
-                  onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Time</label>
-                <select
-                  value={bookingData.time}
-                  onChange={(e) => setBookingData({...bookingData, time: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none"
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 rounded-b-xl">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBookingModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition"
                 >
-                  <option value="">Select Time</option>
-                  <option value="09:00">09:00 AM</option>
-                  <option value="10:00">10:00 AM</option>
-                  <option value="11:00">11:00 AM</option>
-                  <option value="14:00">02:00 PM</option>
-                  <option value="15:00">03:00 PM</option>
-                  <option value="16:00">04:00 PM</option>
-                </select>
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBookViewing}
+                  className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition"
+                >
+                  Submit Booking Request
+                </button>
               </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBookViewing}
-                className="flex-1 px-4 py-2 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-semibold transition"
-              >
-                Confirm Booking
-              </button>
             </div>
           </div>
         </div>
