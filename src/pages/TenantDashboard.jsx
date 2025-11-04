@@ -1497,14 +1497,14 @@ const TenantDashboard = () => {
           {currentView === 'messages' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Messages</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Communicate with your property manager</p>
                 </div>
                 <button
                   onClick={() => setShowMessageModal(true)}
-                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                  className="px-6 py-3 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-semibold whitespace-nowrap flex items-center gap-2"
                 >
                   <Send className="w-5 h-5" />
                   New Message
@@ -1513,15 +1513,15 @@ const TenantDashboard = () => {
 
               {/* Each message as individual card - like Documents */}
               {messages.length === 0 ? (
-                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
-                  <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center shadow-sm border border-gray-200 dark:border-gray-700">
+                  <MessageSquare className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Messages Yet</h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
                     You haven't received any messages from your property manager yet.
                   </p>
                   <button
                     onClick={() => setShowMessageModal(true)}
-                    className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
+                    className="px-6 py-3 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-semibold inline-flex items-center gap-2"
                   >
                     <Send className="w-5 h-5" />
                     Send Your First Message
@@ -1530,19 +1530,19 @@ const TenantDashboard = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                   {messages.map((message) => (
-                    <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer">
+                    <div key={message.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition cursor-pointer">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-sm lg:text-base text-gray-900">{message.subject}</h4>
+                            <h4 className="font-semibold text-sm lg:text-base text-gray-900 dark:text-white">{message.subject}</h4>
                             {!message.read && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                              <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0"></span>
                             )}
                           </div>
-                          <p className="text-xs lg:text-sm text-gray-600 mb-2">{message.from}</p>
-                          <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{message.preview}</p>
+                          <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-2">{message.from}</p>
+                          <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">{message.preview}</p>
                         </div>
-                        <span className="text-xs text-gray-500 flex-shrink-0">{message.date}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{message.date}</span>
                       </div>
                     </div>
                   ))}
@@ -1555,7 +1555,7 @@ const TenantDashboard = () => {
           {currentView === 'listings' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Button to Full Listings Page */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Looking for Properties in Other Areas?</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">Browse all available properties from different landlords and locations</p>
@@ -1577,7 +1577,7 @@ const TenantDashboard = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search by name or location..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -1587,10 +1587,10 @@ const TenantDashboard = () => {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
                 </div>
               ) : filteredListings.length === 0 ? (
-                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200 mb-8">
-                  <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center shadow-sm border border-gray-200 dark:border-gray-700 mb-8">
+                  <Search className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Listings Available</h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
                     {searchTerm
                       ? "No listings match your search. Try different keywords."
                       : "Your landlord hasn't posted any available listings yet."}
@@ -1677,9 +1677,9 @@ const TenantDashboard = () => {
           {/* Settings View */}
 
 {currentView === 'settings' && (
-  <div className="space-y-6 w-full max-w-full">
+  <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
         {/* Blue Banner */}
-        <div className="bg-blue-50 dark:bg-blue-900/30 border-y border-blue-200 dark:border-blue-800 px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Account Settings</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Manage your profile, security, and preferences</p>
@@ -1693,7 +1693,6 @@ const TenantDashboard = () => {
           </button>
         </div>
         {/* Profile Settings Card */}
-        <div className="px-4 lg:px-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Settings</h2>
@@ -1817,10 +1816,8 @@ const TenantDashboard = () => {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Security Card */}
-        <div className="px-4 lg:px-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Security</h2>
@@ -1853,10 +1850,8 @@ const TenantDashboard = () => {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Notification Preferences Card */}
-        <div className="px-4 lg:px-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Notification Preferences</h2>
@@ -1902,10 +1897,8 @@ const TenantDashboard = () => {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Alert Types Card */}
-        <div className="px-4 lg:px-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Alert Types</h2>
@@ -1970,10 +1963,8 @@ const TenantDashboard = () => {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Preferences Card */}
-        <div className="px-4 lg:px-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Preferences</h2>
@@ -2029,10 +2020,8 @@ const TenantDashboard = () => {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Language & Region Card */}
-        <div className="px-4 lg:px-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Language & Region</h2>
@@ -2078,10 +2067,8 @@ const TenantDashboard = () => {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Privacy & Data Card */}
-        <div className="px-4 lg:px-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-5xl mx-auto w-full">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Privacy & Data</h2>
@@ -2118,10 +2105,8 @@ const TenantDashboard = () => {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Danger Zone Card */}
-        <div className="px-4 lg:px-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-200 dark:border-red-900">
           <div className="p-4 sm:p-6 border-b border-red-200 dark:border-red-900">
             <h2 className="text-xl font-bold text-red-600 dark:text-red-400">Danger Zone</h2>
@@ -2156,7 +2141,6 @@ const TenantDashboard = () => {
               </button>
             </div>
           </div>
-        </div>
         </div>
   </div>
 )}
@@ -2311,20 +2295,20 @@ const TenantDashboard = () => {
       {/* Message Modal */}
       {showMessageModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex justify-between items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">New Message</h3>
-              <button onClick={() => setShowMessageModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-300">
+              <button onClick={() => setShowMessageModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <X className="w-5 h-5 lg:w-6 lg:h-6" />
               </button>
             </div>
             <div className="p-4 lg:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
                 <select
                   value={newMessage.to}
                   onChange={(e) => setNewMessage({...newMessage, to: e.target.value})}
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
                 >
                   <option value="Property Manager">Property Manager</option>
                   <option value="Maintenance Team">Maintenance Team</option>
@@ -2332,35 +2316,35 @@ const TenantDashboard = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
                 <input
                   type="text"
                   value={newMessage.subject}
                   onChange={(e) => setNewMessage({...newMessage, subject: e.target.value})}
                   placeholder="Message subject"
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm lg:text-base"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
                 <textarea
                   value={newMessage.message}
                   onChange={(e) => setNewMessage({...newMessage, message: e.target.value})}
                   rows="6"
                   placeholder="Type your message..."
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm lg:text-base"
                 />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowMessageModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm lg:text-base"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm lg:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSendMessage}
-                  className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+                  className="flex-1 px-4 py-2 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition text-sm lg:text-base"
                 >
                   Send
                 </button>
@@ -2495,10 +2479,10 @@ const TenantDashboard = () => {
       {/* Property Detail View Modal */}
       {selectedListing && !showBookingModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex justify-between items-center z-10">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4 flex justify-between items-center z-10">
               <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">{selectedListing.name}</h3>
-              <button onClick={() => setSelectedListing(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-300">
+              <button onClick={() => setSelectedListing(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <X className="w-5 h-5 lg:w-6 lg:h-6" />
               </button>
             </div>
@@ -2514,15 +2498,15 @@ const TenantDashboard = () => {
                   <>
                     <button
                       onClick={() => setCurrentImageIndex((currentImageIndex - 1 + selectedListing.images.length) % selectedListing.images.length)}
-                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/90 p-2 rounded-full hover:bg-white transition"
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 p-2 rounded-full hover:bg-white dark:hover:bg-gray-800 transition"
                     >
-                      <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6" />
+                      <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 text-gray-900 dark:text-white" />
                     </button>
                     <button
                       onClick={() => setCurrentImageIndex((currentImageIndex + 1) % selectedListing.images.length)}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/90 p-2 rounded-full hover:bg-white transition"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 p-2 rounded-full hover:bg-white dark:hover:bg-gray-800 transition"
                     >
-                      <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6" />
+                      <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-gray-900 dark:text-white" />
                     </button>
                     <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
                       {selectedListing.images.map((_, index) => (
@@ -2542,7 +2526,7 @@ const TenantDashboard = () => {
               <div className="space-y-6">
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-2xl font-bold text-gray-900">KES {selectedListing.rent.toLocaleString()}<span className="text-base font-normal text-gray-500 dark:text-gray-400">/month</span></h4>
+                    <h4 className="text-2xl font-bold text-gray-900 dark:text-white">KES {selectedListing.rent.toLocaleString()}<span className="text-base font-normal text-gray-500 dark:text-gray-400">/month</span></h4>
                     <button
                       onClick={() => {
                         setShowBookingModal(true);
@@ -2553,14 +2537,14 @@ const TenantDashboard = () => {
                           phone: profileSettings.phone
                         });
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
+                      className="flex items-center gap-2 px-4 py-2 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition"
                     >
                       <Calendar className="w-5 h-5" />
                       Book Viewing
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2 text-gray-600 mb-4">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4">
                     <MapPin className="w-5 h-5" />
                     <span>{selectedListing.location}</span>
                   </div>
@@ -2582,10 +2566,10 @@ const TenantDashboard = () => {
                 </div>
 
                 <div>
-                  <h5 className="font-semibold text-lg text-gray-900 mb-3">Amenities</h5>
+                  <h5 className="font-semibold text-lg text-gray-900 dark:text-white mb-3">Amenities</h5>
                   <div className="flex flex-wrap gap-2">
                     {selectedListing.amenities.map((amenity, index) => (
-                      <span key={index} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg">
+                      <span key={index} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">
                         {amenity}
                       </span>
                     ))}
