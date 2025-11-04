@@ -921,9 +921,9 @@ const TenantDashboard = () => {
 
               {/* Blue Banner */}
               {tenantData && (
-                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/30 border-y border-blue-200 dark:border-blue-800 -mx-4 lg:-mx-6 px-4 lg:px-6 py-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Welcome back, {profileSettings.name}!</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Welcome back, {profileSettings.name}!</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">Here's an overview of your tenancy</p>
                   </div>
                 </div>
@@ -1070,7 +1070,7 @@ const TenantDashboard = () => {
           {currentView === 'payments' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border-y border-blue-200 dark:border-blue-800 -mx-4 lg:-mx-6 px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Payment History</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Track your rent payments and receipts</p>
@@ -1187,7 +1187,7 @@ const TenantDashboard = () => {
           {currentView === 'documents' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border-y border-blue-200 dark:border-blue-800 -mx-4 lg:-mx-6 px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Documents</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Access your lease agreements and receipts</p>
@@ -1427,7 +1427,7 @@ const TenantDashboard = () => {
 {currentView === 'settings' && (
   <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
         {/* Blue Banner */}
-        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border-y border-blue-200 dark:border-blue-800 -mx-4 lg:-mx-6 px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Account Settings</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Manage your profile, security, and preferences</p>
