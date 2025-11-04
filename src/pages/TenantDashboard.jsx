@@ -230,13 +230,17 @@ const TenantDashboard = () => {
   // Fetch listings filtered by tenant's landlordId
   useEffect(() => {
     if (!tenantData?.landlordId) {
+      console.log('No landlordId found in tenant data');
       setLoadingListings(false);
       return;
     }
 
+    console.log('Fetching listings for landlordId:', tenantData.landlordId);
+
     const listingsQuery = query(
       collection(db, 'listings'),
-      where('landlordId', '==', tenantData.landlordId)
+      where('landlordId', '==', tenantData.landlordId),
+      where('status', '==', 'available')
     );
 
     const unsubscribe = onSnapshot(listingsQuery, (snapshot) => {
@@ -244,6 +248,7 @@ const TenantDashboard = () => {
         id: doc.id,
         ...doc.data()
       }));
+      console.log('Listings found:', listingsData.length, listingsData);
       setAvailableListings(listingsData);
       setLoadingListings(false);
     }, (error) => {
@@ -701,8 +706,9 @@ const TenantDashboard = () => {
   };
 
   const filteredListings = availableListings.filter(listing =>
-    (listing.name && listing.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (listing.location && listing.location.toLowerCase().includes(searchTerm.toLowerCase()))
+    (listing.property && listing.property.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (listing.unit && listing.unit.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (listing.description && listing.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -1209,15 +1215,15 @@ const TenantDashboard = () => {
               {/* Button to Full Listings Page */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Looking for More Properties?</h3>
-              <p className="text-sm text-gray-600">Browse our complete catalog with advanced filters</p>
+            <h3 className="font-semibold text-gray-900 mb-1">Looking for Properties in Other Areas?</h3>
+              <p className="text-sm text-gray-600">Browse all available properties from different landlords and locations</p>
             </div>
             <button
            onClick={() => navigate('/listings')}
             className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
              >
             <Search className="w-5 h-5" />
-            View All Listings
+            Browse All Properties
             </button>
             </div>
               <div>
@@ -1253,22 +1259,19 @@ const TenantDashboard = () => {
                   {filteredListings.map((listing) => (
                   <div key={listing.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition group">
                     <div className="relative h-48 lg:h-56 overflow-hidden">
-                      <img 
-                        src={listing.images[0]} 
-                        alt={listing.name}
+                      <img
+                        src={listing.images?.[0] || '/images/placeholder.jpg'}
+                        alt={listing.property}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                       <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full shadow-md">
-                        <span className="font-bold text-[#003366] text-sm lg:text-base">KES {listing.rent.toLocaleString()}/mo</span>
+                        <span className="font-bold text-[#003366] text-sm lg:text-base">KES {listing.rent?.toLocaleString()}/mo</span>
                       </div>
                     </div>
-                    
+
                     <div className="p-4 lg:p-6">
-                      <h4 className="font-bold text-base lg:text-lg text-gray-900 mb-2">{listing.name}</h4>
-                      <div className="flex items-center gap-2 text-gray-600 mb-4">
-                        <MapPin className="w-4 h-4 flex-shrink-0" />
-                        <span className="text-xs lg:text-sm">{listing.location}</span>
-                      </div>
+                      <h4 className="font-bold text-base lg:text-lg text-gray-900 mb-2">{listing.property} - {listing.unit}</h4>
+                      <p className="text-xs lg:text-sm text-gray-600 mb-4 line-clamp-2">{listing.description}</p>
                       
                       <div className="flex items-center gap-4 mb-4 text-gray-600">
                         <div className="flex items-center gap-1">
@@ -1286,7 +1289,7 @@ const TenantDashboard = () => {
                       </div>
 
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {listing.amenities.map((amenity, index) => (
+                        {listing.amenities?.map((amenity, index) => (
                           <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
                             {amenity}
                           </span>
