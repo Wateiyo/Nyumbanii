@@ -167,12 +167,7 @@ const TenantDashboard = () => {
     { id: 3, issue: 'AC not cooling properly', status: 'Resolved', date: '2024-11-15', priority: 'Low', description: 'Air conditioning system needs servicing' }
   ]);
 
-  const [documents, setDocuments] = useState([
-    { id: 1, name: 'Lease Agreement', type: 'PDF', date: '2024-01-15', size: '2.4 MB' },
-    { id: 2, name: 'Payment Receipt - Nov 2024', type: 'PDF', date: '2024-11-03', size: '156 KB' },
-    { id: 3, name: 'Property Inspection Report', type: 'PDF', date: '2024-01-20', size: '1.8 MB' },
-    { id: 4, name: 'Move-in Checklist', type: 'PDF', date: '2024-01-15', size: '890 KB' }
-  ]);
+  const [documents, setDocuments] = useState([]);
 
   const [messages, setMessages] = useState([
     { id: 1, from: 'Property Manager', subject: 'Monthly Reminder', date: '2024-11-30', read: false, preview: 'Your rent is due on December 5th...' },
@@ -349,6 +344,28 @@ const TenantDashboard = () => {
       setMessages(messagesData);
     }, (error) => {
       console.error('Error fetching messages:', error);
+    });
+
+    return () => unsubscribe();
+  }, [tenantData]);
+
+  // Fetch documents from Firebase
+  useEffect(() => {
+    if (!tenantData?.id) return;
+
+    const documentsQuery = query(
+      collection(db, 'documents'),
+      where('tenantId', '==', tenantData.id)
+    );
+
+    const unsubscribe = onSnapshot(documentsQuery, (snapshot) => {
+      const documentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setDocuments(documentsData);
+    }, (error) => {
+      console.error('Error fetching documents:', error);
     });
 
     return () => unsubscribe();
@@ -679,10 +696,15 @@ const TenantDashboard = () => {
       return;
     }
 
+    if (!tenantData?.id) {
+      alert('Unable to upload: Tenant data not found');
+      return;
+    }
+
     setUploadingDocument(true);
     try {
       // Create a storage reference
-      const fileRef = ref(storage, `documents/${Date.now()}_${newDocument.file.name}`);
+      const fileRef = ref(storage, `documents/${tenantData.id}/${Date.now()}_${newDocument.file.name}`);
 
       // Upload the file
       await uploadBytes(fileRef, newDocument.file);
@@ -690,23 +712,25 @@ const TenantDashboard = () => {
       // Get the download URL
       const downloadURL = await getDownloadURL(fileRef);
 
-      // Add document to the list
-      const document = {
-        id: documents.length + 1,
+      // Add document to Firestore
+      const documentData = {
         name: newDocument.name || newDocument.file.name,
         type: newDocument.file.type.includes('pdf') ? 'PDF' : newDocument.file.type.toUpperCase(),
         date: new Date().toISOString().split('T')[0],
         size: `${(newDocument.file.size / 1024 / 1024).toFixed(2)} MB`,
-        url: downloadURL
+        url: downloadURL,
+        tenantId: tenantData.id,
+        uploadedAt: serverTimestamp()
       };
 
-      setDocuments([document, ...documents]);
+      await addDoc(collection(db, 'documents'), documentData);
+
       setShowDocumentUploadModal(false);
       setNewDocument({ name: '', file: null });
       alert('Document uploaded successfully!');
     } catch (error) {
       console.error('Error uploading document:', error);
-      alert('Failed to upload document. Please try again.');
+      alert(`Failed to upload document: ${error.message}`);
     } finally {
       setUploadingDocument(false);
     }
@@ -1161,28 +1185,43 @@ const TenantDashboard = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition">
-                    <div className="flex items-start justify-between mb-3">
-                      <FileText className="w-8 h-8 lg:w-10 lg:h-10 text-[#003366] flex-shrink-0" />
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{doc.type}</span>
+              {documents.length === 0 ? (
+                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Documents Yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">Upload your first document to get started</p>
+                  <button
+                    onClick={() => setShowDocumentUploadModal(true)}
+                    className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
+                  >
+                    <Upload className="w-5 h-5" />
+                    Upload Document
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                  {documents.map((doc) => (
+                    <div key={doc.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+                      <div className="flex items-start justify-between mb-3">
+                        <FileText className="w-8 h-8 lg:w-10 lg:h-10 text-[#003366] dark:text-blue-400 flex-shrink-0" />
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{doc.type}</span>
+                      </div>
+                      <h4 className="font-semibold text-sm lg:text-base text-gray-900 dark:text-white mb-2">{doc.name}</h4>
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>{doc.date}</span>
+                        <span>{doc.size}</span>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadDocument(doc)}
+                        className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white transition text-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download
+                      </button>
                     </div>
-                    <h4 className="font-semibold text-sm lg:text-base text-gray-900 mb-2">{doc.name}</h4>
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                      <span>{doc.date}</span>
-                      <span>{doc.size}</span>
-                    </div>
-                    <button
-                      onClick={() => handleDownloadDocument(doc)}
-                      className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 border border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366] hover:text-white transition text-sm"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
