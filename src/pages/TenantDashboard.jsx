@@ -213,6 +213,20 @@ const TenantDashboard = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
+  // Update profile settings when tenant data is loaded
+  useEffect(() => {
+    if (tenantData) {
+      setProfileSettings(prev => ({
+        ...prev,
+        name: tenantData.name || 'N/A',
+        email: tenantData.email || 'N/A',
+        phone: tenantData.phone || 'N/A',
+        idNumber: tenantData.idNumber || 'N/A',
+        emergencyContact: tenantData.emergencyContact || 'N/A'
+      }));
+    }
+  }, [tenantData]);
+
   // Fetch listings filtered by tenant's landlordId
   useEffect(() => {
     if (!tenantData?.landlordId) {
@@ -235,6 +249,72 @@ const TenantDashboard = () => {
     }, (error) => {
       console.error('Error fetching listings:', error);
       setLoadingListings(false);
+    });
+
+    return () => unsubscribe();
+  }, [tenantData]);
+
+  // Fetch maintenance requests from Firebase
+  useEffect(() => {
+    if (!tenantData?.id) return;
+
+    const maintenanceQuery = query(
+      collection(db, 'maintenance'),
+      where('tenantId', '==', tenantData.id)
+    );
+
+    const unsubscribe = onSnapshot(maintenanceQuery, (snapshot) => {
+      const maintenanceData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMaintenanceRequests(maintenanceData);
+    }, (error) => {
+      console.error('Error fetching maintenance requests:', error);
+    });
+
+    return () => unsubscribe();
+  }, [tenantData]);
+
+  // Fetch payments from Firebase
+  useEffect(() => {
+    if (!tenantData?.id) return;
+
+    const paymentsQuery = query(
+      collection(db, 'payments'),
+      where('tenantId', '==', tenantData.id)
+    );
+
+    const unsubscribe = onSnapshot(paymentsQuery, (snapshot) => {
+      const paymentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPayments(paymentsData);
+    }, (error) => {
+      console.error('Error fetching payments:', error);
+    });
+
+    return () => unsubscribe();
+  }, [tenantData]);
+
+  // Fetch messages from Firebase
+  useEffect(() => {
+    if (!tenantData?.id) return;
+
+    const messagesQuery = query(
+      collection(db, 'messages'),
+      where('tenantId', '==', tenantData.id)
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      const messagesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMessages(messagesData);
+    }, (error) => {
+      console.error('Error fetching messages:', error);
     });
 
     return () => unsubscribe();
@@ -442,57 +522,121 @@ const TenantDashboard = () => {
 
   // ============ OTHER HANDLERS ============
   
-  const handleAddPayment = () => {
-    const payment = {
-      id: payments.length + 1,
-      month: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-      amount: parseInt(newPayment.amount),
-      date: newPayment.date,
-      status: 'Pending Verification',
-      method: newPayment.method,
-      reference: newPayment.reference
-    };
-    setPayments([payment, ...payments]);
-    setShowPaymentModal(false);
-    setNewPayment({ amount: '35000', method: 'M-Pesa', reference: '', date: new Date().toISOString().split('T')[0] });
+  const handleAddPayment = async () => {
+    if (!newPayment.amount || !newPayment.method) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    if (!tenantData) {
+      alert('Unable to submit payment. Please try logging in again.');
+      return;
+    }
+
+    try {
+      const paymentData = {
+        month: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        amount: parseInt(newPayment.amount),
+        paidDate: newPayment.date,
+        status: 'Pending Verification',
+        method: newPayment.method,
+        referenceNumber: newPayment.reference || '',
+        createdAt: serverTimestamp(),
+        tenantId: tenantData.id,
+        tenantName: tenantData.name,
+        propertyId: tenantData.propertyId || '',
+        propertyName: tenantData.propertyName || '',
+        unitNumber: tenantData.unit || '',
+        landlordId: tenantData.landlordId
+      };
+
+      await addDoc(collection(db, 'payments'), paymentData);
+
+      setShowPaymentModal(false);
+      setNewPayment({ amount: '35000', method: 'M-Pesa', reference: '', date: new Date().toISOString().split('T')[0] });
+      alert('Payment submitted for verification!');
+    } catch (error) {
+      console.error('Error submitting payment:', error);
+      alert('Failed to submit payment. Please try again.');
+    }
   };
 
-  const handleAddMaintenanceRequest = () => {
+  const handleAddMaintenanceRequest = async () => {
     if (!newMaintenance.issue || !newMaintenance.description) {
       alert('Please fill in all required fields');
       return;
     }
-    const request = {
-      id: maintenanceRequests.length + 1,
-      issue: newMaintenance.issue,
-      description: newMaintenance.description,
-      priority: newMaintenance.priority,
-      location: newMaintenance.location,
-      status: 'Pending',
-      date: new Date().toISOString().split('T')[0]
-    };
-    setMaintenanceRequests([request, ...maintenanceRequests]);
-    setShowMaintenanceModal(false);
-    setNewMaintenance({ issue: '', description: '', priority: 'Medium', location: '' });
+
+    if (!tenantData) {
+      alert('Unable to submit request. Please try logging in again.');
+      return;
+    }
+
+    try {
+      const maintenanceData = {
+        issue: newMaintenance.issue,
+        description: newMaintenance.description,
+        priority: newMaintenance.priority,
+        location: newMaintenance.location || 'Not specified',
+        status: 'Pending',
+        date: new Date().toISOString().split('T')[0],
+        createdAt: serverTimestamp(),
+        tenantId: tenantData.id,
+        tenantName: tenantData.name,
+        tenantEmail: tenantData.email,
+        tenantPhone: tenantData.phone,
+        propertyId: tenantData.propertyId || '',
+        propertyName: tenantData.propertyName || '',
+        unitNumber: tenantData.unit || '',
+        landlordId: tenantData.landlordId
+      };
+
+      await addDoc(collection(db, 'maintenance'), maintenanceData);
+
+      setShowMaintenanceModal(false);
+      setNewMaintenance({ issue: '', description: '', priority: 'Medium', location: '' });
+      alert('Maintenance request submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting maintenance request:', error);
+      alert('Failed to submit maintenance request. Please try again.');
+    }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.subject || !newMessage.message) {
       alert('Please fill in all fields');
       return;
     }
-    const message = {
-      id: messages.length + 1,
-      from: 'Me',
-      to: newMessage.to,
-      subject: newMessage.subject,
-      date: new Date().toISOString().split('T')[0],
-      read: true,
-      preview: newMessage.message.substring(0, 50) + '...'
-    };
-    setMessages([message, ...messages]);
-    setShowMessageModal(false);
-    setNewMessage({ to: 'Property Manager', subject: '', message: '' });
+
+    if (!tenantData) {
+      alert('Unable to send message. Please try logging in again.');
+      return;
+    }
+
+    try {
+      const messageData = {
+        from: tenantData.name,
+        fromEmail: tenantData.email,
+        to: newMessage.to,
+        subject: newMessage.subject,
+        message: newMessage.message,
+        date: new Date().toISOString().split('T')[0],
+        createdAt: serverTimestamp(),
+        read: false,
+        tenantId: tenantData.id,
+        landlordId: tenantData.landlordId,
+        preview: newMessage.message.substring(0, 50) + (newMessage.message.length > 50 ? '...' : '')
+      };
+
+      await addDoc(collection(db, 'messages'), messageData);
+
+      setShowMessageModal(false);
+      setNewMessage({ to: 'Property Manager', subject: '', message: '' });
+      alert('Message sent successfully!');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    }
   };
 
   const handleUploadDocument = async () => {
@@ -710,8 +854,12 @@ const TenantDashboard = () => {
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600">Next Payment Due</h4>
                     <Calendar className="w-5 h-5 text-[#003366]" />
                   </div>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900">Dec 5, 2024</p>
-                  <p className="text-xs lg:text-sm text-gray-500 mt-1">KES 35,000</p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900">
+                    {tenantData?.rentDueDate ? new Date(tenantData.rentDueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}
+                  </p>
+                  <p className="text-xs lg:text-sm text-gray-500 mt-1">
+                    KES {tenantData?.rent ? tenantData.rent.toLocaleString() : '0'}
+                  </p>
                 </div>
 
                 <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
@@ -719,8 +867,18 @@ const TenantDashboard = () => {
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600">Lease Expires</h4>
                     <FileText className="w-5 h-5 text-[#003366]" />
                   </div>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900">Jan 15, 2026</p>
-                  <p className="text-xs lg:text-sm text-gray-500 mt-1">14 months left</p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900">
+                    {tenantData?.leaseEnd ? new Date(tenantData.leaseEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}
+                  </p>
+                  <p className="text-xs lg:text-sm text-gray-500 mt-1">
+                    {tenantData?.leaseEnd ? (() => {
+                      const today = new Date();
+                      const leaseEndDate = new Date(tenantData.leaseEnd);
+                      const diffTime = Math.abs(leaseEndDate - today);
+                      const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
+                      return `${diffMonths} months left`;
+                    })() : 'N/A'}
+                  </p>
                 </div>
 
                 <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
