@@ -97,6 +97,26 @@ const TenantDashboard = () => {
     }
   });
 
+  // Preferences State - Load from localStorage
+  const [preferences, setPreferences] = useState(() => {
+    const saved = localStorage.getItem('tenantPreferences');
+    return saved ? JSON.parse(saved) : {
+      darkMode: false,
+      autoPayReminders: true,
+      compactView: false,
+      language: 'English',
+      currency: 'KES (Kenyan Shilling)',
+      dateFormat: 'DD/MM/YYYY',
+      shareUsageData: true
+    };
+  });
+
+  // Save preferences to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('tenantPreferences', JSON.stringify(preferences));
+    console.log('Preferences saved:', preferences);
+  }, [preferences]);
+
   // ENHANCED BOOKING DATA WITH CREDIBILITY FIELDS
   const [bookingData, setBookingData] = useState({
     date: '',
@@ -718,7 +738,7 @@ const TenantDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
+    <div className={`min-h-screen ${preferences.darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex overflow-x-hidden`}>
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
         <div className="p-6">
@@ -764,13 +784,13 @@ const TenantDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 lg:ml-64">
         {/* Top Navigation */}
-        <header className={`bg-gray-50 sticky top-0 z-40 transition-transform duration-300 ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
+        <header className={`${preferences.darkMode ? 'bg-gray-900' : 'bg-gray-50'} sticky top-0 z-40 transition-all duration-300 ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between px-4 lg:px-6 py-4">
             <div className="flex items-center gap-4">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
                 <Menu className="w-6 h-6" />
               </button>
-              <h2 className="text-xl lg:text-2xl font-bold text-gray-900">
+              <h2 className={`text-xl lg:text-2xl font-bold ${preferences.darkMode ? 'text-white' : 'text-gray-900'}`}>
                 {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
               </h2>
             </div>
@@ -1615,6 +1635,8 @@ const TenantDashboard = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
+                  checked={preferences.darkMode}
+                  onChange={(e) => setPreferences({...preferences, darkMode: e.target.checked})}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
@@ -1629,7 +1651,8 @@ const TenantDashboard = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  defaultChecked
+                  checked={preferences.autoPayReminders}
+                  onChange={(e) => setPreferences({...preferences, autoPayReminders: e.target.checked})}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
@@ -1644,6 +1667,8 @@ const TenantDashboard = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
+                  checked={preferences.compactView}
+                  onChange={(e) => setPreferences({...preferences, compactView: e.target.checked})}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
@@ -1661,7 +1686,11 @@ const TenantDashboard = () => {
           <div className="p-4 sm:p-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-              <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white">
+              <select
+                value={preferences.language}
+                onChange={(e) => setPreferences({...preferences, language: e.target.value})}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white"
+              >
                 <option>English</option>
                 <option>Swahili</option>
               </select>
@@ -1669,7 +1698,11 @@ const TenantDashboard = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
-              <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white">
+              <select
+                value={preferences.currency}
+                onChange={(e) => setPreferences({...preferences, currency: e.target.value})}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white"
+              >
                 <option>KES (Kenyan Shilling)</option>
                 <option>USD (US Dollar)</option>
                 <option>EUR (Euro)</option>
@@ -1678,7 +1711,11 @@ const TenantDashboard = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Date Format</label>
-              <select className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white">
+              <select
+                value={preferences.dateFormat}
+                onChange={(e) => setPreferences({...preferences, dateFormat: e.target.value})}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white"
+              >
                 <option>DD/MM/YYYY</option>
                 <option>MM/DD/YYYY</option>
                 <option>YYYY-MM-DD</option>
@@ -1702,7 +1739,8 @@ const TenantDashboard = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  defaultChecked
+                  checked={preferences.shareUsageData}
+                  onChange={(e) => setPreferences({...preferences, shareUsageData: e.target.checked})}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
@@ -1714,7 +1752,10 @@ const TenantDashboard = () => {
                 <h3 className="font-semibold text-gray-900">Download Your Data</h3>
                 <p className="text-sm text-gray-500 mt-1">Get a copy of all your data stored with us</p>
               </div>
-              <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm">
+              <button
+                onClick={() => alert('Data export will be sent to your email within 24 hours.')}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
                 Request Data Export
               </button>
             </div>
