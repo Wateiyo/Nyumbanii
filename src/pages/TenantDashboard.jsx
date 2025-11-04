@@ -791,7 +791,7 @@ const TenantDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64">
+      <div className="flex-1 lg:ml-64 w-full max-w-full">
         {/* Top Navigation */}
         <header className={`bg-gray-50 dark:bg-gray-900 sticky top-0 z-40 transition-all duration-300 ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between px-4 lg:px-6 py-4">
@@ -851,7 +851,7 @@ const TenantDashboard = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="px-4 lg:px-6 py-4 lg:py-6">
+        <main className="w-full px-4 lg:px-6 py-4 lg:py-6">
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <div className="space-y-6">
