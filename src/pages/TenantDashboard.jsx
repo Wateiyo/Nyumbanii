@@ -1341,20 +1341,20 @@ const TenantDashboard = () => {
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                       {payments.map((payment) => (
                         <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium text-gray-900">{payment.month}</td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-900">KES {payment.amount.toLocaleString()}</td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{payment.date || `Due: ${payment.dueDate}`}</td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{payment.method || '-'}</td>
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium text-gray-900 dark:text-white">{payment.month}</td>
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-900 dark:text-white">KES {payment.amount.toLocaleString()}</td>
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500 dark:text-gray-400">{payment.date || `Due: ${payment.dueDate}`}</td>
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500 dark:text-gray-400">{payment.method || '-'}</td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              payment.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              payment.status === 'Paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
                             }`}>
                               {payment.status}
                             </span>
                           </td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             {payment.status === 'Paid' && (
-                              <button className="text-[#003366] hover:text-[#002244] flex items-center gap-1 text-xs lg:text-sm">
+                              <button className="text-[#003366] dark:text-blue-400 hover:text-[#002244] dark:hover:text-blue-300 flex items-center gap-1 text-xs lg:text-sm">
                                 <Download className="w-4 h-4" />
                                 Receipt
                               </button>
@@ -1373,14 +1373,14 @@ const TenantDashboard = () => {
           {currentView === 'maintenance' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Maintenance Requests</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Report and track maintenance issues</p>
                 </div>
                 <button
                   onClick={() => setShowMaintenanceModal(true)}
-                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                  className="px-6 py-3 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-semibold whitespace-nowrap flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
                   New Request
@@ -1389,30 +1389,30 @@ const TenantDashboard = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                 {maintenanceRequests.map((request) => (
-                  <div key={request.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200">
+                  <div key={request.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h4 className="font-semibold text-base lg:text-lg text-gray-900">{request.issue}</h4>
+                          <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white">{request.issue}</h4>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            request.priority === 'High' ? 'bg-red-100 text-red-800' :
-                            request.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
+                            request.priority === 'High' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
+                            request.priority === 'Medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                            'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                           }`}>
                             {request.priority}
                           </span>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            request.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                            request.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
+                            request.status === 'Resolved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                            request.status === 'In Progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
                           }`}>
                             {request.status}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{request.description}</p>
-                        <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">Reported on {request.date}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{request.description}</p>
+                        <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Reported on {request.date}</p>
                       </div>
-                      <button className="self-end lg:self-center text-[#003366] hover:text-[#002244] text-xs lg:text-sm font-medium whitespace-nowrap">
+                      <button className="self-end lg:self-center text-[#003366] dark:text-blue-400 hover:text-[#002244] dark:hover:text-blue-300 text-xs lg:text-sm font-medium whitespace-nowrap">
                         View Details
                       </button>
                     </div>
@@ -2223,40 +2223,40 @@ const TenantDashboard = () => {
       {/* Maintenance Modal */}
       {showMaintenanceModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex justify-between items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">New Maintenance Request</h3>
-              <button onClick={() => setShowMaintenanceModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-300">
+              <button onClick={() => setShowMaintenanceModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <X className="w-5 h-5 lg:w-6 lg:h-6" />
               </button>
             </div>
             <div className="p-4 lg:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Issue Title *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Title *</label>
                 <input
                   type="text"
                   value={newMaintenance.issue}
                   onChange={(e) => setNewMaintenance({...newMaintenance, issue: e.target.value})}
                   placeholder="e.g., Leaking faucet"
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm lg:text-base"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
                 <textarea
                   value={newMaintenance.description}
                   onChange={(e) => setNewMaintenance({...newMaintenance, description: e.target.value})}
                   rows="4"
                   placeholder="Provide details about the issue..."
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm lg:text-base"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
                 <select
                   value={newMaintenance.priority}
                   onChange={(e) => setNewMaintenance({...newMaintenance, priority: e.target.value})}
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -2264,25 +2264,25 @@ const TenantDashboard = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
                 <input
                   type="text"
                   value={newMaintenance.location}
                   onChange={(e) => setNewMaintenance({...newMaintenance, location: e.target.value})}
                   placeholder="e.g., Kitchen, Bedroom 1"
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm lg:text-base"
                 />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowMaintenanceModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm lg:text-base"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm lg:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddMaintenanceRequest}
-                  className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+                  className="flex-1 px-4 py-2 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition text-sm lg:text-base"
                 >
                   Submit
                 </button>
