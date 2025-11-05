@@ -1135,10 +1135,10 @@ const TenantDashboard = () => {
         <main className="w-full max-w-full py-4 lg:py-6 overflow-x-hidden">
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
-            <div className="space-y-6 w-full max-w-full">
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* No Tenant Data Warning */}
               {!tenantData && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 mx-4 lg:mx-6">
+                <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
                   <div className="flex items-start gap-4">
                     <Bell className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-1" />
                     <div>
@@ -1162,7 +1162,7 @@ const TenantDashboard = () => {
 
               {/* Blue Banner */}
               {tenantData && (
-                <div className="bg-blue-50 dark:bg-blue-900/30 border-y border-blue-200 dark:border-blue-800 px-4 lg:px-6 py-4">
+                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Welcome back, {profileSettings.name}!</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">Here's an overview of your tenancy</p>
@@ -1170,7 +1170,7 @@ const TenantDashboard = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 px-4 lg:px-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                 <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Next Payment Due</h4>
@@ -1223,7 +1223,7 @@ const TenantDashboard = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mx-4 lg:mx-6">
+              <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-3 lg:mb-4 text-sm lg:text-base">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-2 lg:gap-3">
                   <button
@@ -1260,7 +1260,7 @@ const TenantDashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 lg:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                   <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white mb-4">Recent Payments</h4>
                   <div className="space-y-3">
@@ -1309,9 +1309,9 @@ const TenantDashboard = () => {
 
           {/* Payments View */}
           {currentView === 'payments' && (
-            <div className="space-y-6 w-full max-w-full">
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
               {/* Blue Banner */}
-              <div className="bg-blue-50 dark:bg-blue-900/30 border-y border-blue-200 dark:border-blue-800 px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Payment History</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Track your rent payments and receipts</p>
@@ -1325,7 +1325,7 @@ const TenantDashboard = () => {
                 </button>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden max-w-6xl mx-auto px-4 lg:px-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
