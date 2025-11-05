@@ -1209,7 +1209,7 @@ const handleViewTenantDetails = (tenant) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen w-full bg-gray-50 flex flex-col lg:flex-row overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
