@@ -248,13 +248,47 @@ const Login = () => {
               <div className="mt-8 text-center">
                 <p className="text-white">
                   Don't have an account?{' '}
-                  <button 
+                  <button
                     onClick={() => !loading && navigate('/register')}
                     className={`text-blue-200 hover:text-white font-bold transition-colors ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:underline'}`}
                     disabled={loading}
                   >
                     Create Account
                   </button>
+                </p>
+              </div>
+
+              {/* User Type Information */}
+              <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                <h3 className="text-white font-semibold text-lg mb-4 text-center">Logging in as:</h3>
+                <div className="space-y-3 text-sm text-blue-100">
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-blue-300 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div>
+                      <span className="font-semibold text-white">Landlord:</span> Directly sign up and access your dashboard
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-blue-300 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div>
+                      <span className="font-semibold text-white">Tenant:</span> Register using the invitation link from your landlord
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-blue-300 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div>
+                      <span className="font-semibold text-white">Property Manager:</span> Register using the invitation link from your landlord
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-blue-300 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div>
+                      <span className="font-semibold text-white">Maintenance Staff:</span> Register using the invitation link from your landlord
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-200 mt-4 text-center italic">
+                  Your account type is automatically detected based on your registration
                 </p>
               </div>
             </div>
