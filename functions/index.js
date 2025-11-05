@@ -2,6 +2,7 @@ const {setGlobalOptions} = require("firebase-functions/v2");
 const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {onCall} = require("firebase-functions/v2/https");
 const {onRequest} = require("firebase-functions/v2/https");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { Resend } = require("resend");
@@ -574,6 +575,462 @@ exports.sendViewingConfirmationEmail = onCall(
     } catch (error) {
       logger.error('Error in sendViewingConfirmationEmail:', error);
       throw new Error(error.message);
+    }
+  }
+);
+
+// ==========================================
+// SCHEDULED FUNCTIONS (Automated Workflows)
+// ==========================================
+
+/**
+ * Send Automated Rent Reminders
+ * Runs daily at 9:00 AM EAT (East Africa Time)
+ * Sends reminders X days before rent is due based on landlord settings
+ */
+exports.sendRentReminders = onSchedule(
+  {
+    schedule: "0 9 * * *", // Daily at 9 AM
+    timeZone: "Africa/Nairobi",
+    region: "us-central1"
+  },
+  async (event) => {
+    try {
+      logger.info("🔔 Starting automated rent reminders job...");
+
+      const db = admin.firestore();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Get all landlords with auto rent reminders enabled
+      const settingsSnapshot = await db.collection('landlordSettings')
+        .where('automatedWorkflows.autoRentReminders', '==', true)
+        .get();
+
+      let totalReminders = 0;
+      let totalErrors = 0;
+
+      for (const settingsDoc of settingsSnapshot.docs) {
+        try {
+          const settings = settingsDoc.data();
+          const landlordId = settingsDoc.id;
+          const reminderDays = settings.automatedWorkflows?.rentReminderDays || 3;
+
+          logger.info(`Processing landlord ${landlordId}, reminder days: ${reminderDays}`);
+
+          // Calculate target due date (today + reminderDays)
+          const targetDueDate = new Date(today);
+          targetDueDate.setDate(targetDueDate.getDate() + reminderDays);
+          const targetDateStr = targetDueDate.toISOString().split('T')[0];
+
+          // Get all unpaid payments for this landlord due on target date
+          const paymentsSnapshot = await db.collection('payments')
+            .where('landlordId', '==', landlordId)
+            .where('status', '==', 'pending')
+            .where('dueDate', '==', targetDateStr)
+            .get();
+
+          logger.info(`Found ${paymentsSnapshot.size} payments due on ${targetDateStr}`);
+
+          for (const paymentDoc of paymentsSnapshot.docs) {
+            try {
+              const payment = paymentDoc.data();
+
+              // Get tenant details
+              const tenantsSnapshot = await db.collection('tenants')
+                .where('landlordId', '==', landlordId)
+                .where('name', '==', payment.tenant)
+                .limit(1)
+                .get();
+
+              if (tenantsSnapshot.empty) {
+                logger.warn(`Tenant not found: ${payment.tenant}`);
+                continue;
+              }
+
+              const tenant = tenantsSnapshot.docs[0].data();
+
+              if (!tenant.email) {
+                logger.warn(`No email for tenant: ${payment.tenant}`);
+                continue;
+              }
+
+              // Format currency
+              const currency = settings.businessPreferences?.currency || 'KSH';
+              const currencySymbol = currency === 'KSH' ? 'KSH ' : '$';
+              const formattedAmount = `${currencySymbol}${payment.amount.toLocaleString()}`;
+
+              // Send reminder email
+              const emailResult = await resend.emails.send({
+                from: 'Karibu Nyumbanii <noreply@nyumbanii.co.ke>',
+                to: tenant.email,
+                subject: `Rent Reminder: Payment Due in ${reminderDays} Days`,
+                html: `
+                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #003366;">Rent Payment Reminder</h2>
+                    <p>Dear ${tenant.name},</p>
+                    <p>This is a friendly reminder that your rent payment is due in <strong>${reminderDays} days</strong>.</p>
+
+                    <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                      <p style="margin: 5px 0;"><strong>Property:</strong> ${payment.property}</p>
+                      <p style="margin: 5px 0;"><strong>Unit:</strong> ${payment.unit}</p>
+                      <p style="margin: 5px 0;"><strong>Amount Due:</strong> ${formattedAmount}</p>
+                      <p style="margin: 5px 0;"><strong>Due Date:</strong> ${payment.dueDate}</p>
+                    </div>
+
+                    <p>Please ensure payment is made on or before the due date to avoid any late fees.</p>
+
+                    <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                      This is an automated reminder from Karibu Nyumbanii.
+                    </p>
+                  </div>
+                `
+              });
+
+              logger.info(`Reminder sent to ${tenant.email}: ${emailResult.id}`);
+              totalReminders++;
+
+              // Log notification in Firestore
+              await db.collection('notifications').add({
+                userId: tenant.userId || null,
+                landlordId: landlordId,
+                type: 'rent_reminder',
+                title: 'Rent Reminder',
+                message: `Your rent of ${formattedAmount} is due in ${reminderDays} days`,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false,
+                metadata: {
+                  paymentId: paymentDoc.id,
+                  dueDate: payment.dueDate,
+                  amount: payment.amount
+                }
+              });
+
+            } catch (error) {
+              logger.error(`Error sending reminder for payment ${paymentDoc.id}:`, error);
+              totalErrors++;
+            }
+          }
+        } catch (error) {
+          logger.error(`Error processing landlord ${settingsDoc.id}:`, error);
+          totalErrors++;
+        }
+      }
+
+      logger.info(`✅ Rent reminders completed. Sent: ${totalReminders}, Errors: ${totalErrors}`);
+      return {success: true, sent: totalReminders, errors: totalErrors};
+
+    } catch (error) {
+      logger.error("❌ Error in sendRentReminders:", error);
+      throw error;
+    }
+  }
+);
+
+/**
+ * Send Automated Overdue Notices
+ * Runs daily at 10:00 AM EAT
+ * Sends notices for payments that are overdue
+ */
+exports.sendOverdueNotices = onSchedule(
+  {
+    schedule: "0 10 * * *", // Daily at 10 AM
+    timeZone: "Africa/Nairobi",
+    region: "us-central1"
+  },
+  async (event) => {
+    try {
+      logger.info("⚠️ Starting automated overdue notices job...");
+
+      const db = admin.firestore();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Get all landlords with auto overdue notices enabled
+      const settingsSnapshot = await db.collection('landlordSettings')
+        .where('automatedWorkflows.autoOverdueNotices', '==', true)
+        .get();
+
+      let totalNotices = 0;
+      let totalErrors = 0;
+
+      for (const settingsDoc of settingsSnapshot.docs) {
+        try {
+          const settings = settingsDoc.data();
+          const landlordId = settingsDoc.id;
+          const overdueDays = settings.automatedWorkflows?.overdueNoticeDays || 1;
+
+          // Calculate target overdue date (today - overdueDays)
+          const targetOverdueDate = new Date(today);
+          targetOverdueDate.setDate(targetOverdueDate.getDate() - overdueDays);
+          const targetDateStr = targetOverdueDate.toISOString().split('T')[0];
+
+          logger.info(`Processing landlord ${landlordId}, checking for payments overdue since ${targetDateStr}`);
+
+          // Get all overdue payments for this landlord
+          const paymentsSnapshot = await db.collection('payments')
+            .where('landlordId', '==', landlordId)
+            .where('status', 'in', ['pending', 'overdue'])
+            .where('dueDate', '<=', targetDateStr)
+            .get();
+
+          logger.info(`Found ${paymentsSnapshot.size} overdue payments`);
+
+          for (const paymentDoc of paymentsSnapshot.docs) {
+            try {
+              const payment = paymentDoc.data();
+
+              // Calculate days overdue
+              const dueDate = new Date(payment.dueDate);
+              const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+
+              // Get tenant details
+              const tenantsSnapshot = await db.collection('tenants')
+                .where('landlordId', '==', landlordId)
+                .where('name', '==', payment.tenant)
+                .limit(1)
+                .get();
+
+              if (tenantsSnapshot.empty) continue;
+
+              const tenant = tenantsSnapshot.docs[0].data();
+              if (!tenant.email) continue;
+
+              // Calculate late fee if applicable
+              const lateFeeEnabled = settings.financialSettings?.lateFeeEnabled || false;
+              const lateFeePercentage = settings.financialSettings?.lateFeePercentage || 5;
+              const gracePeriodDays = settings.financialSettings?.gracePeriodDays || 3;
+
+              let lateFee = 0;
+              let totalAmount = payment.amount;
+
+              if (lateFeeEnabled && daysOverdue > gracePeriodDays) {
+                lateFee = payment.amount * (lateFeePercentage / 100);
+                totalAmount = payment.amount + lateFee;
+              }
+
+              // Format currency
+              const currency = settings.businessPreferences?.currency || 'KSH';
+              const currencySymbol = currency === 'KSH' ? 'KSH ' : '$';
+              const formattedAmount = `${currencySymbol}${payment.amount.toLocaleString()}`;
+              const formattedTotal = `${currencySymbol}${totalAmount.toLocaleString()}`;
+              const formattedLateFee = `${currencySymbol}${lateFee.toLocaleString()}`;
+
+              // Send overdue notice email
+              const emailResult = await resend.emails.send({
+                from: 'Karibu Nyumbanii <noreply@nyumbanii.co.ke>',
+                to: tenant.email,
+                subject: `⚠️ Overdue Payment Notice - ${daysOverdue} Days Late`,
+                html: `
+                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #dc2626;">Overdue Payment Notice</h2>
+                    <p>Dear ${tenant.name},</p>
+                    <p>This is to notify you that your rent payment is now <strong>${daysOverdue} days overdue</strong>.</p>
+
+                    <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+                      <p style="margin: 5px 0;"><strong>Property:</strong> ${payment.property}</p>
+                      <p style="margin: 5px 0;"><strong>Unit:</strong> ${payment.unit}</p>
+                      <p style="margin: 5px 0;"><strong>Original Amount:</strong> ${formattedAmount}</p>
+                      ${lateFee > 0 ? `<p style="margin: 5px 0;"><strong>Late Fee (${lateFeePercentage}%):</strong> ${formattedLateFee}</p>` : ''}
+                      ${lateFee > 0 ? `<p style="margin: 5px 0; color: #dc2626;"><strong>Total Amount Due:</strong> ${formattedTotal}</p>` : ''}
+                      <p style="margin: 5px 0;"><strong>Original Due Date:</strong> ${payment.dueDate}</p>
+                      <p style="margin: 5px 0; color: #dc2626;"><strong>Days Overdue:</strong> ${daysOverdue} days</p>
+                    </div>
+
+                    <p><strong>Please make payment immediately to avoid further late fees and potential action.</strong></p>
+
+                    <p>If you have already made this payment, please disregard this notice and contact your property manager.</p>
+
+                    <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                      This is an automated notice from Karibu Nyumbanii.
+                    </p>
+                  </div>
+                `
+              });
+
+              logger.info(`Overdue notice sent to ${tenant.email}: ${emailResult.id}`);
+              totalNotices++;
+
+              // Update payment status to overdue if it's still pending
+              if (payment.status === 'pending') {
+                await db.collection('payments').doc(paymentDoc.id).update({
+                  status: 'overdue'
+                });
+              }
+
+              // Log notification in Firestore
+              await db.collection('notifications').add({
+                userId: tenant.userId || null,
+                landlordId: landlordId,
+                type: 'overdue_notice',
+                title: 'Overdue Payment',
+                message: `Your rent payment is ${daysOverdue} days overdue`,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false,
+                metadata: {
+                  paymentId: paymentDoc.id,
+                  dueDate: payment.dueDate,
+                  amount: payment.amount,
+                  daysOverdue: daysOverdue,
+                  lateFee: lateFee
+                }
+              });
+
+            } catch (error) {
+              logger.error(`Error sending overdue notice for payment ${paymentDoc.id}:`, error);
+              totalErrors++;
+            }
+          }
+        } catch (error) {
+          logger.error(`Error processing landlord ${settingsDoc.id}:`, error);
+          totalErrors++;
+        }
+      }
+
+      logger.info(`✅ Overdue notices completed. Sent: ${totalNotices}, Errors: ${totalErrors}`);
+      return {success: true, sent: totalNotices, errors: totalErrors};
+
+    } catch (error) {
+      logger.error("❌ Error in sendOverdueNotices:", error);
+      throw error;
+    }
+  }
+);
+
+/**
+ * Generate Monthly Reports
+ * Runs on the 1st of each month at 8:00 AM EAT
+ * Generates and emails monthly financial reports to landlords
+ */
+exports.generateMonthlyReports = onSchedule(
+  {
+    schedule: "0 8 1 * *", // 1st of month at 8 AM
+    timeZone: "Africa/Nairobi",
+    region: "us-central1"
+  },
+  async (event) => {
+    try {
+      logger.info("📊 Starting monthly reports generation...");
+
+      const db = admin.firestore();
+
+      // Calculate previous month
+      const now = new Date();
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const monthName = lastMonth.toLocaleString('default', { month: 'long' });
+      const year = lastMonth.getFullYear();
+
+      // Get all landlords with auto monthly reports enabled
+      const settingsSnapshot = await db.collection('landlordSettings')
+        .where('automatedWorkflows.autoMonthlyReports', '==', true)
+        .get();
+
+      let totalReports = 0;
+      let totalErrors = 0;
+
+      for (const settingsDoc of settingsSnapshot.docs) {
+        try {
+          const settings = settingsDoc.data();
+          const landlordId = settingsDoc.id;
+
+          logger.info(`Generating report for landlord ${landlordId}`);
+
+          // Get landlord profile
+          const landlordDoc = await db.collection('users').doc(landlordId).get();
+          const landlord = landlordDoc.data();
+
+          if (!landlord || !landlord.email) {
+            logger.warn(`No email found for landlord ${landlordId}`);
+            continue;
+          }
+
+          // Get payments for last month
+          const paymentsSnapshot = await db.collection('payments')
+            .where('landlordId', '==', landlordId)
+            .get();
+
+          const lastMonthPayments = paymentsSnapshot.docs
+            .map(doc => ({id: doc.id, ...doc.data()}))
+            .filter(payment => {
+              if (payment.paidDate) {
+                const paidDate = new Date(payment.paidDate);
+                return paidDate.getMonth() === lastMonth.getMonth() &&
+                       paidDate.getFullYear() === lastMonth.getFullYear();
+              }
+              return false;
+            });
+
+          // Calculate statistics
+          const totalIncome = lastMonthPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+          const totalLateFees = lastMonthPayments.reduce((sum, p) => sum + (p.lateFee || 0), 0);
+          const totalCollected = totalIncome + totalLateFees;
+          const paymentsReceived = lastMonthPayments.length;
+
+          // Get total expected (all payments due in that month)
+          const allPayments = paymentsSnapshot.docs
+            .map(doc => ({id: doc.id, ...doc.data()}))
+            .filter(payment => {
+              const dueDate = new Date(payment.dueDate);
+              return dueDate.getMonth() === lastMonth.getMonth() &&
+                     dueDate.getFullYear() === lastMonth.getFullYear();
+            });
+
+          const totalExpected = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+          const collectionRate = totalExpected > 0 ? ((totalIncome / totalExpected) * 100).toFixed(1) : 0;
+
+          // Format currency
+          const currency = settings.businessPreferences?.currency || 'KSH';
+          const currencySymbol = currency === 'KSH' ? 'KSH ' : '$';
+
+          // Send report email
+          const emailResult = await resend.emails.send({
+            from: 'Karibu Nyumbanii <noreply@nyumbanii.co.ke>',
+            to: landlord.email,
+            subject: `Monthly Report: ${monthName} ${year}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #003366;">Monthly Financial Report</h2>
+                <h3 style="color: #666;">${monthName} ${year}</h3>
+
+                <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h3 style="margin-top: 0;">Summary</h3>
+                  <p style="margin: 10px 0;"><strong>Total Expected:</strong> ${currencySymbol}${totalExpected.toLocaleString()}</p>
+                  <p style="margin: 10px 0;"><strong>Total Collected:</strong> ${currencySymbol}${totalCollected.toLocaleString()}</p>
+                  <p style="margin: 10px 0;"><strong>Rental Income:</strong> ${currencySymbol}${totalIncome.toLocaleString()}</p>
+                  <p style="margin: 10px 0;"><strong>Late Fees:</strong> ${currencySymbol}${totalLateFees.toLocaleString()}</p>
+                  <p style="margin: 10px 0;"><strong>Collection Rate:</strong> ${collectionRate}%</p>
+                  <p style="margin: 10px 0;"><strong>Payments Received:</strong> ${paymentsReceived}</p>
+                </div>
+
+                <p>You can view detailed reports and analytics in your dashboard.</p>
+
+                <a href="https://nyumbanii.co.ke/landlord/dashboard"
+                   style="display: inline-block; background-color: #003366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
+                  View Dashboard
+                </a>
+
+                <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                  This is an automated monthly report from Karibu Nyumbanii.
+                </p>
+              </div>
+            `
+          });
+
+          logger.info(`Monthly report sent to ${landlord.email}: ${emailResult.id}`);
+          totalReports++;
+
+        } catch (error) {
+          logger.error(`Error generating report for landlord ${settingsDoc.id}:`, error);
+          totalErrors++;
+        }
+      }
+
+      logger.info(`✅ Monthly reports completed. Sent: ${totalReports}, Errors: ${totalErrors}`);
+      return {success: true, sent: totalReports, errors: totalErrors};
+
+    } catch (error) {
+      logger.error("❌ Error in generateMonthlyReports:", error);
+      throw error;
     }
   }
 );

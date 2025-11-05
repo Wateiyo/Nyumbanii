@@ -27,6 +27,20 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  calculateRentWithLateFee,
+  getPaymentStatus,
+  canAddTenant,
+  canEditRent,
+  canApproveMaintenance,
+  canViewFinancials,
+  canManageProperties,
+  canSendMessages,
+  canManageTeam
+} from '../utils/formatters';
+import {
   Home,
   Users,
   User,
@@ -105,6 +119,9 @@ const LandlordDashboard = () => {
     prn: '',
     amount: ''
   });
+
+  // User role for permissions (default to landlord, will be updated from user data)
+  const [userRole, setUserRole] = useState('landlord');
 
   const [newTeamMember, setNewTeamMember] = useState({
   name: '',
@@ -444,13 +461,202 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     address: userProfile?.address || 'Westlands, Nairobi',
     notifications: {
       email: true,
-      sms: true,
+      sms: false, // Disabled SMS
       push: true,
       paymentAlerts: true,
       maintenanceAlerts: true,
       viewingAlerts: true
     }
   });
+
+  // Preferences state for dark mode and other UI preferences
+  const [preferences, setPreferences] = useState({
+    darkMode: false,
+    compactView: false,
+    autoRefresh: true
+  });
+
+  // Business Preferences
+  const [businessPreferences, setBusinessPreferences] = useState({
+    currency: 'KSH',
+    dateFormat: 'DD/MM/YYYY',
+    fiscalYearStart: 'January',
+    businessHoursStart: '08:00',
+    businessHoursEnd: '18:00',
+    language: 'English',
+    timezone: 'Africa/Nairobi'
+  });
+
+  // Automated Workflows
+  const [automatedWorkflows, setAutomatedWorkflows] = useState({
+    autoApproveMaintenance: false,
+    maintenanceApprovalLimit: 5000,
+    autoRentReminders: true,
+    rentReminderDays: 3,
+    autoOverdueNotices: true,
+    overdueNoticeDays: 1,
+    autoMonthlyReports: true,
+    autoArchiveRecords: false,
+    archiveAfterMonths: 12
+  });
+
+  // Financial Settings
+  const [financialSettings, setFinancialSettings] = useState({
+    lateFeeEnabled: true,
+    lateFeePercentage: 5,
+    gracePeriodDays: 3,
+    acceptedPaymentMethods: ['mpesa', 'bank', 'cash'],
+    customReceiptBranding: true,
+    invoicePrefix: 'INV-2025-',
+    receiptPrefix: 'RCP-2025-'
+  });
+
+  // Communication Preferences
+  const [communicationPrefs, setCommunicationPrefs] = useState({
+    emailSignature: '',
+    autoReplyEnabled: false,
+    autoReplyMessage: 'Thank you for your message. We will respond within 24 hours.',
+    tenantPortalEnabled: true,
+    allowTenantSelfService: true
+  });
+
+  // Property Management Settings
+  const [propertySettings, setPropertySettings] = useState({
+    autoPostVacancies: true,
+    minimumLeaseTerm: 12,
+    securityDepositMultiple: 1,
+    utilitiesIncluded: ['water'],
+    petPolicy: 'not_allowed',
+    petDeposit: 0
+  });
+
+  // Team Management Permissions
+  const [teamPermissions, setTeamPermissions] = useState({
+    propertyManagerCanAddTenants: true,
+    propertyManagerCanEditRent: false,
+    maintenanceCanViewPayments: false,
+    requireApprovalForExpenses: true,
+    expenseApprovalLimit: 10000,
+    activityLogsEnabled: true
+  });
+
+  // Reporting Settings
+  const [reportingSettings, setReportingSettings] = useState({
+    dashboardWidgets: ['revenue', 'occupancy', 'maintenance', 'payments'],
+    defaultExportFormat: 'PDF',
+    scheduledReportsEnabled: true,
+    reportFrequency: 'monthly',
+    reportRecipients: []
+  });
+
+  // Security Settings
+  const [securitySettings, setSecuritySettings] = useState({
+    sessionTimeout: 30,
+    ipWhitelistEnabled: false,
+    ipWhitelist: [],
+    auditTrailEnabled: true,
+    dataRetentionMonths: 24,
+    twoFactorEnabled: false
+  });
+
+  // Integration Settings
+  const [integrationSettings, setIntegrationSettings] = useState({
+    mpesaEnabled: false,
+    mpesaBusinessNumber: '',
+    mpesaPasskey: '',
+    customEmailEnabled: false,
+    smtpServer: '',
+    smtpPort: 587,
+    calendarSyncEnabled: false,
+    calendarProvider: 'google',
+    whatsappBusinessEnabled: false,
+    whatsappNumber: ''
+  });
+
+  // Apply dark mode class to document root
+  useEffect(() => {
+    if (preferences.darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [preferences.darkMode]);
+
+  // Load settings from Firestore on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!currentUser) return;
+
+      try {
+        const { getDoc, doc: firestoreDoc } = await import('firebase/firestore');
+        const settingsRef = firestoreDoc(db, 'landlordSettings', currentUser.uid);
+        const settingsSnap = await getDoc(settingsRef);
+
+        if (settingsSnap.exists()) {
+          const data = settingsSnap.data();
+
+          // Load all settings
+          if (data.preferences) setPreferences(data.preferences);
+          if (data.businessPreferences) setBusinessPreferences(data.businessPreferences);
+          if (data.automatedWorkflows) setAutomatedWorkflows(data.automatedWorkflows);
+          if (data.financialSettings) setFinancialSettings(data.financialSettings);
+          if (data.communicationPrefs) setCommunicationPrefs(data.communicationPrefs);
+          if (data.propertySettings) setPropertySettings(data.propertySettings);
+          if (data.teamPermissions) setTeamPermissions(data.teamPermissions);
+          if (data.reportingSettings) setReportingSettings(data.reportingSettings);
+          if (data.securitySettings) setSecuritySettings(data.securitySettings);
+          if (data.integrationSettings) setIntegrationSettings(data.integrationSettings);
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+
+    loadSettings();
+  }, [currentUser]);
+
+  // Save settings to Firestore whenever they change (with debouncing)
+  useEffect(() => {
+    const saveSettings = async () => {
+      if (!currentUser) return;
+
+      try {
+        const { setDoc, doc: firestoreDoc } = await import('firebase/firestore');
+        const settingsRef = firestoreDoc(db, 'landlordSettings', currentUser.uid);
+        await setDoc(settingsRef, {
+          preferences,
+          businessPreferences,
+          automatedWorkflows,
+          financialSettings,
+          communicationPrefs,
+          propertySettings,
+          teamPermissions,
+          reportingSettings,
+          securitySettings,
+          integrationSettings,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (error) {
+        console.error('Error saving settings:', error);
+      }
+    };
+
+    // Debounce saving to avoid too many writes (wait 1 second after last change)
+    const timeoutId = setTimeout(saveSettings, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [
+    currentUser,
+    preferences,
+    businessPreferences,
+    automatedWorkflows,
+    financialSettings,
+    communicationPrefs,
+    propertySettings,
+    teamPermissions,
+    reportingSettings,
+    securitySettings,
+    integrationSettings
+  ]);
 
   // Update profileSettings when userProfile changes
   useEffect(() => {
@@ -770,22 +976,98 @@ const handleEditProperty = async () => {
   };
 
 
-  // RECORD PAYMENT
+  // RECORD PAYMENT (with late fee calculation)
   const handleRecordPayment = async (paymentId) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Find the payment
+      const payment = payments.find(p => p.id === paymentId);
+      if (!payment) {
+        alert('Payment not found');
+        return;
+      }
+
+      const today = new Date();
+
+      // Calculate late fees if applicable
+      const lateFeeResult = calculateRentWithLateFee(
+        payment.amount,
+        payment.dueDate,
+        today,
+        financialSettings
+      );
+
+      // Show confirmation if late fee applies
+      if (lateFeeResult.isLate && lateFeeResult.lateFee > 0) {
+        const message = `This payment is ${lateFeeResult.daysLate} days late.\n\nOriginal Amount: ${formatCurrency(payment.amount, businessPreferences.currency)}\nLate Fee (${financialSettings.lateFeePercentage}%): ${formatCurrency(lateFeeResult.lateFee, businessPreferences.currency)}\nTotal Amount: ${formatCurrency(lateFeeResult.totalAmount, businessPreferences.currency)}\n\nDo you want to proceed?`;
+
+        if (!confirm(message)) {
+          return;
+        }
+      }
+
       const paymentRef = doc(db, 'payments', paymentId);
-      
+
       await updateDoc(paymentRef, {
         status: 'paid',
-        paidDate: today,
-        method: 'M-Pesa'
+        paidDate: today.toISOString().split('T')[0],
+        method: 'M-Pesa',
+        originalAmount: payment.amount,
+        lateFee: lateFeeResult.lateFee,
+        totalAmount: lateFeeResult.totalAmount,
+        daysLate: lateFeeResult.daysLate
       });
-      
+
       alert('Payment recorded successfully!');
     } catch (error) {
       console.error('Error recording payment:', error);
       alert('Error recording payment. Please try again.');
+    }
+  };
+
+  // MARK PAYMENT AS PAID (with late fee calculation)
+  const handleMarkPaymentPaid = async (paymentId) => {
+    try {
+      // Find the payment
+      const payment = payments.find(p => p.id === paymentId);
+      if (!payment) {
+        alert('Payment not found');
+        return;
+      }
+
+      const today = new Date();
+
+      // Calculate late fees if applicable
+      const lateFeeResult = calculateRentWithLateFee(
+        payment.amount,
+        payment.dueDate,
+        today,
+        financialSettings
+      );
+
+      // Show confirmation if late fee applies
+      if (lateFeeResult.isLate && lateFeeResult.lateFee > 0) {
+        const message = `This payment is ${lateFeeResult.daysLate} days late.\n\nOriginal Amount: ${formatCurrency(payment.amount, businessPreferences.currency)}\nLate Fee (${financialSettings.lateFeePercentage}%): ${formatCurrency(lateFeeResult.lateFee, businessPreferences.currency)}\nTotal Amount: ${formatCurrency(lateFeeResult.totalAmount, businessPreferences.currency)}\n\nDo you want to proceed?`;
+
+        if (!confirm(message)) {
+          return;
+        }
+      }
+
+      const paymentRef = doc(db, 'payments', paymentId);
+
+      await updateDoc(paymentRef, {
+        status: 'paid',
+        paidDate: today.toISOString().split('T')[0],
+        originalAmount: payment.amount,
+        lateFee: lateFeeResult.lateFee,
+        totalAmount: lateFeeResult.totalAmount,
+        daysLate: lateFeeResult.daysLate
+      });
+
+      alert('Payment marked as paid successfully!');
+    } catch (error) {
+      console.error('Error marking payment as paid:', error);
+      alert('Error marking payment as paid. Please try again.');
     }
   };
 
@@ -1209,7 +1491,7 @@ const handleViewTenantDetails = (tenant) => {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 flex flex-col lg:flex-row overflow-hidden">
+    <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900 flex flex-col lg:flex-row overflow-hidden transition-colors duration-200">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
@@ -1513,19 +1795,19 @@ const handleViewTenantDetails = (tenant) => {
         <div className="space-y-2 lg:space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-xs lg:text-sm text-gray-600">Expected This Month</span>
-            <span className="font-semibold text-gray-900 text-xs lg:text-sm">KES {paymentStats.expected.toLocaleString()}</span>
+            <span className="font-semibold text-gray-900 text-xs lg:text-sm">{formatCurrency(paymentStats.expected, businessPreferences.currency)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs lg:text-sm text-gray-600">Received</span>
-            <span className="font-semibold text-green-600 text-xs lg:text-sm">KES {paymentStats.received.toLocaleString()}</span>
+            <span className="font-semibold text-green-600 text-xs lg:text-sm">{formatCurrency(paymentStats.received, businessPreferences.currency)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs lg:text-sm text-gray-600">Pending</span>
-            <span className="font-semibold text-yellow-600 text-xs lg:text-sm">KES {paymentStats.pending.toLocaleString()}</span>
+            <span className="font-semibold text-yellow-600 text-xs lg:text-sm">{formatCurrency(paymentStats.pending, businessPreferences.currency)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs lg:text-sm text-gray-600">Overdue</span>
-            <span className="font-semibold text-red-600 text-xs lg:text-sm">KES {paymentStats.overdue.toLocaleString()}</span>
+            <span className="font-semibold text-red-600 text-xs lg:text-sm">{formatCurrency(paymentStats.overdue, businessPreferences.currency)}</span>
           </div>
         </div>
         <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t">
@@ -1565,14 +1847,18 @@ const handleViewTenantDetails = (tenant) => {
       <div className="bg-white p-4 lg:p-6 rounded-xl shadow-sm">
         <h3 className="font-semibold text-gray-900 mb-3 lg:mb-4 text-sm lg:text-base">Quick Actions</h3>
         <div className="grid grid-cols-2 gap-2 lg:gap-3">
-          <button onClick={() => setShowPropertyModal(true)} className="p-3 lg:p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-center">
-            <Building className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium text-gray-900 block">Add Property</span>
-          </button>
-          <button onClick={() => setShowTenantModal(true)} className="p-3 lg:p-4 bg-green-50 hover:bg-green-100 rounded-lg transition text-center">
-            <Users className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium text-gray-900 block">Add Tenant</span>
-          </button>
+          {canManageProperties(userRole, teamPermissions) && (
+            <button onClick={() => setShowPropertyModal(true)} className="p-3 lg:p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-center">
+              <Building className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 mx-auto mb-1 lg:mb-2" />
+              <span className="text-xs lg:text-sm font-medium text-gray-900 block">Add Property</span>
+            </button>
+          )}
+          {canAddTenant(userRole, teamPermissions) && (
+            <button onClick={() => setShowTenantModal(true)} className="p-3 lg:p-4 bg-green-50 hover:bg-green-100 rounded-lg transition text-center">
+              <Users className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 mx-auto mb-1 lg:mb-2" />
+              <span className="text-xs lg:text-sm font-medium text-gray-900 block">Add Tenant</span>
+            </button>
+          )}
           <button onClick={() => setShowListingModal(true)} className="p-3 lg:p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-center">
             <Eye className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 mx-auto mb-1 lg:mb-2" />
             <span className="text-xs lg:text-sm font-medium text-gray-900 block">Create Listing</span>
@@ -1600,13 +1886,15 @@ const handleViewTenantDetails = (tenant) => {
             <h3 className="font-semibold text-gray-900 mb-1">Property Management</h3>
             <p className="text-sm text-gray-600">Manage your properties and track occupancy rates</p>
           </div>
-          <button
-            onClick={() => setShowPropertyModal(true)}
-            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Add Property
-          </button>
+          {canManageProperties(userRole, teamPermissions) && (
+            <button
+              onClick={() => setShowPropertyModal(true)}
+              className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Add Property
+            </button>
+          )}
         </div>
 
         {/* Properties Grid - Responsive Full Width */}
@@ -1717,7 +2005,7 @@ const handleViewTenantDetails = (tenant) => {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Monthly Revenue</span>
                       <span className="text-xl font-bold text-gray-900">
-                        KES {Number(property.revenue).toLocaleString()}
+                        {formatCurrency(Number(property.revenue), businessPreferences.currency)}
                       </span>
                     </div>
                   </div>
@@ -1854,11 +2142,11 @@ const handleViewTenantDetails = (tenant) => {
               <div className="pt-4 border-t space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Monthly Rent</span>
-                  <span className="font-bold text-[#003366] text-lg">KES {listing.rent?.toLocaleString()}</span>
+                  <span className="font-bold text-[#003366] text-lg">{formatCurrency(listing.rent, businessPreferences.currency)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Deposit: KES {listing.deposit?.toLocaleString()}</span>
-                  <span className="text-xs text-gray-500">Posted: {listing.postedDate}</span>
+                  <span className="text-xs text-gray-500">Deposit: {formatCurrency(listing.deposit, businessPreferences.currency)}</span>
+                  <span className="text-xs text-gray-500">Posted: {formatDate(listing.postedDate, businessPreferences.dateFormat)}</span>
                 </div>
               </div>
               
@@ -2226,20 +2514,20 @@ const handleViewTenantDetails = (tenant) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Total Rental Income</p>
-                    <p className="text-2xl font-bold text-gray-900">KES {currentMonthTax.totalIncome.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentMonthTax.totalIncome, businessPreferences.currency)}</p>
                     <p className="text-xs text-gray-500 mt-1">{currentMonthTax.payments.length} payments received</p>
                   </div>
 
                   <div className="bg-orange-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Tax Due (10%)</p>
-                    <p className="text-2xl font-bold text-orange-600">KES {currentMonthTax.taxDue.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-orange-600">{formatCurrency(currentMonthTax.taxDue, businessPreferences.currency)}</p>
                     <p className="text-xs text-gray-500 mt-1">Residential Rental Tax</p>
                   </div>
 
                   <div className="bg-purple-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Payment Due Date</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {currentMonthTax.dueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      {formatDate(currentMonthTax.dueDate, businessPreferences.dateFormat)}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {Math.ceil((currentMonthTax.dueDate - new Date()) / (1000 * 60 * 60 * 24))} days remaining
@@ -2292,15 +2580,15 @@ const handleViewTenantDetails = (tenant) => {
                             <div className="text-sm font-medium text-gray-900">{period.monthName} {period.year}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">KES {period.totalIncome.toLocaleString()}</div>
+                            <div className="text-sm text-gray-900">{formatCurrency(period.totalIncome, businessPreferences.currency)}</div>
                             <div className="text-xs text-gray-500">{period.payments.length} payments</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-semibold text-orange-600">KES {period.taxDue.toLocaleString()}</div>
+                            <div className="text-sm font-semibold text-orange-600">{formatCurrency(period.taxDue, businessPreferences.currency)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
-                              {period.dueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {formatDate(period.dueDate, businessPreferences.dateFormat)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -2371,13 +2659,15 @@ const handleViewTenantDetails = (tenant) => {
                   <h3 className="font-semibold text-gray-900 mb-1">Tenant Directory</h3>
                   <p className="text-sm text-gray-600">Manage and communicate with your tenants</p>
                 </div>
-                <button
-                  onClick={() => setShowTenantModal(true)}
-                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Add Tenant
-                </button>
+                {canAddTenant(userRole, teamPermissions) && (
+                  <button
+                    onClick={() => setShowTenantModal(true)}
+                    className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Tenant
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -2479,12 +2769,12 @@ const handleViewTenantDetails = (tenant) => {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Banknote className="w-4 h-4 flex-shrink-0" />
-                                <span className="font-semibold text-gray-900">KES {tenant.rent?.toLocaleString()}/month</span>
+                                <span className="font-semibold text-gray-900">{formatCurrency(tenant.rent, businessPreferences.currency)}/month</span>
                               </div>
                               {tenant.leaseEnd && (
                                 <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4 flex-shrink-0" />
-                                  <span>Lease: {tenant.leaseStart} to {tenant.leaseEnd}</span>
+                                  <span>Lease: {formatDate(tenant.leaseStart, businessPreferences.dateFormat)} to {formatDate(tenant.leaseEnd, businessPreferences.dateFormat)}</span>
                                 </div>
                               )}
                             </div>
@@ -2572,7 +2862,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">
-              KES {payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+              {formatCurrency(payments.reduce((sum, p) => sum + p.amount, 0), businessPreferences.currency)}
             </p>
           </div>
 
@@ -2585,7 +2875,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
             </div>
             <p className="text-3xl font-bold text-green-600">
-              KES {payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+              {formatCurrency(payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0), businessPreferences.currency)}
             </p>
           </div>
 
@@ -2598,7 +2888,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
             </div>
             <p className="text-3xl font-bold text-yellow-600">
-              KES {payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+              {formatCurrency(payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0), businessPreferences.currency)}
             </p>
           </div>
 
@@ -2611,7 +2901,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
             </div>
             <p className="text-3xl font-bold text-red-600">
-              KES {payments.filter(p => p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+              {formatCurrency(payments.filter(p => p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0), businessPreferences.currency)}
             </p>
           </div>
         </div>
@@ -2718,7 +3008,7 @@ const handleViewTenantDetails = (tenant) => {
                       {/* Amount */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <p className="font-bold text-gray-900">
-                          KES {payment.amount?.toLocaleString()}
+                          {formatCurrency(payment.amount, businessPreferences.currency)}
                         </p>
                         {payment.method && (
                           <p className="text-xs text-gray-500 capitalize">{payment.method}</p>
@@ -2730,11 +3020,7 @@ const handleViewTenantDetails = (tenant) => {
                         <div className="flex items-center gap-2 text-gray-700">
                           <Calendar className="w-4 h-4 text-gray-400" />
                           <span className="text-sm">
-                            {new Date(payment.dueDate).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
+                            {formatDate(payment.dueDate, businessPreferences.dateFormat)}
                           </span>
                         </div>
                       </td>
@@ -3117,13 +3403,15 @@ const handleViewTenantDetails = (tenant) => {
             <h3 className="font-semibold text-gray-900 mb-1">Team Management</h3>
             <p className="text-sm text-gray-600">Manage your property management team members</p>
           </div>
-          <button
-            onClick={() => setShowTeamModal(true)}
-            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-          >
-            <Users className="w-5 h-5" />
-            Add Team Member
-          </button>
+          {canManageTeam(userRole) && (
+            <button
+              onClick={() => setShowTeamModal(true)}
+              className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+            >
+              <Users className="w-5 h-5" />
+              Add Team Member
+            </button>
+          )}
         </div>
 
         {/* Team Stats Cards */}
@@ -3478,16 +3766,6 @@ const handleViewTenantDetails = (tenant) => {
               </label>
             </div>
 
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">SMS Notifications</h3>
-                <p className="text-sm text-gray-500 mt-1">Receive updates via text message</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
-              </label>
-            </div>
 
             <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
               <div className="flex-1">
@@ -3497,6 +3775,63 @@ const handleViewTenantDetails = (tenant) => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" defaultChecked className="sr-only peer" />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Display Preferences Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Display Preferences</h2>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Dark Mode</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Toggle dark theme for better viewing in low light</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={preferences.darkMode}
+                  onChange={(e) => setPreferences({...preferences, darkMode: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Compact View</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Show more information in less space</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={preferences.compactView}
+                  onChange={(e) => setPreferences({...preferences, compactView: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Auto Refresh</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automatically refresh data every 30 seconds</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={preferences.autoRefresh}
+                  onChange={(e) => setPreferences({...preferences, autoRefresh: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
               </label>
             </div>
           </div>
@@ -3594,6 +3929,873 @@ const handleViewTenantDetails = (tenant) => {
                 <input type="checkbox" defaultChecked className="sr-only peer" />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
               </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Business Preferences Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Business Preferences</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure your business settings and regional preferences</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Currency</label>
+                <select
+                  value={businessPreferences.currency}
+                  onChange={(e) => setBusinessPreferences({...businessPreferences, currency: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="KSH">KSH - Kenyan Shilling</option>
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="EUR">EUR - Euro</option>
+                  <option value="GBP">GBP - British Pound</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Format</label>
+                <select
+                  value={businessPreferences.dateFormat}
+                  onChange={(e) => setBusinessPreferences({...businessPreferences, dateFormat: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fiscal Year Start</label>
+                <select
+                  value={businessPreferences.fiscalYearStart}
+                  onChange={(e) => setBusinessPreferences({...businessPreferences, fiscalYearStart: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="January">January</option>
+                  <option value="April">April</option>
+                  <option value="July">July</option>
+                  <option value="October">October</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Language</label>
+                <select
+                  value={businessPreferences.language}
+                  onChange={(e) => setBusinessPreferences({...businessPreferences, language: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="English">English</option>
+                  <option value="Swahili">Swahili</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Business Hours Start</label>
+                <input
+                  type="time"
+                  value={businessPreferences.businessHoursStart}
+                  onChange={(e) => setBusinessPreferences({...businessPreferences, businessHoursStart: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Business Hours End</label>
+                <input
+                  type="time"
+                  value={businessPreferences.businessHoursEnd}
+                  onChange={(e) => setBusinessPreferences({...businessPreferences, businessHoursEnd: e.target.value})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Automated Workflows Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Automated Workflows</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Save time with automated tasks and notifications</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Auto-approve Maintenance Requests</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automatically approve requests under a certain amount</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={automatedWorkflows.autoApproveMaintenance}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, autoApproveMaintenance: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {automatedWorkflows.autoApproveMaintenance && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Approval Limit (KSH)</label>
+                  <input
+                    type="number"
+                    value={automatedWorkflows.maintenanceApprovalLimit}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, maintenanceApprovalLimit: parseInt(e.target.value)})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Automatic Rent Reminders</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Send reminders before rent is due</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={automatedWorkflows.autoRentReminders}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, autoRentReminders: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {automatedWorkflows.autoRentReminders && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Days Before Due Date</label>
+                  <input
+                    type="number"
+                    value={automatedWorkflows.rentReminderDays}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, rentReminderDays: parseInt(e.target.value)})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Overdue Payment Notices</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automatically send overdue notices</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={automatedWorkflows.autoOverdueNotices}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, autoOverdueNotices: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {automatedWorkflows.autoOverdueNotices && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Days After Due Date</label>
+                  <input
+                    type="number"
+                    value={automatedWorkflows.overdueNoticeDays}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, overdueNoticeDays: parseInt(e.target.value)})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Monthly Reports</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Auto-generate and email monthly reports</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={automatedWorkflows.autoMonthlyReports}
+                  onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, autoMonthlyReports: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Auto-archive Old Records</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automatically archive records older than specified months</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={automatedWorkflows.autoArchiveRecords}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, autoArchiveRecords: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {automatedWorkflows.autoArchiveRecords && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Archive After (Months)</label>
+                  <input
+                    type="number"
+                    value={automatedWorkflows.archiveAfterMonths}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, archiveAfterMonths: parseInt(e.target.value)})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Financial Settings Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Financial Settings</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure payment methods, fees, and financial preferences</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Late Payment Fees</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Charge fees for late rent payments</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={financialSettings.lateFeeEnabled}
+                    onChange={(e) => setFinancialSettings({...financialSettings, lateFeeEnabled: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {financialSettings.lateFeeEnabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Late Fee Percentage</label>
+                    <input
+                      type="number"
+                      value={financialSettings.lateFeePercentage}
+                      onChange={(e) => setFinancialSettings({...financialSettings, lateFeePercentage: parseFloat(e.target.value)})}
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Grace Period (Days)</label>
+                    <input
+                      type="number"
+                      value={financialSettings.gracePeriodDays}
+                      onChange={(e) => setFinancialSettings({...financialSettings, gracePeriodDays: parseInt(e.target.value)})}
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Accepted Payment Methods</label>
+              <div className="space-y-2">
+                {[
+                  { value: 'mpesa', label: 'M-Pesa' },
+                  { value: 'bank', label: 'Bank Transfer' },
+                  { value: 'cash', label: 'Cash' },
+                  { value: 'card', label: 'Credit/Debit Card' }
+                ].map(method => (
+                  <label key={method.value} className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={financialSettings.acceptedPaymentMethods.includes(method.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFinancialSettings({
+                            ...financialSettings,
+                            acceptedPaymentMethods: [...financialSettings.acceptedPaymentMethods, method.value]
+                          });
+                        } else {
+                          setFinancialSettings({
+                            ...financialSettings,
+                            acceptedPaymentMethods: financialSettings.acceptedPaymentMethods.filter(m => m !== method.value)
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 text-[#003366] border-gray-300 rounded focus:ring-[#003366]"
+                    />
+                    <span className="ml-3 text-gray-700 dark:text-gray-300 font-medium">{method.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Invoice Prefix</label>
+                <input
+                  type="text"
+                  value={financialSettings.invoicePrefix}
+                  onChange={(e) => setFinancialSettings({...financialSettings, invoicePrefix: e.target.value})}
+                  placeholder="INV-2025-"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Receipt Prefix</label>
+                <input
+                  type="text"
+                  value={financialSettings.receiptPrefix}
+                  onChange={(e) => setFinancialSettings({...financialSettings, receiptPrefix: e.target.value})}
+                  placeholder="RCP-2025-"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Custom Receipt Branding</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Add your logo and branding to receipts</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={financialSettings.customReceiptBranding}
+                  onChange={(e) => setFinancialSettings({...financialSettings, customReceiptBranding: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Communication Preferences Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Communication Preferences</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage how you communicate with tenants</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Signature</label>
+              <textarea
+                value={communicationPrefs.emailSignature}
+                onChange={(e) => setCommunicationPrefs({...communicationPrefs, emailSignature: e.target.value})}
+                placeholder="Best regards,&#10;Your Name&#10;Property Management Company"
+                rows={4}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Auto-Reply Messages</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Send automatic replies outside business hours</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={communicationPrefs.autoReplyEnabled}
+                    onChange={(e) => setCommunicationPrefs({...communicationPrefs, autoReplyEnabled: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {communicationPrefs.autoReplyEnabled && (
+                <textarea
+                  value={communicationPrefs.autoReplyMessage}
+                  onChange={(e) => setCommunicationPrefs({...communicationPrefs, autoReplyMessage: e.target.value})}
+                  rows={3}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                />
+              )}
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Tenant Portal Access</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Allow tenants to access their portal</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={communicationPrefs.tenantPortalEnabled}
+                  onChange={(e) => setCommunicationPrefs({...communicationPrefs, tenantPortalEnabled: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Tenant Self-Service</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Allow tenants to submit maintenance requests and view payments</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={communicationPrefs.allowTenantSelfService}
+                  onChange={(e) => setCommunicationPrefs({...communicationPrefs, allowTenantSelfService: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Property Management Settings Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Property Management</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Set default policies for your properties</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Auto-post Vacancies</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automatically post vacant units to listings</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={propertySettings.autoPostVacancies}
+                  onChange={(e) => setPropertySettings({...propertySettings, autoPostVacancies: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Minimum Lease Term (Months)</label>
+                <select
+                  value={propertySettings.minimumLeaseTerm}
+                  onChange={(e) => setPropertySettings({...propertySettings, minimumLeaseTerm: parseInt(e.target.value)})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                >
+                  <option value={3}>3 Months</option>
+                  <option value={6}>6 Months</option>
+                  <option value={12}>12 Months</option>
+                  <option value={24}>24 Months</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Security Deposit</label>
+                <select
+                  value={propertySettings.securityDepositMultiple}
+                  onChange={(e) => setPropertySettings({...propertySettings, securityDepositMultiple: parseInt(e.target.value)})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                >
+                  <option value={1}>1x Monthly Rent</option>
+                  <option value={2}>2x Monthly Rent</option>
+                  <option value={3}>3x Monthly Rent</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Utilities Included</label>
+              <div className="grid grid-cols-2 gap-2">
+                {['water', 'electricity', 'internet', 'gas'].map(utility => (
+                  <label key={utility} className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={propertySettings.utilitiesIncluded.includes(utility)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setPropertySettings({
+                            ...propertySettings,
+                            utilitiesIncluded: [...propertySettings.utilitiesIncluded, utility]
+                          });
+                        } else {
+                          setPropertySettings({
+                            ...propertySettings,
+                            utilitiesIncluded: propertySettings.utilitiesIncluded.filter(u => u !== utility)
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 text-[#003366] border-gray-300 rounded focus:ring-[#003366]"
+                    />
+                    <span className="ml-3 text-gray-700 dark:text-gray-300 font-medium capitalize">{utility}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pet Policy</label>
+              <select
+                value={propertySettings.petPolicy}
+                onChange={(e) => setPropertySettings({...propertySettings, petPolicy: e.target.value})}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+              >
+                <option value="allowed">Pets Allowed</option>
+                <option value="not_allowed">Pets Not Allowed</option>
+                <option value="with_deposit">Pets Allowed with Deposit</option>
+              </select>
+            </div>
+
+            {propertySettings.petPolicy === 'with_deposit' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pet Deposit (KSH)</label>
+                <input
+                  type="number"
+                  value={propertySettings.petDeposit}
+                  onChange={(e) => setPropertySettings({...propertySettings, petDeposit: parseInt(e.target.value)})}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Team Management Permissions Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Team Management & Permissions</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Control what your team members can access and do</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Property Managers Can Add Tenants</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Allow property managers to add new tenants</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={teamPermissions.propertyManagerCanAddTenants}
+                  onChange={(e) => setTeamPermissions({...teamPermissions, propertyManagerCanAddTenants: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Property Managers Can Edit Rent</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Allow property managers to modify rent amounts</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={teamPermissions.propertyManagerCanEditRent}
+                  onChange={(e) => setTeamPermissions({...teamPermissions, propertyManagerCanEditRent: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Maintenance Can View Payments</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Allow maintenance staff to see payment information</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={teamPermissions.maintenanceCanViewPayments}
+                  onChange={(e) => setTeamPermissions({...teamPermissions, maintenanceCanViewPayments: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Require Approval for Expenses</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Team members must get approval for expenses above limit</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={teamPermissions.requireApprovalForExpenses}
+                    onChange={(e) => setTeamPermissions({...teamPermissions, requireApprovalForExpenses: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {teamPermissions.requireApprovalForExpenses && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Approval Limit (KSH)</label>
+                  <input
+                    type="number"
+                    value={teamPermissions.expenseApprovalLimit}
+                    onChange={(e) => setTeamPermissions({...teamPermissions, expenseApprovalLimit: parseInt(e.target.value)})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Activity Logs</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track all team member actions and changes</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={teamPermissions.activityLogsEnabled}
+                  onChange={(e) => setTeamPermissions({...teamPermissions, activityLogsEnabled: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Reporting & Analytics Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Reporting & Analytics</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Customize your reporting and data export preferences</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default Export Format</label>
+              <select
+                value={reportingSettings.defaultExportFormat}
+                onChange={(e) => setReportingSettings({...reportingSettings, defaultExportFormat: e.target.value})}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+              >
+                <option value="PDF">PDF</option>
+                <option value="Excel">Excel (.xlsx)</option>
+                <option value="CSV">CSV</option>
+              </select>
+            </div>
+
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Scheduled Reports</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automatically send reports via email</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={reportingSettings.scheduledReportsEnabled}
+                    onChange={(e) => setReportingSettings({...reportingSettings, scheduledReportsEnabled: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {reportingSettings.scheduledReportsEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Report Frequency</label>
+                  <select
+                    value={reportingSettings.reportFrequency}
+                    onChange={(e) => setReportingSettings({...reportingSettings, reportFrequency: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Security & Privacy Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Security & Privacy</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your account security and data retention</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Session Timeout (Minutes)</label>
+              <select
+                value={securitySettings.sessionTimeout}
+                onChange={(e) => setSecuritySettings({...securitySettings, sessionTimeout: parseInt(e.target.value)})}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+              >
+                <option value={15}>15 minutes</option>
+                <option value={30}>30 minutes</option>
+                <option value={60}>1 hour</option>
+                <option value={120}>2 hours</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Audit Trail</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Log all important actions for security</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={securitySettings.auditTrailEnabled}
+                  onChange={(e) => setSecuritySettings({...securitySettings, auditTrailEnabled: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data Retention Period</label>
+              <select
+                value={securitySettings.dataRetentionMonths}
+                onChange={(e) => setSecuritySettings({...securitySettings, dataRetentionMonths: parseInt(e.target.value)})}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+              >
+                <option value={12}>12 months</option>
+                <option value={24}>24 months</option>
+                <option value={36}>36 months</option>
+                <option value={60}>60 months</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Integration Settings Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Integration Settings</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Connect external services and platforms</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">M-Pesa Integration</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Connect your M-Pesa business account for payments</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={integrationSettings.mpesaEnabled}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, mpesaEnabled: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {integrationSettings.mpesaEnabled && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Business Number (Paybill/Till)</label>
+                    <input
+                      type="text"
+                      value={integrationSettings.mpesaBusinessNumber}
+                      onChange={(e) => setIntegrationSettings({...integrationSettings, mpesaBusinessNumber: e.target.value})}
+                      placeholder="123456"
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">API Passkey</label>
+                    <input
+                      type="password"
+                      value={integrationSettings.mpesaPasskey}
+                      onChange={(e) => setIntegrationSettings({...integrationSettings, mpesaPasskey: e.target.value})}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Calendar Sync</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sync viewings and maintenance with your calendar</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={integrationSettings.calendarSyncEnabled}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, calendarSyncEnabled: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {integrationSettings.calendarSyncEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Calendar Provider</label>
+                  <select
+                    value={integrationSettings.calendarProvider}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, calendarProvider: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="google">Google Calendar</option>
+                    <option value="outlook">Microsoft Outlook</option>
+                    <option value="apple">Apple Calendar</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">WhatsApp Business</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Send notifications via WhatsApp</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={integrationSettings.whatsappBusinessEnabled}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, whatsappBusinessEnabled: e.target.checked})}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                </label>
+              </div>
+              {integrationSettings.whatsappBusinessEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">WhatsApp Business Number</label>
+                  <input
+                    type="tel"
+                    value={integrationSettings.whatsappNumber}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, whatsappNumber: e.target.value})}
+                    placeholder="+254 700 000 000"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -4411,10 +5613,19 @@ const handleViewTenantDetails = (tenant) => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                 >
                   <option value="">Not paid yet</option>
-                  <option value="M-Pesa">M-Pesa</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Cheque">Cheque</option>
+                  {/* Filter payment methods based on acceptedPaymentMethods setting */}
+                  {financialSettings.acceptedPaymentMethods.includes('mpesa') && (
+                    <option value="M-Pesa">M-Pesa</option>
+                  )}
+                  {financialSettings.acceptedPaymentMethods.includes('bank') && (
+                    <option value="Bank Transfer">Bank Transfer</option>
+                  )}
+                  {financialSettings.acceptedPaymentMethods.includes('cash') && (
+                    <option value="Cash">Cash</option>
+                  )}
+                  {financialSettings.acceptedPaymentMethods.includes('card') && (
+                    <option value="Card">Credit/Debit Card</option>
+                  )}
                 </select>
               </div>
 
@@ -4476,7 +5687,7 @@ const handleViewTenantDetails = (tenant) => {
                 </p>
                 <p className="text-sm text-gray-600 mt-2">Tax Amount Due</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  KES {selectedTaxPeriod.taxDue.toLocaleString()}
+                  {formatCurrency(selectedTaxPeriod.taxDue, businessPreferences.currency)}
                 </p>
               </div>
 
@@ -5056,7 +6267,7 @@ const handleViewTenantDetails = (tenant) => {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Monthly Rent</label>
-              <p className="text-base font-semibold text-gray-900">KES {selectedTenantForDetails.rent?.toLocaleString()}</p>
+              <p className="text-base font-semibold text-gray-900">{formatCurrency(selectedTenantForDetails.rent, businessPreferences.currency)}</p>
             </div>
           </div>
         </div>
@@ -5070,11 +6281,11 @@ const handleViewTenantDetails = (tenant) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
             <div>
               <label className="text-sm font-medium text-gray-600">Lease Start Date</label>
-              <p className="text-base text-gray-900">{selectedTenantForDetails.leaseStart}</p>
+              <p className="text-base text-gray-900">{formatDate(selectedTenantForDetails.leaseStart, businessPreferences.dateFormat)}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Lease End Date</label>
-              <p className="text-base text-gray-900">{selectedTenantForDetails.leaseEnd}</p>
+              <p className="text-base text-gray-900">{formatDate(selectedTenantForDetails.leaseEnd, businessPreferences.dateFormat)}</p>
             </div>
           </div>
         </div>
