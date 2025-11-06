@@ -49,7 +49,6 @@ service cloud.firestore {
     // Viewings collection
     match /viewings/{viewingId} {
       allow read, write: if isAuthenticated();
-      allow create: if true;
     }
     
     // Notifications collection
