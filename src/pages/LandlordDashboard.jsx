@@ -1256,6 +1256,407 @@ const handleEditProperty = async () => {
     }
   };
 
+  // DOWNLOAD PAYMENT RECEIPT AS PDF
+  const handleDownloadReceipt = async (paymentId) => {
+    try {
+      const payment = payments.find(p => p.id === paymentId);
+      if (!payment) {
+        alert('Payment not found');
+        return;
+      }
+
+      // Dynamically import jsPDF
+      const { default: jsPDF } = await import('jspdf');
+
+      // Create new PDF document
+      const doc = new jsPDF();
+
+      // Set font
+      doc.setFont('helvetica');
+
+      // Company Header
+      doc.setFontSize(24);
+      doc.setTextColor(0, 51, 102); // #003366
+      doc.text(profileSettings.company || 'Property Management', 105, 20, { align: 'center' });
+
+      doc.setFontSize(18);
+      doc.setTextColor(100, 100, 100);
+      doc.text('PAYMENT RECEIPT', 105, 30, { align: 'center' });
+
+      // Line separator
+      doc.setDrawColor(0, 51, 102);
+      doc.setLineWidth(1);
+      doc.line(20, 35, 190, 35);
+
+      // Receipt Info - Left Side
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('RECEIPT NUMBER', 20, 45);
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text('#' + payment.id.substring(0, 8).toUpperCase(), 20, 50);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('ISSUE DATE', 20, 58);
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(formatDate(payment.paidDate || new Date().toISOString().split('T')[0], businessPreferences.dateFormat), 20, 63);
+
+      // Receipt Info - Right Side
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('TENANT', 140, 45);
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(payment.tenant, 140, 50);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('STATUS', 140, 58);
+      doc.setFontSize(12);
+
+      // Status badge color
+      if (payment.status === 'paid') {
+        doc.setTextColor(34, 197, 94); // green
+      } else if (payment.status === 'pending') {
+        doc.setTextColor(234, 179, 8); // yellow
+      } else {
+        doc.setTextColor(239, 68, 68); // red
+      }
+      doc.text(payment.status.toUpperCase(), 140, 63);
+
+      // Payment Details Box
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, 75, 170, 100, 'F');
+
+      // Details
+      let yPos = 85;
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+
+      const details = [
+        { label: 'Property', value: payment.property },
+        { label: 'Unit', value: payment.unit },
+        { label: 'Period', value: payment.month || 'N/A' },
+        { label: 'Due Date', value: formatDate(payment.dueDate, businessPreferences.dateFormat) }
+      ];
+
+      if (payment.paidDate) {
+        details.push({ label: 'Paid Date', value: formatDate(payment.paidDate, businessPreferences.dateFormat) });
+      }
+
+      if (payment.method) {
+        details.push({ label: 'Payment Method', value: payment.method.charAt(0).toUpperCase() + payment.method.slice(1) });
+      }
+
+      details.push({ label: 'Rent Amount', value: formatCurrency(payment.originalAmount || payment.amount, businessPreferences.currency) });
+
+      if (payment.lateFee) {
+        details.push({
+          label: `Late Fee (${payment.daysLate} days)`,
+          value: formatCurrency(payment.lateFee, businessPreferences.currency)
+        });
+      }
+
+      // Draw detail rows
+      details.forEach((detail, index) => {
+        doc.setTextColor(100, 100, 100);
+        doc.text(detail.label, 25, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.text(detail.value, 185, yPos, { align: 'right' });
+
+        // Draw line separator
+        if (index < details.length - 1) {
+          doc.setDrawColor(220, 220, 220);
+          doc.setLineWidth(0.5);
+          doc.line(25, yPos + 3, 185, yPos + 3);
+        }
+
+        yPos += 10;
+      });
+
+      // Total box
+      doc.setFillColor(0, 51, 102);
+      doc.rect(20, yPos + 5, 170, 15, 'F');
+
+      doc.setFontSize(14);
+      doc.setTextColor(255, 255, 255);
+      doc.text('TOTAL AMOUNT', 25, yPos + 14);
+      doc.setFontSize(16);
+      doc.text(formatCurrency(payment.totalAmount || payment.amount, businessPreferences.currency), 185, yPos + 14, { align: 'right' });
+
+      // Footer
+      yPos += 30;
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+
+      const footerLines = [];
+      footerLines.push(profileSettings.company || 'Property Management');
+      if (profileSettings.address) footerLines.push(profileSettings.address);
+      if (profileSettings.phone) footerLines.push('Phone: ' + profileSettings.phone);
+      if (profileSettings.email) footerLines.push('Email: ' + profileSettings.email);
+      footerLines.push('');
+      footerLines.push('This is an automatically generated receipt. For any queries, please contact us.');
+
+      footerLines.forEach((line, index) => {
+        doc.text(line, 105, yPos + (index * 5), { align: 'center' });
+      });
+
+      // Save PDF
+      doc.save(`Receipt_${payment.tenant.replace(/\s+/g, '_')}_${payment.id.substring(0, 8)}.pdf`);
+
+    } catch (error) {
+      console.error('Error downloading receipt:', error);
+      alert('Error generating receipt. Please try again.');
+    }
+  };
+
+  // OLD HTML VERSION (keeping for reference, not used)
+  const handleDownloadReceiptHTML_OLD = async (paymentId) => {
+    try {
+      const payment = payments.find(p => p.id === paymentId);
+      if (!payment) {
+        alert('Payment not found');
+        return;
+      }
+
+      // Create receipt HTML
+      const receiptHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Payment Receipt - ${payment.tenant}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      color: #333;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid #003366;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .company-name {
+      font-size: 28px;
+      font-weight: bold;
+      color: #003366;
+      margin-bottom: 10px;
+    }
+    .receipt-title {
+      font-size: 24px;
+      color: #666;
+      margin-top: 10px;
+    }
+    .receipt-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+    .info-section {
+      flex: 1;
+    }
+    .info-label {
+      font-weight: bold;
+      color: #666;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .info-value {
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+    .payment-details {
+      background-color: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #ddd;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: #666;
+    }
+    .detail-value {
+      font-weight: 600;
+      color: #333;
+    }
+    .total-row {
+      background-color: #003366;
+      color: white;
+      margin: -20px;
+      margin-top: 20px;
+      padding: 15px 20px;
+      border-radius: 0 0 8px 8px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .status-paid {
+      background-color: #22c55e;
+      color: white;
+    }
+    .status-pending {
+      background-color: #eab308;
+      color: white;
+    }
+    .status-overdue {
+      background-color: #ef4444;
+      color: white;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #ddd;
+      color: #666;
+      font-size: 12px;
+    }
+    @media print {
+      body {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="company-name">${profileSettings.company || 'Property Management'}</div>
+    <div class="receipt-title">PAYMENT RECEIPT</div>
+  </div>
+
+  <div class="receipt-info">
+    <div class="info-section">
+      <div class="info-label">Receipt Number</div>
+      <div class="info-value">#${payment.id.substring(0, 8).toUpperCase()}</div>
+
+      <div class="info-label">Issue Date</div>
+      <div class="info-value">${formatDate(payment.paidDate || new Date().toISOString().split('T')[0], businessPreferences.dateFormat)}</div>
+    </div>
+
+    <div class="info-section" style="text-align: right;">
+      <div class="info-label">Tenant</div>
+      <div class="info-value">${payment.tenant}</div>
+
+      <div class="info-label">Status</div>
+      <div class="info-value">
+        <span class="status-badge status-${payment.status}">
+          ${payment.status.toUpperCase()}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="payment-details">
+    <div class="detail-row">
+      <span class="detail-label">Property</span>
+      <span class="detail-value">${payment.property}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Unit</span>
+      <span class="detail-value">${payment.unit}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Period</span>
+      <span class="detail-value">${payment.month || 'N/A'}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Due Date</span>
+      <span class="detail-value">${formatDate(payment.dueDate, businessPreferences.dateFormat)}</span>
+    </div>
+    ${payment.paidDate ? `
+    <div class="detail-row">
+      <span class="detail-label">Paid Date</span>
+      <span class="detail-value">${formatDate(payment.paidDate, businessPreferences.dateFormat)}</span>
+    </div>
+    ` : ''}
+    ${payment.method ? `
+    <div class="detail-row">
+      <span class="detail-label">Payment Method</span>
+      <span class="detail-value">${payment.method.charAt(0).toUpperCase() + payment.method.slice(1)}</span>
+    </div>
+    ` : ''}
+    <div class="detail-row">
+      <span class="detail-label">Rent Amount</span>
+      <span class="detail-value">${formatCurrency(payment.originalAmount || payment.amount, businessPreferences.currency)}</span>
+    </div>
+    ${payment.lateFee ? `
+    <div class="detail-row">
+      <span class="detail-label">Late Fee (${payment.daysLate} days)</span>
+      <span class="detail-value">${formatCurrency(payment.lateFee, businessPreferences.currency)}</span>
+    </div>
+    ` : ''}
+    <div class="detail-row total-row">
+      <span class="detail-label" style="font-size: 18px;">TOTAL AMOUNT</span>
+      <span class="detail-value" style="font-size: 20px;">${formatCurrency(payment.totalAmount || payment.amount, businessPreferences.currency)}</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p><strong>${profileSettings.company || 'Property Management'}</strong></p>
+    ${profileSettings.address ? `<p>${profileSettings.address}</p>` : ''}
+    ${profileSettings.phone ? `<p>Phone: ${profileSettings.phone}</p>` : ''}
+    ${profileSettings.email ? `<p>Email: ${profileSettings.email}</p>` : ''}
+    <p style="margin-top: 20px;">This is an automatically generated receipt. For any queries, please contact us.</p>
+  </div>
+</body>
+</html>
+      `;
+
+      // Create blob and download
+      const blob = new Blob([receiptHTML], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Receipt_${payment.tenant.replace(/\s+/g, '_')}_${payment.id.substring(0, 8)}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      // Also open in new window for printing
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(receiptHTML);
+      printWindow.document.close();
+    } catch (error) {
+      console.error('Error downloading receipt:', error);
+      alert('Error generating receipt. Please try again.');
+    }
+  };
+
+  // DELETE PAYMENT
+  const handleDeletePayment = async (paymentId) => {
+    if (!confirm('Are you sure you want to delete this payment record? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'payments', paymentId));
+      alert('Payment record deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      alert('Error deleting payment. Please try again.');
+    }
+  };
+
   // ADD MAINTENANCE REQUEST
   const handleAddMaintenance = async () => {
     // Validate required fields and provide specific error messages
