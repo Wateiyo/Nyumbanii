@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { auth, storage } from '../firebase';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  useProperties, 
-  useTenants, 
-  usePayments, 
+import InvitationModal from '../components/InvitationModal';
+import {
+  useProperties,
+  useTenants,
+  usePayments,
   useViewings,
   useMaintenanceRequests,
   useNotifications,
-  useListings, 
+  useListings,
   useMemos,
-  useTeamMembers
+  useTeamMembers,
+  useAllMessages
 } from '../hooks/useRealtimeData';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -124,6 +126,10 @@ const LandlordDashboard = () => {
     amount: ''
   });
 
+  // Invitation modal state
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
+  const [pendingInvitation, setPendingInvitation] = useState(null);
+
   // User role for permissions (default to landlord, will be updated from user data)
   const [userRole, setUserRole] = useState('landlord');
 
@@ -211,8 +217,9 @@ const { payments, loading: loadingPayments } = usePayments(currentUser?.uid, 'la
 const { requests: maintenanceRequests, loading: loadingMaintenance } = useMaintenanceRequests(currentUser?.uid, 'landlord');
 const { viewings, loading: loadingViewings } = useViewings(currentUser?.uid, 'landlord');
 const { listings, loading: loadingListings } = useListings(currentUser?.uid);
-const { memos, loading: loadingMemos } = useMemos(currentUser?.uid);
+const { memos, loading: loadingMemos } = useMemos(currentUser?.uid, 'landlord');
 const { teamMembers, loading: loadingTeam } = useTeamMembers(currentUser?.uid);
+const { messages, loading: loadingMessages } = useAllMessages(currentUser?.uid, 'landlord');
   
   // Mock maintenance data for display
   const mockMaintenanceRequests = [
@@ -1355,10 +1362,16 @@ const handleAddTeamMember = async () => {
 
     await addDoc(collection(db, 'invitations'), invitationData);
 
-    // Generate invitation link using the correct domain
-    const invitationLink = `https://nyumbanii.web.app/register?invite=${invitationToken}&type=${newTeamMember.role}`;
+    // Store invitation data and show invitation modal
+    setPendingInvitation({
+      token: invitationToken,
+      name: newTeamMember.name,
+      email: newTeamMember.email,
+      phone: newTeamMember.phone,
+      role: newTeamMember.role
+    });
 
-    // Reset form first
+    // Reset form and close team modal
     setNewTeamMember({
       name: '',
       email: '',
@@ -1368,14 +1381,9 @@ const handleAddTeamMember = async () => {
     });
     setShowTeamModal(false);
 
-    // Copy to clipboard and show success message
-    try {
-      await navigator.clipboard.writeText(invitationLink);
-      alert(`Team member added successfully!\n\nInvitation link copied to clipboard:\n${invitationLink}\n\nAn invitation email has been sent to ${newTeamMember.name}.`);
-    } catch (err) {
-      console.log('Clipboard error:', err);
-      alert(`Team member added successfully!\n\nInvitation link:\n${invitationLink}\n\nAn invitation email has been sent to ${newTeamMember.name}.`);
-    }
+    // Show invitation modal
+    setShowInvitationModal(true);
+
   } catch (error) {
     console.error('Error adding team member:', error);
     console.error('Error details:', error.message, error.code);
@@ -6653,6 +6661,19 @@ const handleViewTenantDetails = (tenant) => {
     }}
   />
 )}
+
+{/* Invitation Modal */}
+<InvitationModal
+  isOpen={showInvitationModal}
+  onClose={() => {
+    setShowInvitationModal(false);
+    setPendingInvitation(null);
+  }}
+  invitationData={pendingInvitation}
+  onSendEmail={() => {
+    alert('Email invitation sent automatically via Firebase Function!');
+  }}
+/>
     </div>
   );
 };

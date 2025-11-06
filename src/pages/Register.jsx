@@ -270,12 +270,16 @@ const Register = () => {
 
     try {
       const { role } = await signInWithGoogle(selectedRole);
-      
+
       // Redirect based on role
       if (role === 'landlord') {
         navigate('/landlord/dashboard');
       } else if (role === 'tenant') {
         navigate('/tenant/dashboard');
+      } else if (role === 'property_manager') {
+        navigate('/property-manager/dashboard');
+      } else if (role === 'maintenance') {
+        navigate('/maintenance/dashboard');
       }
     } catch (err) {
       setError('Failed to sign in with Google. Please try again.');
