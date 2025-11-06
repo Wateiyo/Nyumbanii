@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../config/firebase';
-import { 
-  collection, 
-  doc, 
+import {
+  collection,
+  doc,
   onSnapshot,
-  query, 
+  query,
   where,
-  updateDoc
+  updateDoc,
+  addDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { 
   Home, 
@@ -37,6 +39,7 @@ const PropertyManagerDashboard = ({ teamMember, onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [selectedViewing, setSelectedViewing] = useState(null);
   const [viewingFilter, setViewingFilter] = useState('all');
+  const [maintenanceStaff, setMaintenanceStaff] = useState([]);
 
   // Fetch assigned properties
   useEffect(() => {
@@ -145,6 +148,27 @@ const PropertyManagerDashboard = ({ teamMember, onLogout }) => {
     return unsubscribe;
   }, [properties]);
 
+  // Fetch maintenance staff for the landlord
+  useEffect(() => {
+    if (!teamMember?.landlordId) return;
+
+    const q = query(
+      collection(db, 'team-members'),
+      where('landlordId', '==', teamMember.landlordId),
+      where('role', '==', 'maintenance')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const staffData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMaintenanceStaff(staffData);
+    });
+
+    return unsubscribe;
+  }, [teamMember]);
+
   const handleUpdateViewingStatus = async (id, status) => {
     try {
       await updateDoc(doc(db, 'viewingBookings', id), { status });
@@ -154,6 +178,49 @@ const PropertyManagerDashboard = ({ teamMember, onLogout }) => {
     } catch (error) {
       console.error('Error updating viewing:', error);
       alert('Error updating viewing status.');
+    }
+  };
+
+  const handleAssignStaff = async (requestId, staffId) => {
+    try {
+      const staff = maintenanceStaff.find(s => s.id === staffId);
+      await updateDoc(doc(db, 'maintenanceRequests', requestId), {
+        assignedTo: staffId,
+        assignedToName: staff?.name || '',
+        assignedAt: serverTimestamp()
+      });
+      alert('Maintenance staff assigned successfully!');
+    } catch (error) {
+      console.error('Error assigning staff:', error);
+      alert('Error assigning maintenance staff.');
+    }
+  };
+
+  const handleStartWork = async (requestId, request) => {
+    try {
+      // Update status to in-progress
+      await updateDoc(doc(db, 'maintenanceRequests', requestId), {
+        status: 'in-progress',
+        startedAt: serverTimestamp()
+      });
+
+      // Send notification to assigned maintenance staff
+      if (request.assignedTo) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: request.assignedTo,
+          type: 'maintenance_started',
+          title: 'Maintenance Work Started',
+          message: `Work has been started on: ${request.issue} at ${request.property} - Unit ${request.unit}`,
+          maintenanceRequestId: requestId,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      alert('Work started! Notification sent to maintenance staff.');
+    } catch (error) {
+      console.error('Error starting work:', error);
+      alert('Error starting work.');
     }
   };
 
@@ -498,7 +565,7 @@ const PropertyManagerDashboard = ({ teamMember, onLogout }) => {
               ) : (
                 maintenanceRequests.map(request => (
                   <div key={request.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-3">
                           <div>
@@ -524,13 +591,56 @@ const PropertyManagerDashboard = ({ teamMember, onLogout }) => {
                             {request.scheduledTime}
                           </span>
                         </div>
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                          request.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {request.status}
-                        </span>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                            request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {request.status}
+                          </span>
+                          {request.assignedToName && (
+                            <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              Assigned to: {request.assignedToName}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Assignment Section */}
+                        {request.status === 'pending' && maintenanceStaff.length > 0 && (
+                          <div className="flex items-center gap-2 mb-3">
+                            <label className="text-sm text-gray-600 font-medium">Assign to:</label>
+                            <select
+                              value={request.assignedTo || ''}
+                              onChange={(e) => handleAssignStaff(request.id, e.target.value)}
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                            >
+                              <option value="">Select staff...</option>
+                              {maintenanceStaff.map(staff => (
+                                <option key={staff.id} value={staff.id}>
+                                  {staff.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col gap-2">
+                        {request.status === 'pending' && request.assignedTo && (
+                          <button
+                            onClick={() => handleStartWork(request.id, request)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm whitespace-nowrap"
+                          >
+                            Start Work
+                          </button>
+                        )}
+                        {request.status === 'pending' && !request.assignedTo && maintenanceStaff.length === 0 && (
+                          <span className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm text-center">
+                            No staff available
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../config/firebase';
-import { 
-  collection, 
-  doc, 
+import {
+  collection,
+  doc,
   onSnapshot,
-  query, 
+  query,
   where,
-  updateDoc
+  updateDoc,
+  addDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { 
   Home, 
@@ -52,14 +54,14 @@ const MaintenanceStaffDashboard = ({ teamMember, onLogout }) => {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [teamMember]);
 
-  // Fetch maintenance requests
+  // Fetch maintenance requests assigned to this staff member
   useEffect(() => {
-    if (!properties.length) return;
+    if (!teamMember?.id) return;
 
-    const propertyNames = properties.map(p => p.name);
+    // Fetch requests assigned to this maintenance staff
     const q = query(
       collection(db, 'maintenanceRequests'),
-      where('property', 'in', propertyNames.slice(0, 10))
+      where('assignedTo', '==', teamMember.id)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -71,12 +73,43 @@ const MaintenanceStaffDashboard = ({ teamMember, onLogout }) => {
     });
 
     return unsubscribe;
-  }, [properties]);
+  }, [teamMember]);
 
-  const handleUpdateStatus = async (id, status) => {
+  const handleUpdateStatus = async (id, status, request) => {
     try {
-      await updateDoc(doc(db, 'maintenanceRequests', id), { status });
-      alert(`Request ${status === 'in-progress' ? 'started' : 'marked as ' + status}!`);
+      const updateData = {
+        status,
+        ...(status === 'in-progress' && { startedAt: serverTimestamp() }),
+        ...(status === 'completed' && { completedAt: serverTimestamp() })
+      };
+
+      await updateDoc(doc(db, 'maintenanceRequests', id), updateData);
+
+      // Send notification to property manager and landlord
+      if (status === 'completed') {
+        // Get the request data to find landlord
+        const notifications = [];
+
+        // Notify landlord if available
+        if (teamMember?.landlordId) {
+          notifications.push(
+            addDoc(collection(db, 'notifications'), {
+              userId: teamMember.landlordId,
+              type: 'maintenance_completed',
+              title: 'Maintenance Work Completed',
+              message: `${teamMember.name} has completed: ${request.issue} at ${request.property} - Unit ${request.unit}`,
+              maintenanceRequestId: id,
+              read: false,
+              createdAt: serverTimestamp()
+            })
+          );
+        }
+
+        await Promise.all(notifications);
+        alert('Work completed! Notifications sent.');
+      } else {
+        alert(`Request ${status === 'in-progress' ? 'started' : 'marked as ' + status}!`);
+      }
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Error updating status.');
@@ -200,16 +233,16 @@ const MaintenanceStaffDashboard = ({ teamMember, onLogout }) => {
                         <p className="text-xs text-gray-600">{request.property} - Unit {request.unit}</p>
                       </div>
                       {request.status === 'pending' && (
-                        <button 
-                          onClick={() => handleUpdateStatus(request.id, 'in-progress')}
+                        <button
+                          onClick={() => handleUpdateStatus(request.id, 'in-progress', request)}
                           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
                         >
                           Start Work
                         </button>
                       )}
                       {request.status === 'in-progress' && (
-                        <button 
-                          onClick={() => handleUpdateStatus(request.id, 'completed')}
+                        <button
+                          onClick={() => handleUpdateStatus(request.id, 'completed', request)}
                           className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm"
                         >
                           Complete
@@ -234,8 +267,8 @@ const MaintenanceStaffDashboard = ({ teamMember, onLogout }) => {
                         <p className="font-medium text-gray-900 text-sm">{request.issue}</p>
                         <p className="text-xs text-gray-600">{request.property} - Unit {request.unit}</p>
                       </div>
-                      <button 
-                        onClick={() => handleUpdateStatus(request.id, 'completed')}
+                      <button
+                        onClick={() => handleUpdateStatus(request.id, 'completed', request)}
                         className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm"
                       >
                         Complete
@@ -309,16 +342,16 @@ const MaintenanceStaffDashboard = ({ teamMember, onLogout }) => {
                         
                         <div className="flex gap-2">
                           {request.status === 'pending' && (
-                            <button 
-                              onClick={() => handleUpdateStatus(request.id, 'in-progress')}
+                            <button
+                              onClick={() => handleUpdateStatus(request.id, 'in-progress', request)}
                               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
                             >
                               Start Work
                             </button>
                           )}
                           {request.status === 'in-progress' && (
-                            <button 
-                              onClick={() => handleUpdateStatus(request.id, 'completed')}
+                            <button
+                              onClick={() => handleUpdateStatus(request.id, 'completed', request)}
                               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
                             >
                               Mark Complete
