@@ -47,7 +47,7 @@ const MaintenanceStaffDashboard = () => {
     const fetchTeamMember = async () => {
       try {
         const q = query(
-          collection(db, 'team-members'),
+          collection(db, 'teamMembers'),
           where('userId', '==', currentUser.uid),
           where('role', '==', 'maintenance')
         );

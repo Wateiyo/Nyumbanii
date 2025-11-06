@@ -57,7 +57,7 @@ const PropertyManagerDashboard = () => {
     const fetchTeamMember = async () => {
       try {
         const q = query(
-          collection(db, 'team-members'),
+          collection(db, 'teamMembers'),
           where('userId', '==', currentUser.uid),
           where('role', '==', 'property_manager')
         );
@@ -205,7 +205,7 @@ const PropertyManagerDashboard = () => {
     if (!teamMember?.landlordId) return;
 
     const q = query(
-      collection(db, 'team-members'),
+      collection(db, 'teamMembers'),
       where('landlordId', '==', teamMember.landlordId),
       where('role', '==', 'maintenance')
     );
