@@ -162,9 +162,10 @@ const TenantDashboard = () => {
 
   const [documents, setDocuments] = useState([]);
 
-  const [messages, setMessages] = useState([]);
-
-  const [memos, setMemos] = useState([]);
+  const [messages, setMessages] = useState([
+    { id: 1, from: 'Property Manager', subject: 'Monthly Reminder', date: '2024-11-30', read: false, preview: 'Your rent is due on December 5th...' },
+    { id: 2, from: 'Maintenance Team', subject: 'Re: Kitchen Faucet', date: '2024-11-28', read: true, preview: 'We will send a technician tomorrow...' }
+  ]);
 
   const [notifications, setNotifications] = useState([
     { id: 1, message: 'Rent payment due in 3 days', time: '2 hours ago', read: false, type: 'payment' },
@@ -340,38 +341,6 @@ const TenantDashboard = () => {
 
     return () => unsubscribe();
   }, [tenantData]);
-
-  // Fetch memos from Firebase
-  useEffect(() => {
-    if (!tenantData?.landlordId || !currentUser?.uid) return;
-
-    const memosQuery = query(
-      collection(db, 'memos'),
-      where('landlordId', '==', tenantData.landlordId)
-    );
-
-    const unsubscribe = onSnapshot(memosQuery, (snapshot) => {
-      let memosData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      // Filter memos for this tenant
-      memosData = memosData.filter(memo => {
-        if (memo.recipientType === 'all') return true;
-        if (memo.recipientType === 'specific' && memo.recipients) {
-          return memo.recipients.includes(currentUser.uid) || memo.recipients.includes(tenantData.id);
-        }
-        return false;
-      });
-
-      setMemos(memosData);
-    }, (error) => {
-      console.error('Error fetching memos:', error);
-    });
-
-    return () => unsubscribe();
-  }, [tenantData, currentUser]);
 
   // Fetch documents from Firebase
   useEffect(() => {
@@ -1046,29 +1015,10 @@ const TenantDashboard = () => {
     }
   };
 
-  const markNotificationAsRead = (notification) => {
-    // Mark as read
-    setNotifications(notifications.map(n =>
-      n.id === notification.id ? { ...n, read: true } : n
+  const markNotificationAsRead = (id) => {
+    setNotifications(notifications.map(n => 
+      n.id === id ? { ...n, read: true } : n
     ));
-
-    // Navigate to appropriate view based on notification type
-    if (notification.type === 'payment') {
-      setCurrentView('payments');
-      setShowNotifications(false);
-    } else if (notification.type === 'maintenance') {
-      setCurrentView('maintenance');
-      setShowNotifications(false);
-    } else if (notification.type === 'message') {
-      setCurrentView('messages');
-      setShowNotifications(false);
-    } else if (notification.type === 'document') {
-      setCurrentView('documents');
-      setShowNotifications(false);
-    } else if (notification.type === 'memo') {
-      setCurrentView('updates');
-      setShowNotifications(false);
-    }
   };
 
   const filteredListings = availableListings.filter(listing =>
@@ -1156,7 +1106,7 @@ const TenantDashboard = () => {
                       {notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          onClick={() => markNotificationAsRead(notification)}
+                          onClick={() => markNotificationAsRead(notification.id)}
                           className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
                         >
                           <p className="text-sm text-gray-900 dark:text-gray-100">{notification.message}</p>
@@ -2696,7 +2646,7 @@ const TenantDashboard = () => {
             </div>
 
             <div className="sticky bottom-0 bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 rounded-b-xl">
-              <button
+yth              <button
                 onClick={() => {
                   setShowBookingModal(false);
                   setSelectedListing(null);
