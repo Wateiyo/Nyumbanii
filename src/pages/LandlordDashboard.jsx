@@ -3547,12 +3547,12 @@ const handleViewTenantDetails = (tenant) => {
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-xl font-bold text-gray-900 dark:text-white">{member.name}</h3>
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            member.role === 'property_manager' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                            member.role === 'property_manager' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
                           }`}>
                             {member.role === 'property_manager' ? 'Property Manager' : 'Maintenance'}
                           </span>
                           {member.status === 'pending' && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
                               pending
                             </span>
                           )}
@@ -3573,16 +3573,16 @@ const handleViewTenantDetails = (tenant) => {
                         {/* Assigned Properties */}
                         {member.assignedProperties && member.assignedProperties.length > 0 && (
                           <div className="mt-3">
-                            <p className="text-sm text-gray-600 mb-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                               Assigned Properties ({member.assignedProperties.length})
                             </p>
                             <div className="flex flex-wrap gap-2">
                               {member.assignedProperties.map(propId => {
                                 const property = properties.find(p => p.id === propId);
                                 return property ? (
-                                  <span 
+                                  <span
                                     key={propId}
-                                    className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                                    className="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs"
                                   >
                                     {property.name}
                                   </span>
@@ -3596,19 +3596,19 @@ const handleViewTenantDetails = (tenant) => {
 
                     {/* Actions */}
                     <div className="flex gap-2 lg:flex-col lg:items-end">
-                      <button 
+                      <button
                         onClick={() => {
                           setSelectedTeamMember(member);
                           setShowAssignTeamModal(true);
                         }}
-                        className="flex-1 lg:flex-none bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                        className="flex-1 lg:flex-none bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition text-sm flex items-center justify-center gap-2 whitespace-nowrap"
                       >
                         <Building className="w-4 h-4" />
                         Assign Properties
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleRemoveTeamMember(member.id)}
-                        className="flex-1 lg:flex-none bg-white border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition text-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                        className="flex-1 lg:flex-none bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center justify-center gap-2 whitespace-nowrap"
                       >
                         <Trash2 className="w-4 h-4" />
                         Remove
@@ -3623,24 +3623,24 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* Info Section */}
         {teamMembers.length > 0 && (
-          <div className="mt-8 bg-blue-50 rounded-xl p-6">
+          <div className="mt-8 bg-blue-50 dark:bg-blue-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Users className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-800/40 rounded-full flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Team Roles & Permissions</h3>
                 <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
                   <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full mt-1.5 flex-shrink-0"></div>
                     <p><strong>Property Managers:</strong> Can manage properties, tenants, viewings, and view reports</p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-orange-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 bg-orange-600 dark:bg-orange-400 rounded-full mt-1.5 flex-shrink-0"></div>
                     <p><strong>Maintenance Staff:</strong> Can view and update maintenance requests for assigned properties</p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-yellow-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 bg-yellow-600 dark:bg-yellow-400 rounded-full mt-1.5 flex-shrink-0"></div>
                     <p><strong>Pending Members:</strong> Have received an invitation email but haven't completed registration yet</p>
                   </div>
                 </div>
@@ -6377,7 +6377,7 @@ const handleViewTenantDetails = (tenant) => {
         <button onClick={() => setShowTeamModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
       </div>
       <div className="p-6 space-y-4">
-        <div className="bg-blue-50 p-4 rounded-lg mb-4">
+        <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-4">
           <p className="text-sm text-gray-700 dark:text-gray-300">
             <strong>Note:</strong> The team member will receive an email invitation to create their account and access the platform.
           </p>
@@ -6434,13 +6434,13 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Assign to Properties (Optional)</label>
-          <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assign to Properties (Optional)</label>
+          <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700">
             {properties.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">No properties available</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No properties available</p>
             ) : (
               properties.map(property => (
-                <label key={property.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                <label key={property.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded cursor-pointer">
                   <input
                     type="checkbox"
                     checked={newTeamMember.assignedProperties.includes(property.id)}
@@ -6457,7 +6457,7 @@ const handleViewTenantDetails = (tenant) => {
                         });
                       }
                     }}
-                    className="w-4 h-4 text-[#003366] border-gray-300 rounded focus:ring-[#003366]"
+                    className="w-4 h-4 text-[#003366] border-gray-300 dark:border-gray-600 rounded focus:ring-[#003366]"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">{property.name} - {property.location}</span>
                 </label>
@@ -6466,8 +6466,8 @@ const handleViewTenantDetails = (tenant) => {
           </div>
         </div>
       </div>
-      <div className="p-6 border-t border-gray-200 flex gap-3">
-        <button onClick={() => setShowTeamModal(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+      <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+        <button onClick={() => setShowTeamModal(false)} className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
           Cancel
         </button>
         <button onClick={handleAddTeamMember} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
@@ -6490,18 +6490,18 @@ const handleViewTenantDetails = (tenant) => {
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Select which properties this team member can access:</p>
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {properties.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-8">No properties available</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No properties available</p>
           ) : (
             properties.map(property => (
-              <label key={property.id} className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+              <label key={property.id} className="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition">
                 <input
                   type="checkbox"
                   checked={selectedTeamMember.assignedProperties?.includes(property.id) || false}
                   onChange={() => handleAssignToProperty(selectedTeamMember.id, property.id)}
-                  className="w-5 h-5 text-[#003366] border-gray-300 rounded focus:ring-[#003366] mt-0.5"
+                  className="w-5 h-5 text-[#003366] border-gray-300 dark:border-gray-600 rounded focus:ring-[#003366] mt-0.5"
                 />
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">{property.name}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{property.name}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{property.location}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{property.units} units • {property.occupied} occupied</p>
                 </div>
@@ -6510,7 +6510,7 @@ const handleViewTenantDetails = (tenant) => {
           )}
         </div>
       </div>
-      <div className="p-6 border-t border-gray-200">
+      <div className="p-6 border-t border-gray-200 dark:border-gray-700">
         <button onClick={() => setShowAssignTeamModal(false)} className="w-full px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
           Done
         </button>
