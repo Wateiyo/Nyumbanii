@@ -3678,7 +3678,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
         {/* Profile Settings Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Settings</h2>
             <button
               onClick={() => setEditingProfile(!editingProfile)}
@@ -3721,7 +3721,7 @@ const handleViewTenantDetails = (tenant) => {
                   type="text"
                   value={userProfile?.name || 'Test User'}
                   disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               
@@ -3731,7 +3731,7 @@ const handleViewTenantDetails = (tenant) => {
                   type="email"
                   value={userProfile?.email || 'test@test.com'}
                   disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               
@@ -3741,7 +3741,7 @@ const handleViewTenantDetails = (tenant) => {
                   type="tel"
                   value={userProfile?.phone || '+25470000000'}
                   disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               
@@ -3751,7 +3751,7 @@ const handleViewTenantDetails = (tenant) => {
                   type="text"
                   value={userProfile?.companyName || 'Doe Properties Ltd'}
                   disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
 
@@ -3761,7 +3761,7 @@ const handleViewTenantDetails = (tenant) => {
                   type="text"
                   value={userProfile?.address || 'Westlands, Nairobi'}
                   disabled={!editingProfile}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
@@ -3770,30 +3770,30 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* Security Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Security</h2>
           </div>
 
           <div className="p-4 sm:p-6 space-y-4">
             {/* Password */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Password</h3>
-                <p className="text-sm text-gray-500 mt-1">Last changed 3 months ago</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Password</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Last changed 3 months ago</p>
               </div>
               <button
                 onClick={() => setShowPasswordModal(true)}
-                className="px-4 py-2 sm:px-6 sm:py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium whitespace-nowrap text-sm sm:text-base"
+                className="px-4 py-2 sm:px-6 sm:py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium whitespace-nowrap text-sm sm:text-base"
               >
                 Change Password
               </button>
             </div>
 
             {/* Two-Factor Authentication */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500 mt-1">Add an extra layer of security to your account</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Two-Factor Authentication</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Add an extra layer of security to your account</p>
               </div>
               <button className="px-4 py-2 sm:px-6 sm:py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium text-sm sm:text-base">
                 Enable
@@ -3804,15 +3804,15 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* Notification Preferences Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Notification Preferences</h2>
           </div>
 
           <div className="p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Email Notifications</h3>
-                <p className="text-sm text-gray-500 mt-1">Receive updates via email</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Email Notifications</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Receive updates via email</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -3821,10 +3821,10 @@ const handleViewTenantDetails = (tenant) => {
             </div>
 
 
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Push Notifications</h3>
-                <p className="text-sm text-gray-500 mt-1">Receive browser push notifications</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Push Notifications</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Receive browser push notifications</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -3893,7 +3893,7 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* Tax Management Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Calculator className="w-6 h-6" />
               Tax Management
@@ -3901,10 +3901,10 @@ const handleViewTenantDetails = (tenant) => {
           </div>
 
           <div className="p-4 sm:p-6">
-            <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+            <div className="flex items-start justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 mb-2">Tax Assistant</h3>
-                <p className="text-sm text-gray-600 mb-3">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Tax Assistant</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   Automatically track and calculate your monthly rental income tax (10% of gross rent).
                   Stay KRA compliant with automatic calculations, payment reminders, and detailed reports.
                 </p>
@@ -3927,8 +3927,8 @@ const handleViewTenantDetails = (tenant) => {
                   </div>
                 </div>
                 {taxTrackingEnabled && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-800 font-medium flex items-center gap-2">
+                  <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+                    <p className="text-sm text-green-800 dark:text-green-300 font-medium flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" />
                       Tax Assistant is active. View your tax reports in the Tax Reports tab.
                     </p>
@@ -3950,14 +3950,14 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* Alert Types Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Alert Types</h2>
           </div>
 
           <div className="p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Payment Alerts</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Payment Alerts</h3>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -3965,9 +3965,9 @@ const handleViewTenantDetails = (tenant) => {
               </label>
             </div>
 
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Maintenance Requests</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Maintenance Requests</h3>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -3975,9 +3975,9 @@ const handleViewTenantDetails = (tenant) => {
               </label>
             </div>
 
-            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Viewing Bookings</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Viewing Bookings</h3>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" defaultChecked className="sr-only peer" />
