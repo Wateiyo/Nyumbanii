@@ -76,7 +76,8 @@ import {
   Search,
   Ban,
   FileText,
-  Calculator
+  Calculator,
+  Edit
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -94,6 +95,9 @@ const LandlordDashboard = () => {
   const [showListingModal, setShowListingModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [selectedListing, setSelectedListing] = useState(null);
+  const [editingListing, setEditingListing] = useState(null);
+  const [showEditListingModal, setShowEditListingModal] = useState(false);
+  const [showListingDetailsModal, setShowListingDetailsModal] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [tenantFilter, setTenantFilter] = useState('all');
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
@@ -1170,6 +1174,40 @@ const handleEditProperty = async () => {
     }
   };
 
+  // EDIT LISTING
+  const handleEditListing = async () => {
+    if (editingListing && editingListing.property && editingListing.unit && editingListing.bedrooms && editingListing.rent) {
+      try {
+        await updateDoc(doc(db, 'listings', editingListing.id), {
+          property: editingListing.property,
+          unit: editingListing.unit,
+          bedrooms: parseInt(editingListing.bedrooms),
+          bathrooms: parseInt(editingListing.bathrooms) || 1,
+          area: parseInt(editingListing.area) || 0,
+          rent: parseInt(editingListing.rent),
+          deposit: parseInt(editingListing.deposit) || parseInt(editingListing.rent),
+          description: editingListing.description,
+          amenities: typeof editingListing.amenities === 'string'
+            ? editingListing.amenities.split(',').map(a => a.trim()).filter(a => a)
+            : editingListing.amenities,
+          images: editingListing.images && editingListing.images.length > 0 ? editingListing.images : [
+            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'
+          ],
+          updatedAt: serverTimestamp()
+        });
+
+        setEditingListing(null);
+        setShowEditListingModal(false);
+        alert('Listing updated successfully!');
+      } catch (error) {
+        console.error('Error updating listing:', error);
+        alert('Error updating listing. Please try again.');
+      }
+    } else {
+      alert('Please fill in all required fields');
+    }
+  };
+
   // DELETE LISTING
   const handleDeleteListing = async (id) => {
     if (window.confirm('Are you sure you want to delete this listing?')) {
@@ -1961,7 +1999,7 @@ const handleViewTenantDetails = (tenant) => {
                         }}
                         className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
                       >
-                        <Settings className="w-5 h-5" />
+                        <Edit className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleDeleteProperty(property.id)}
@@ -2093,13 +2131,25 @@ const handleViewTenantDetails = (tenant) => {
                   <h3 className="font-bold text-gray-900 dark:text-white text-lg">{listing.property}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Unit {listing.unit}</p>
                 </div>
-                <button
-                  onClick={() => handleDeleteListing(listing.id)}
-                  className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-                  title="Delete listing"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingListing(listing);
+                      setShowEditListingModal(true);
+                    }}
+                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
+                    title="Edit listing"
+                  >
+                    <Edit className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteListing(listing.id)}
+                    className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+                    title="Delete listing"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Property Stats */}
@@ -2151,8 +2201,12 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               
               {/* Action Button */}
-              <button 
-                onClick={() => setSelectedListing(listing)}
+              <button
+                onClick={() => {
+                  setSelectedListing(listing);
+                  setShowListingDetailsModal(true);
+                  setCurrentImageIndex(0);
+                }}
                 className="w-full mt-4 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
               >
                 View Details
@@ -2212,7 +2266,7 @@ const handleViewTenantDetails = (tenant) => {
             {/* Header Section - Mobile Optimized */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 text-base lg:text-lg truncate">{viewing.prospectName}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-base lg:text-lg truncate">{viewing.prospectName}</h3>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs lg:text-sm text-gray-600 dark:text-gray-400">
                   <span className="flex items-center gap-1">
                     <Phone className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
@@ -3662,7 +3716,7 @@ const handleViewTenantDetails = (tenant) => {
             {/* Profile Form */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
                 <input
                   type="text"
                   value={userProfile?.name || 'Test User'}
@@ -3672,7 +3726,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                 <input
                   type="email"
                   value={userProfile?.email || 'test@test.com'}
@@ -3682,7 +3736,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
                 <input
                   type="tel"
                   value={userProfile?.phone || '+25470000000'}
@@ -3692,7 +3746,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
                 <input
                   type="text"
                   value={userProfile?.companyName || 'Doe Properties Ltd'}
@@ -3702,7 +3756,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
                 <input
                   type="text"
                   value={userProfile?.address || 'Westlands, Nairobi'}
@@ -4841,13 +4895,13 @@ const handleViewTenantDetails = (tenant) => {
       {showPropertyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add New Property</h2>
-              <button onClick={() => setShowPropertyModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+              <button onClick={() => setShowPropertyModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property Name *</label>
                 <input
                   type="text"
                   value={newProperty.name}
@@ -4857,7 +4911,7 @@ const handleViewTenantDetails = (tenant) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location *</label>
                 <input
                   type="text"
                   value={newProperty.location}
@@ -4868,7 +4922,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Units *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Units *</label>
                   <input
                     type="number"
                     value={newProperty.units}
@@ -4878,7 +4932,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Occupied Units</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Occupied Units</label>
                   <input
                     type="number"
                     value={newProperty.occupied}
@@ -4889,7 +4943,7 @@ const handleViewTenantDetails = (tenant) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Revenue</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Revenue</label>
                 <input
                   type="number"
                   value={newProperty.revenue}
@@ -4965,16 +5019,16 @@ const handleViewTenantDetails = (tenant) => {
 {showEditPropertyModal && editingProperty && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Property</h2>
         <button onClick={() => {
           setShowEditPropertyModal(false);
           setEditingProperty(null);
-        }}><X className="w-6 h-6 text-gray-500" /></button>
+        }}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
       </div>
       <div className="p-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Property Name *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property Name *</label>
           <input
             type="text"
             value={editingProperty.name}
@@ -4984,7 +5038,7 @@ const handleViewTenantDetails = (tenant) => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location *</label>
           <input
             type="text"
             value={editingProperty.location}
@@ -4995,7 +5049,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Total Units *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Units *</label>
             <input
               type="number"
               value={editingProperty.units}
@@ -5005,7 +5059,7 @@ const handleViewTenantDetails = (tenant) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Occupied Units</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Occupied Units</label>
             <input
               type="number"
               value={editingProperty.occupied}
@@ -5016,7 +5070,7 @@ const handleViewTenantDetails = (tenant) => {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Revenue</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Revenue</label>
           <input
             type="number"
             value={editingProperty.revenue}
@@ -5093,13 +5147,13 @@ const handleViewTenantDetails = (tenant) => {
       {showTenantModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add New Tenant</h2>
-              <button onClick={() => setShowTenantModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+              <button onClick={() => setShowTenantModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
                 <input
                   type="text"
                   value={newTenant.name}
@@ -5110,7 +5164,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
                   <input
                     type="email"
                     value={newTenant.email}
@@ -5120,7 +5174,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                   <input
                     type="tel"
                     value={newTenant.phone}
@@ -5132,7 +5186,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property *</label>
                   <select
                     value={newTenant.property}
                     onChange={(e) => setNewTenant({...newTenant, property: e.target.value})}
@@ -5145,7 +5199,7 @@ const handleViewTenantDetails = (tenant) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Number *</label>
                   <input
                     type="text"
                     value={newTenant.unit}
@@ -5156,7 +5210,7 @@ const handleViewTenantDetails = (tenant) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rent (KES) *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Rent (KES) *</label>
                 <input
                   type="number"
                   value={newTenant.rent}
@@ -5167,7 +5221,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lease Start Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lease Start Date</label>
                   <input
                     type="date"
                     value={newTenant.leaseStart}
@@ -5176,7 +5230,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lease End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lease End Date</label>
                   <input
                     type="date"
                     value={newTenant.leaseEnd}
@@ -5214,14 +5268,14 @@ const handleViewTenantDetails = (tenant) => {
       {showListingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create Property Listing</h2>
-              <button onClick={() => setShowListingModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+              <button onClick={() => setShowListingModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property *</label>
                   <select
                     value={newListing.property}
                     onChange={(e) => setNewListing({...newListing, property: e.target.value})}
@@ -5234,7 +5288,7 @@ const handleViewTenantDetails = (tenant) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Number *</label>
                   <input
                     type="text"
                     value={newListing.unit}
@@ -5247,7 +5301,7 @@ const handleViewTenantDetails = (tenant) => {
               
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrooms *</label>
                   <input
                     type="number"
                     value={newListing.bedrooms}
@@ -5257,7 +5311,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bathrooms</label>
                   <input
                     type="number"
                     value={newListing.bathrooms}
@@ -5267,7 +5321,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Area (m²)</label>
                   <input
                     type="number"
                     value={newListing.area}
@@ -5280,7 +5334,7 @@ const handleViewTenantDetails = (tenant) => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rent (KES) *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Rent (KES) *</label>
                   <input
                     type="number"
                     value={newListing.rent}
@@ -5290,7 +5344,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Deposit (KES)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deposit (KES)</label>
                   <input
                     type="number"
                     value={newListing.deposit}
@@ -5302,7 +5356,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                 <textarea
                   value={newListing.description}
                   onChange={(e) => setNewListing({...newListing, description: e.target.value})}
@@ -5313,7 +5367,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amenities (comma-separated)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amenities (comma-separated)</label>
                 <input
                   type="text"
                   value={newListing.amenities}
@@ -5381,17 +5435,196 @@ const handleViewTenantDetails = (tenant) => {
         </div>
       )}
 
+      {/* Edit Listing Modal */}
+      {showEditListingModal && editingListing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Property Listing</h2>
+              <button onClick={() => { setShowEditListingModal(false); setEditingListing(null); }}>
+                <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property *</label>
+                  <select
+                    value={editingListing.property}
+                    onChange={(e) => setEditingListing({...editingListing, property: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  >
+                    <option value="">Select Property</option>
+                    {properties.map(prop => (
+                      <option key={prop.id} value={prop.name}>{prop.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Number *</label>
+                  <input
+                    type="text"
+                    value={editingListing.unit}
+                    onChange={(e) => setEditingListing({...editingListing, unit: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="A12"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrooms *</label>
+                  <input
+                    type="number"
+                    value={editingListing.bedrooms}
+                    onChange={(e) => setEditingListing({...editingListing, bedrooms: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bathrooms</label>
+                  <input
+                    type="number"
+                    value={editingListing.bathrooms}
+                    onChange={(e) => setEditingListing({...editingListing, bathrooms: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Area (m²)</label>
+                  <input
+                    type="number"
+                    value={editingListing.area}
+                    onChange={(e) => setEditingListing({...editingListing, area: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="80"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Rent (KES) *</label>
+                  <input
+                    type="number"
+                    value={editingListing.rent}
+                    onChange={(e) => setEditingListing({...editingListing, rent: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="30000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deposit (KES)</label>
+                  <input
+                    type="number"
+                    value={editingListing.deposit}
+                    onChange={(e) => setEditingListing({...editingListing, deposit: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    placeholder="30000"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea
+                  value={editingListing.description}
+                  onChange={(e) => setEditingListing({...editingListing, description: e.target.value})}
+                  rows="3"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="Describe the property..."
+                ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amenities (comma-separated)</label>
+                <input
+                  type="text"
+                  value={Array.isArray(editingListing.amenities) ? editingListing.amenities.join(', ') : editingListing.amenities}
+                  onChange={(e) => setEditingListing({...editingListing, amenities: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="WiFi, Parking, Security, Swimming Pool"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Property Images</label>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-[#003366] transition cursor-pointer">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const urls = await handleImageUpload(e.target.files, 'listing');
+                      setEditingListing({...editingListing, images: [...(editingListing.images || []), ...urls]});
+                    }}
+                    className="hidden"
+                    id="edit-listing-images"
+                  />
+                  <label htmlFor="edit-listing-images" className="cursor-pointer">
+                    {uploadingImages ? (
+                      <div className="text-[#003366] dark:text-blue-400">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003366] mx-auto mb-2"></div>
+                        <p>Uploading...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Click to upload more images</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Add multiple photos to showcase the property</p>
+                      </>
+                    )}
+                  </label>
+                </div>
+                {editingListing.images && editingListing.images.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mt-4">
+                    {editingListing.images.map((img, idx) => (
+                      <div key={idx} className="relative aspect-square">
+                        <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                        <button
+                          onClick={() => setEditingListing({...editingListing, images: editingListing.images.filter((_, i) => i !== idx)})}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              <button
+                onClick={() => { setShowEditListingModal(false); setEditingListing(null); }}
+                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditListing}
+                className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition"
+              >
+                Update Listing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Send Memo Modal */}
       {showMemoModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Send Memo to Tenants</h2>
-              <button onClick={() => setShowMemoModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+              <button onClick={() => setShowMemoModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
                 <input
                   type="text"
                   value={newMemo.title}
@@ -5401,7 +5634,7 @@ const handleViewTenantDetails = (tenant) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message *</label>
                 <textarea
                   value={newMemo.message}
                   onChange={(e) => setNewMemo({...newMemo, message: e.target.value})}
@@ -5412,7 +5645,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
                   <select
                     value={newMemo.priority}
                     onChange={(e) => setNewMemo({...newMemo, priority: e.target.value})}
@@ -5424,7 +5657,7 @@ const handleViewTenantDetails = (tenant) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Send To</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Send To</label>
                   <select
                     value={newMemo.targetAudience}
                     onChange={(e) => setNewMemo({...newMemo, targetAudience: e.target.value})}
@@ -5455,14 +5688,14 @@ const handleViewTenantDetails = (tenant) => {
       {showMaintenanceModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Maintenance Request</h2>
-              <button onClick={() => setShowMaintenanceModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+              <button onClick={() => setShowMaintenanceModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Property *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property *</label>
                   <select
                     value={newMaintenance.property}
                     onChange={(e) => setNewMaintenance({...newMaintenance, property: e.target.value})}
@@ -5475,7 +5708,7 @@ const handleViewTenantDetails = (tenant) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit *</label>
                   <input
                     type="text"
                     value={newMaintenance.unit}
@@ -5486,7 +5719,7 @@ const handleViewTenantDetails = (tenant) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tenant *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tenant *</label>
                 <select
                   value={newMaintenance.tenant}
                   onChange={(e) => setNewMaintenance({...newMaintenance, tenant: e.target.value})}
@@ -5499,7 +5732,7 @@ const handleViewTenantDetails = (tenant) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Issue Description *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Description *</label>
                 <textarea
                   value={newMaintenance.issue}
                   onChange={(e) => setNewMaintenance({...newMaintenance, issue: e.target.value})}
@@ -5509,7 +5742,7 @@ const handleViewTenantDetails = (tenant) => {
                 ></textarea>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
                 <select
                   value={newMaintenance.priority}
                   onChange={(e) => setNewMaintenance({...newMaintenance, priority: e.target.value})}
@@ -5537,13 +5770,13 @@ const handleViewTenantDetails = (tenant) => {
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Record Payment</h2>
-              <button onClick={() => setShowPaymentModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+              <button onClick={() => setShowPaymentModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tenant *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tenant *</label>
                 <select
                   value={newPayment.tenant}
                   onChange={(e) => {
@@ -5566,7 +5799,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Property</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property</label>
                   <input
                     type="text"
                     value={newPayment.property}
@@ -5575,7 +5808,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
                   <input
                     type="text"
                     value={newPayment.unit}
@@ -5586,7 +5819,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (KES) *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (KES) *</label>
                   <input
                     type="number"
                     value={newPayment.amount}
@@ -5596,7 +5829,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date *</label>
                   <input
                     type="date"
                     value={newPayment.dueDate}
@@ -5606,7 +5839,7 @@ const handleViewTenantDetails = (tenant) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
                 <select
                   value={newPayment.method}
                   onChange={(e) => setNewPayment({...newPayment, method: e.target.value, referenceNumber: ''})}
@@ -5632,7 +5865,7 @@ const handleViewTenantDetails = (tenant) => {
               {/* Conditional Reference Number Field */}
               {(newPayment.method === 'M-Pesa' || newPayment.method === 'Bank Transfer' || newPayment.method === 'Cheque') && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {newPayment.method === 'M-Pesa' && 'M-Pesa Transaction Code'}
                     {newPayment.method === 'Bank Transfer' && 'Bank Reference Number'}
                     {newPayment.method === 'Cheque' && 'Cheque Number'}
@@ -5675,7 +5908,7 @@ const handleViewTenantDetails = (tenant) => {
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Record Tax Payment</h2>
               <button onClick={() => setShowTaxPaymentModal(false)}>
-                <X className="w-6 h-6 text-gray-500" />
+                <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
 
@@ -5692,7 +5925,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Payment Date *
                 </label>
                 <input
@@ -5704,7 +5937,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   KRA Payment Reference Number (PRN)
                 </label>
                 <input
@@ -5720,7 +5953,7 @@ const handleViewTenantDetails = (tenant) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Amount Paid (KES) *
                 </label>
                 <input
@@ -5772,11 +6005,11 @@ const handleViewTenantDetails = (tenant) => {
           <div className="bg-white rounded-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Change Password</h2>
-              <button onClick={() => setShowPasswordModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+              <button onClick={() => setShowPasswordModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
                 <input
                   type="password"
                   value={passwordData.current}
@@ -5785,7 +6018,7 @@ const handleViewTenantDetails = (tenant) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
                 <input
                   type="password"
                   value={passwordData.new}
@@ -5794,7 +6027,7 @@ const handleViewTenantDetails = (tenant) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
                 <input
                   type="password"
                   value={passwordData.confirm}
@@ -5819,9 +6052,9 @@ const handleViewTenantDetails = (tenant) => {
       {selectedViewing && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Viewing Request Details</h2>
-              <button onClick={() => setSelectedViewing(null)}><X className="w-6 h-6 text-gray-500" /></button>
+              <button onClick={() => setSelectedViewing(null)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-6">
               {/* Prospect Info */}
@@ -5987,65 +6220,151 @@ const handleViewTenantDetails = (tenant) => {
         </div>
       )}
 
-      {/* Listing Image Gallery Modal */}
-      {selectedListing && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-          <div className="max-w-5xl w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-white text-xl font-semibold">
+      {/* Listing Details Modal */}
+      {showListingDetailsModal && selectedListing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center z-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {selectedListing.property} - Unit {selectedListing.unit}
               </h2>
-              <button onClick={() => setSelectedListing(null)} className="text-white hover:text-gray-300">
-                <X className="w-8 h-8" />
+              <button
+                onClick={() => {
+                  setShowListingDetailsModal(false);
+                  setSelectedListing(null);
+                }}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
               </button>
             </div>
-            
-            {selectedListing.images && selectedListing.images.length > 0 && (
-              <div className="relative">
-                <img 
-                  src={selectedListing.images[currentImageIndex]} 
-                  alt={`View ${currentImageIndex + 1}`}
-                  className="w-full h-[70vh] object-contain rounded-lg"
-                />
-                
-                {selectedListing.images.length > 1 && (
-                  <>
-                    <button 
-                      onClick={() => setCurrentImageIndex((currentImageIndex - 1 + selectedListing.images.length) % selectedListing.images.length)}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition"
-                    >
-                      <ChevronLeft className="w-6 h-6 text-gray-900" />
-                    </button>
-                    <button 
-                      onClick={() => setCurrentImageIndex((currentImageIndex + 1) % selectedListing.images.length)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition"
-                    >
-                      <ChevronRight className="w-6 h-6 text-gray-900" />
-                    </button>
-                    
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black bg-opacity-70 text-white rounded-full text-sm">
-                      {currentImageIndex + 1} / {selectedListing.images.length}
+
+            <div className="p-6 space-y-6">
+              {/* Image Gallery */}
+              {selectedListing.images && selectedListing.images.length > 0 && (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <img
+                      src={selectedListing.images[currentImageIndex]}
+                      alt={`View ${currentImageIndex + 1}`}
+                      className="w-full h-96 object-cover rounded-lg"
+                    />
+
+                    {selectedListing.images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentImageIndex((currentImageIndex - 1 + selectedListing.images.length) % selectedListing.images.length)}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-gray-700 bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition"
+                        >
+                          <ChevronLeft className="w-6 h-6 text-gray-900 dark:text-white" />
+                        </button>
+                        <button
+                          onClick={() => setCurrentImageIndex((currentImageIndex + 1) % selectedListing.images.length)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-gray-700 bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition"
+                        >
+                          <ChevronRight className="w-6 h-6 text-gray-900 dark:text-white" />
+                        </button>
+
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black bg-opacity-70 text-white rounded-full text-sm">
+                          {currentImageIndex + 1} / {selectedListing.images.length}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {selectedListing.images.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {selectedListing.images.map((img, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentImageIndex(idx)}
+                          className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
+                            idx === currentImageIndex ? 'border-blue-500' : 'border-transparent opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
                     </div>
-                  </>
-                )}
+                  )}
+                </div>
+              )}
+
+              {/* Property Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Property Details</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                      <Bed className="w-5 h-5" />
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedListing.bedrooms} Bedrooms</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                      <Bath className="w-5 h-5" />
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedListing.bathrooms} Bathrooms</span>
+                    </div>
+                    {selectedListing.area > 0 && (
+                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <Square className="w-5 h-5" />
+                        <span className="font-medium text-gray-900 dark:text-white">{selectedListing.area} m²</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                      <MapPin className="w-5 h-5" />
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedListing.property}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Pricing</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Rent</p>
+                      <p className="text-2xl font-bold text-[#003366] dark:text-blue-400">{formatCurrency(selectedListing.rent, businessPreferences.currency)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Security Deposit</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatCurrency(selectedListing.deposit, businessPreferences.currency)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Posted Date</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{formatDate(selectedListing.postedDate, businessPreferences.dateFormat)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                        selectedListing.status === 'available' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                      }`}>
+                        {selectedListing.status === 'available' ? 'Available' : 'Occupied'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-            
-            {selectedListing.images && selectedListing.images.length > 1 && (
-              <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                {selectedListing.images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentImageIndex(idx)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
-                      idx === currentImageIndex ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+
+              {/* Description */}
+              {selectedListing.description && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Description</h3>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{selectedListing.description}</p>
+                </div>
+              )}
+
+              {/* Amenities */}
+              {selectedListing.amenities && selectedListing.amenities.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Amenities</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedListing.amenities.map((amenity, idx) => (
+                      <span key={idx} className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-lg">
+                        {amenity}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -6053,9 +6372,9 @@ const handleViewTenantDetails = (tenant) => {
 {showTeamModal && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Team Member</h2>
-        <button onClick={() => setShowTeamModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+        <button onClick={() => setShowTeamModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
       </div>
       <div className="p-6 space-y-4">
         <div className="bg-blue-50 p-4 rounded-lg mb-4">
@@ -6065,7 +6384,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
           <input
             type="text"
             value={newTeamMember.name}
@@ -6076,7 +6395,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
           <input
             type="email"
             value={newTeamMember.email}
@@ -6087,7 +6406,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number *</label>
           <input
             type="tel"
             value={newTeamMember.phone}
@@ -6098,7 +6417,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role *</label>
           <select
             value={newTeamMember.role}
             onChange={(e) => setNewTeamMember({...newTeamMember, role: e.target.value})}
@@ -6163,9 +6482,9 @@ const handleViewTenantDetails = (tenant) => {
 {showAssignTeamModal && selectedTeamMember && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Assign Properties to {selectedTeamMember.name}</h2>
-        <button onClick={() => setShowAssignTeamModal(false)}><X className="w-6 h-6 text-gray-500" /></button>
+        <button onClick={() => setShowAssignTeamModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
       </div>
       <div className="p-6">
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Select which properties this team member can access:</p>
