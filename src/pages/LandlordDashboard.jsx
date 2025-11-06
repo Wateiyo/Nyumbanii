@@ -80,7 +80,8 @@ import {
   Ban,
   FileText,
   Calculator,
-  Edit
+  Edit,
+  MessageSquare
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -116,6 +117,10 @@ const LandlordDashboard = () => {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedTenantForMessage, setSelectedTenantForMessage] = useState(null);
   const [unreadMessages, setUnreadMessages] = useState({});
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [conversationFilter, setConversationFilter] = useState('all'); // all, tenant, property-manager, maintenance
+  const [conversationSearchQuery, setConversationSearchQuery] = useState('');
   const [showTenantDetailsModal, setShowTenantDetailsModal] = useState(false);
   const [selectedTenantForDetails, setSelectedTenantForDetails] = useState(null);
   const [taxTrackingEnabled, setTaxTrackingEnabled] = useState(false);
@@ -684,7 +689,78 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     }
   }, [userProfile]);
 
- 
+  // Fetch conversations for Messages tab
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const q = query(
+      collection(db, 'messages'),
+      where('senderId', '==', currentUser.uid)
+    );
+
+    const q2 = query(
+      collection(db, 'messages'),
+      where('recipientId', '==', currentUser.uid)
+    );
+
+    // Combine both queries to get all conversations
+    const unsubscribe1 = onSnapshot(q, (snapshot) => {
+      const sentMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      processConversations(sentMessages, 'sent');
+    });
+
+    const unsubscribe2 = onSnapshot(q2, (snapshot) => {
+      const receivedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      processConversations(receivedMessages, 'received');
+    });
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
+  }, [currentUser]);
+
+  // Process messages into conversations
+  const processConversations = (messages, type) => {
+    const conversationMap = new Map();
+
+    messages.forEach(message => {
+      const conversationId = message.conversationId;
+      if (!conversationId) return;
+
+      const existingConv = conversationMap.get(conversationId);
+
+      if (!existingConv || (message.timestamp && message.timestamp > existingConv.lastMessageTime)) {
+        const otherUserId = message.senderId === currentUser?.uid ? message.recipientId : message.senderId;
+        const otherUserName = message.senderId === currentUser?.uid ? message.recipientName : message.senderName;
+        const otherUserRole = message.senderId === currentUser?.uid ? message.recipientRole : message.senderRole;
+
+        conversationMap.set(conversationId, {
+          conversationId,
+          otherUserId,
+          otherUserName,
+          otherUserRole,
+          lastMessage: message.text,
+          lastMessageTime: message.timestamp,
+          unread: type === 'received' && !message.read,
+          propertyName: message.propertyName,
+          unit: message.unit
+        });
+      }
+    });
+
+    setConversations(prev => {
+      const merged = new Map(prev.map(c => [c.conversationId, c]));
+      conversationMap.forEach((value, key) => {
+        merged.set(key, value);
+      });
+      return Array.from(merged.values()).sort((a, b) => {
+        const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
+        const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
+        return bTime - aTime;
+      });
+    });
+  };
 
   // Image upload handler
   const handleImageUpload = async (files, type = 'property') => {
@@ -1556,7 +1632,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'team', 'memos', 'settings'].map((view) => {
+          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'messages', 'team', 'memos', 'settings'].map((view) => {
             const icons = {
               dashboard: Home,
               properties: Building,
@@ -1567,6 +1643,7 @@ const handleViewTenantDetails = (tenant) => {
               tenants: Users,
               payments: Banknote,
               'tax-reports': Calculator,
+              messages: MessageSquare,
               team: Users,
               memos: Mail,
               settings: Settings
@@ -3658,6 +3735,192 @@ const handleViewTenantDetails = (tenant) => {
           </div>
         )}
 
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Messages View */}
+{currentView === 'messages' && (
+  <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="flex-1 flex overflow-hidden">
+      {/* Conversations List */}
+      <div className={`${selectedConversation ? 'hidden lg:flex' : 'flex'} lg:w-1/3 w-full flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800`}>
+        {/* Search and Filter Header */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Messages</h2>
+
+          {/* Search Bar */}
+          <div className="mb-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={conversationSearchQuery}
+                onChange={(e) => setConversationSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-[#003366] dark:focus:ring-[#004080] focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'tenant', label: 'Tenants' },
+              { value: 'property-manager', label: 'Managers' },
+              { value: 'maintenance', label: 'Maintenance' }
+            ].map(filter => (
+              <button
+                key={filter.value}
+                onClick={() => setConversationFilter(filter.value)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition ${
+                  conversationFilter === filter.value
+                    ? 'bg-[#003366] dark:bg-[#004080] text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto">
+          {conversations
+            .filter(conv => {
+              // Filter by role
+              if (conversationFilter !== 'all' && conv.otherUserRole !== conversationFilter) {
+                return false;
+              }
+              // Filter by search query
+              if (conversationSearchQuery && !conv.otherUserName.toLowerCase().includes(conversationSearchQuery.toLowerCase())) {
+                return false;
+              }
+              return true;
+            })
+            .map(conversation => (
+              <div
+                key={conversation.conversationId}
+                onClick={() => setSelectedConversation(conversation)}
+                className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition ${
+                  selectedConversation?.conversationId === conversation.conversationId ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {/* Avatar */}
+                  <div className="w-12 h-12 bg-[#003366] dark:bg-[#004080] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                    {conversation.otherUserName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+
+                  {/* Conversation Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                        {conversation.otherUserName}
+                      </h3>
+                      {conversation.lastMessageTime && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
+                          {formatRelativeTime(conversation.lastMessageTime.toDate ? conversation.lastMessageTime.toDate() : new Date(conversation.lastMessageTime))}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        conversation.otherUserRole === 'tenant' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                        conversation.otherUserRole === 'property-manager' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                        'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+                      }`}>
+                        {conversation.otherUserRole === 'property-manager' ? 'Manager' :
+                         conversation.otherUserRole === 'maintenance' ? 'Maintenance' : 'Tenant'}
+                      </span>
+                      {conversation.propertyName && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {conversation.propertyName} {conversation.unit && `- ${conversation.unit}`}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                      {conversation.lastMessage}
+                    </p>
+                  </div>
+
+                  {/* Unread Indicator */}
+                  {conversation.unread && (
+                    <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+          {conversations.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <MessageSquare className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No conversations yet</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Start a conversation by messaging a tenant from the Tenants tab
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Message View */}
+      <div className={`${selectedConversation ? 'flex' : 'hidden lg:flex'} flex-1 flex-col bg-white dark:bg-gray-800`}>
+        {selectedConversation ? (
+          <>
+            {/* Conversation Header */}
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedConversation(null)}
+                  className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </button>
+                <div className="w-10 h-10 bg-[#003366] dark:bg-[#004080] rounded-full flex items-center justify-center text-white font-semibold">
+                  {selectedConversation.otherUserName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{selectedConversation.otherUserName}</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {selectedConversation.propertyName && `${selectedConversation.propertyName}${selectedConversation.unit ? ` - Unit ${selectedConversation.unit}` : ''}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Use MessageModal Component */}
+            <div className="flex-1 relative">
+              <MessageModal
+                tenant={{
+                  id: selectedConversation.otherUserId,
+                  name: selectedConversation.otherUserName,
+                  property: selectedConversation.propertyName,
+                  unit: selectedConversation.unit
+                }}
+                currentUser={currentUser}
+                userProfile={userProfile}
+                isOpen={true}
+                onClose={() => setSelectedConversation(null)}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="hidden lg:flex flex-1 items-center justify-center p-8 text-center">
+            <div>
+              <MessageSquare className="w-20 h-20 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Select a conversation</h3>
+              <p className="text-gray-500 dark:text-gray-400">
+                Choose a conversation from the list to view messages
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   </div>
