@@ -1595,7 +1595,7 @@ const handleViewTenantDetails = (tenant) => {
         onClick={() => setShowNotifications(false)}
         className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
       >
-        <X className="w-5 h-5 text-gray-600" />
+        <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
       </button>
     </div>
 
@@ -1657,7 +1657,7 @@ const handleViewTenantDetails = (tenant) => {
                   {notification.type === 'maintenance' && <Wrench className="w-5 h-5 text-orange-600" />}
                   {notification.type === 'viewing' && <Eye className="w-5 h-5 text-blue-600" />}
                   {notification.type === 'tenant' && <Users className="w-5 h-5 text-purple-600" />}
-                  {!notification.type && <Bell className="w-5 h-5 text-gray-600" />}
+                  {!notification.type && <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
                 </div>
 
                 {/* Content */}
@@ -1668,7 +1668,7 @@ const handleViewTenantDetails = (tenant) => {
                   <p className="text-xs text-gray-600 line-clamp-2">
                     {notification.message}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {notification.createdAt && typeof notification.createdAt.toDate === 'function' 
                       ? formatRelativeTime(notification.createdAt.toDate())
                       : 'Just now'}
@@ -1765,7 +1765,7 @@ const handleViewTenantDetails = (tenant) => {
         {displayViewingBookings.length === 0 ? (
           <div className="text-center py-6 lg:py-8">
             <CalendarCheck className="w-12 h-12 lg:w-16 lg:h-16 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500 text-xs lg:text-sm">No viewing requests yet</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs lg:text-sm">No viewing requests yet</p>
           </div>
         ) : (
           displayViewingBookings.slice(0, 5).map(viewing => (
@@ -1850,22 +1850,22 @@ const handleViewTenantDetails = (tenant) => {
           {canManageProperties(userRole, teamPermissions) && (
             <button onClick={() => setShowPropertyModal(true)} className="p-3 lg:p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition text-center">
               <Building className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400 mx-auto mb-1 lg:mb-2" />
-              <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white block">Add Property</span>
+              <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white dark:text-white block">Add Property</span>
             </button>
           )}
           {canAddTenant(userRole, teamPermissions) && (
             <button onClick={() => setShowTenantModal(true)} className="p-3 lg:p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition text-center">
               <Users className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400 mx-auto mb-1 lg:mb-2" />
-              <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white block">Add Tenant</span>
+              <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white dark:text-white block">Add Tenant</span>
             </button>
           )}
           <button onClick={() => setShowListingModal(true)} className="p-3 lg:p-4 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition text-center">
             <Eye className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 dark:text-purple-400 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white block">Create Listing</span>
+            <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white dark:text-white block">Create Listing</span>
           </button>
           <button onClick={() => setShowMemoModal(true)} className="p-3 lg:p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition text-center">
             <Mail className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600 dark:text-orange-400 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white block">Send Memo</span>
+            <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white dark:text-white block">Send Memo</span>
           </button>
         </div>
       </div>
@@ -2090,18 +2090,18 @@ const handleViewTenantDetails = (tenant) => {
             <div className="p-6">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">{listing.property}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-lg">{listing.property}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Unit {listing.unit}</p>
                 </div>
-                <button 
-                  onClick={() => handleDeleteListing(listing.id)} 
-                  className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition"
+                <button
+                  onClick={() => handleDeleteListing(listing.id)}
+                  className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                   title="Delete listing"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
-              
+
               {/* Property Stats */}
               <div className="flex gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-1">
@@ -2125,28 +2125,28 @@ const handleViewTenantDetails = (tenant) => {
                 <div className="mb-4">
                   <div className="flex flex-wrap gap-2">
                     {listing.amenities.slice(0, 3).map((amenity, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+                      <span key={idx} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
                         {amenity}
                       </span>
                     ))}
                     {listing.amenities.length > 3 && (
-                      <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                      <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
                         +{listing.amenities.length - 3} more
                       </span>
                     )}
                   </div>
                 </div>
               )}
-              
+
               {/* Pricing */}
-              <div className="pt-4 border-t space-y-2">
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Monthly Rent</span>
                   <span className="font-bold text-[#003366] dark:text-blue-400 text-lg">{formatCurrency(listing.rent, businessPreferences.currency)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Deposit: {formatCurrency(listing.deposit, businessPreferences.currency)}</span>
-                  <span className="text-xs text-gray-500">Posted: {formatDate(listing.postedDate, businessPreferences.dateFormat)}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Deposit: {formatCurrency(listing.deposit, businessPreferences.currency)}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Posted: {formatDate(listing.postedDate, businessPreferences.dateFormat)}</span>
                 </div>
               </div>
               
@@ -2175,32 +2175,13 @@ const handleViewTenantDetails = (tenant) => {
       </div>
     </div>
 
-    {/* Credibility System Info Banner */}
-    <div className="bg-blue-50 border-l-4 border-blue-500 p-3 lg:p-4 mb-4 lg:mb-6 rounded-lg">
-      <div className="flex items-start gap-2 lg:gap-3">
-        <div className="flex-shrink-0">
-          <svg className="w-4 h-4 lg:w-5 lg:h-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-xs lg:text-sm font-semibold text-blue-900 mb-1">Smart Credibility Filtering Active</h3>
-          <p className="text-xs lg:text-sm text-blue-800">
-            Our system automatically scores viewing requests based on user credibility.
-            <span className="font-medium"> High-scoring applicants (80+) are prioritized</span> to help you find reliable tenants quickly.
-            Review the credibility score below each request before approving.
-          </p>
-        </div>
-      </div>
-    </div>
-
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 lg:gap-4 mb-4 lg:mb-6">
       <h2 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">Viewing Requests</h2>
       <div className="flex flex-wrap gap-2 w-full sm:w-auto">
         <button 
           onClick={() => setViewingFilter('all')}
           className={`flex-1 sm:flex-none px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition ${
-            viewingFilter === 'all' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            viewingFilter === 'all' ? 'bg-[#003366] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           All
@@ -2208,7 +2189,7 @@ const handleViewTenantDetails = (tenant) => {
         <button 
           onClick={() => setViewingFilter('pending')}
           className={`flex-1 sm:flex-none px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition ${
-            viewingFilter === 'pending' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            viewingFilter === 'pending' ? 'bg-[#003366] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           Pending
@@ -2216,7 +2197,7 @@ const handleViewTenantDetails = (tenant) => {
         <button 
           onClick={() => setViewingFilter('confirmed')}
           className={`flex-1 sm:flex-none px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition ${
-            viewingFilter === 'confirmed' ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            viewingFilter === 'confirmed' ? 'bg-[#003366] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           Confirmed
@@ -2256,11 +2237,11 @@ const handleViewTenantDetails = (tenant) => {
             {/* Property & Date Info - Mobile Optimized */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
               <div>
-                <p className="text-xs text-gray-600 mb-1">Property</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Property</p>
                 <p className="font-medium text-gray-900 dark:text-white text-sm lg:text-base truncate">{viewing.property}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-600 mb-1">Viewing Date & Time</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Viewing Date & Time</p>
                 <p className="font-medium text-gray-900 dark:text-white text-sm lg:text-base">{viewing.date} at {viewing.time}</p>
               </div>
             </div>
@@ -2268,9 +2249,9 @@ const handleViewTenantDetails = (tenant) => {
             {/* Credibility Score - Mobile Optimized */}
             {viewing.credibilityScore && (
               <div>
-                <p className="text-xs text-gray-600 mb-2">Credibility Score</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Credibility Score</p>
                 <div className="flex items-center gap-2 lg:gap-3">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
                       className={`h-2 rounded-full transition-all ${
                         viewing.credibilityScore >= 80 ? 'bg-green-500' :
@@ -2315,6 +2296,25 @@ const handleViewTenantDetails = (tenant) => {
           </div>
         </div>
       ))}
+    </div>
+
+    {/* Credibility System Info Banner - Moved to Bottom */}
+    <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 p-3 lg:p-4 rounded-lg">
+      <div className="flex items-start gap-2 lg:gap-3">
+        <div className="flex-shrink-0">
+          <svg className="w-4 h-4 lg:w-5 lg:h-5 text-blue-500 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-xs lg:text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">Smart Credibility Filtering Active</h3>
+          <p className="text-xs lg:text-sm text-blue-800 dark:text-blue-300">
+            Our system automatically scores viewing requests based on user credibility.
+            <span className="font-medium"> High-scoring applicants (80+) are prioritized</span> to help you find reliable tenants quickly.
+            Review the credibility score below each request before approving.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 )}
@@ -2514,22 +2514,22 @@ const handleViewTenantDetails = (tenant) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Total Rental Income</p>
-                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentMonthTax.totalIncome, businessPreferences.currency)}</p>
-                    <p className="text-xs text-gray-500 mt-1">{currentMonthTax.payments.length} payments received</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(currentMonthTax.totalIncome, businessPreferences.currency)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{currentMonthTax.payments.length} payments received</p>
                   </div>
 
                   <div className="bg-orange-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Tax Due (10%)</p>
                     <p className="text-2xl font-bold text-orange-600">{formatCurrency(currentMonthTax.taxDue, businessPreferences.currency)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Residential Rental Tax</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Residential Rental Tax</p>
                   </div>
 
                   <div className="bg-purple-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Payment Due Date</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {formatDate(currentMonthTax.dueDate, businessPreferences.dateFormat)}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {Math.ceil((currentMonthTax.dueDate - new Date()) / (1000 * 60 * 60 * 24))} days remaining
                     </p>
                   </div>
@@ -2577,11 +2577,11 @@ const handleViewTenantDetails = (tenant) => {
                       {getRecentTaxPeriods().map((period, index) => (
                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">{period.monthName} {period.year}</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{period.monthName} {period.year}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{formatCurrency(period.totalIncome, businessPreferences.currency)}</div>
-                            <div className="text-xs text-gray-500">{period.payments.length} payments</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{period.payments.length} payments</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-semibold text-orange-600">{formatCurrency(period.taxDue, businessPreferences.currency)}</div>
@@ -2857,11 +2857,11 @@ const handleViewTenantDetails = (tenant) => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Expected</span>
-              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                <Banknote className="w-5 h-5 text-gray-600" />
+              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <Banknote className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {formatCurrency(payments.reduce((sum, p) => sum + p.amount, 0), businessPreferences.currency)}
             </p>
           </div>
@@ -2874,7 +2874,7 @@ const handleViewTenantDetails = (tenant) => {
                 <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-green-600">
+            <p className="text-3xl font-bold text-green-600 dark:text-green-400">
               {formatCurrency(payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0), businessPreferences.currency)}
             </p>
           </div>
@@ -2887,7 +2887,7 @@ const handleViewTenantDetails = (tenant) => {
                 <Clock className="w-5 h-5 text-yellow-600" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-yellow-600">
+            <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
               {formatCurrency(payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0), businessPreferences.currency)}
             </p>
           </div>
@@ -2900,7 +2900,7 @@ const handleViewTenantDetails = (tenant) => {
                 <Ban className="w-5 h-5 text-red-600" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-red-600">
+            <p className="text-3xl font-bold text-red-600 dark:text-red-400">
               {formatCurrency(payments.filter(p => p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0), businessPreferences.currency)}
             </p>
           </div>
@@ -2992,7 +2992,7 @@ const handleViewTenantDetails = (tenant) => {
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">{payment.tenant}</p>
-                            <p className="text-sm text-gray-500">{payment.unit}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{payment.unit}</p>
                           </div>
                         </div>
                       </td>
@@ -3011,7 +3011,7 @@ const handleViewTenantDetails = (tenant) => {
                           {formatCurrency(payment.amount, businessPreferences.currency)}
                         </p>
                         {payment.method && (
-                          <p className="text-xs text-gray-500 capitalize">{payment.method}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{payment.method}</p>
                         )}
                       </td>
 
@@ -3193,7 +3193,7 @@ const handleViewTenantDetails = (tenant) => {
             {/* Calendar Header - Days of Week */}
             <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="px-2 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200 last:border-r-0">
+                <div key={day} className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 border-gray-200 last:border-r-0">
                   {day}
                 </div>
               ))}
@@ -3209,20 +3209,20 @@ const handleViewTenantDetails = (tenant) => {
               {/* Days 1-4 */}
               {[1, 2, 3, 4].map(day => (
                 <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition cursor-pointer ${day !== 4 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{day}</div>
                 </div>
               ))}
 
               {/* Days 5-6 */}
               {[5, 6].map(day => (
                 <div key={day} className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{day}</div>
                 </div>
               ))}
               
               {/* Day 7 - With Events */}
               <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">7</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white mb-1">7</div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
                     <CalendarCheck className="w-3 h-3 flex-shrink-0" />
@@ -3237,7 +3237,7 @@ const handleViewTenantDetails = (tenant) => {
               
               {/* Day 8 - With Events */}
               <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">8</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white mb-1">8</div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
                     <CalendarCheck className="w-3 h-3 flex-shrink-0" />
@@ -3252,7 +3252,7 @@ const handleViewTenantDetails = (tenant) => {
               
               {/* Day 9 - With Event */}
               <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">9</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white mb-1">9</div>
                 <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
                   <Wrench className="w-3 h-3 flex-shrink-0" />
                   <span>1</span>
@@ -3262,14 +3262,14 @@ const handleViewTenantDetails = (tenant) => {
               {/* Days 10-11 */}
               {[10, 11].map(day => (
                 <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition cursor-pointer ${day === 10 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{day}</div>
                 </div>
               ))}
 
               {/* Weeks 3-5 */}
               {[12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map((day, idx) => (
                 <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition cursor-pointer ${(idx + 5) % 7 !== 6 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{day}</div>
                 </div>
               ))}
               <div className="aspect-square min-h-[80px] sm:min-h-[100px] p-2 bg-gray-50"></div>
@@ -3292,7 +3292,7 @@ const handleViewTenantDetails = (tenant) => {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Property Viewing</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Sarah Johnson - Sunset Apartments</p>
-                <p className="text-gray-500 text-xs">10:00</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs">10:00</p>
               </div>
               
               <div className="flex-shrink-0">
@@ -3312,7 +3312,7 @@ const handleViewTenantDetails = (tenant) => {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Property Viewing</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Michael Ochieng - Sunset Apartments</p>
-                <p className="text-gray-500 text-xs">14:00</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs">14:00</p>
               </div>
               
               <div className="flex-shrink-0">
@@ -3332,7 +3332,7 @@ const handleViewTenantDetails = (tenant) => {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Leaking faucet - Sunset Apartments</p>
-                <p className="text-gray-500 text-xs">09:00</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs">09:00</p>
               </div>
               
               <div className="flex-shrink-0">
@@ -3352,7 +3352,7 @@ const handleViewTenantDetails = (tenant) => {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Broken AC - Garden View</p>
-                <p className="text-gray-500 text-xs">14:00</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs">14:00</p>
               </div>
               
               <div className="flex-shrink-0">
@@ -3372,7 +3372,7 @@ const handleViewTenantDetails = (tenant) => {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Faulty door lock - Riverside Towers</p>
-                <p className="text-gray-500 text-xs">10:00</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs">10:00</p>
               </div>
               
               <div className="flex-shrink-0">
@@ -3420,8 +3420,8 @@ const handleViewTenantDetails = (tenant) => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Team Members</span>
-              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                <Users className="w-5 h-5 text-gray-600" />
+              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <Users className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </div>
             </div>
             <p className="text-4xl font-bold text-gray-900">{teamMembers.length}</p>
@@ -4927,7 +4927,7 @@ const handleViewTenantDetails = (tenant) => {
                       <>
                         <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 dark:text-gray-400">Click to upload property images</p>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB each</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG up to 5MB each</p>
                       </>
                     )}
                   </label>
@@ -5049,7 +5049,7 @@ const handleViewTenantDetails = (tenant) => {
                 <>
                   <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-600 dark:text-gray-400">Click to upload property images</p>
-                  <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB each</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG up to 5MB each</p>
                 </>
               )}
             </label>
@@ -5347,7 +5347,7 @@ const handleViewTenantDetails = (tenant) => {
                       <>
                         <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 dark:text-gray-400">Click to upload listing images</p>
-                        <p className="text-xs text-gray-500 mt-1">Add multiple photos to showcase the property</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Add multiple photos to showcase the property</p>
                       </>
                     )}
                   </label>
@@ -5648,7 +5648,7 @@ const handleViewTenantDetails = (tenant) => {
                     }
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {newPayment.method === 'M-Pesa' && 'Enter the M-Pesa confirmation code from the SMS'}
                     {newPayment.method === 'Bank Transfer' && 'Enter the bank transaction reference number'}
                     {newPayment.method === 'Cheque' && 'Enter the cheque number'}
@@ -5714,7 +5714,7 @@ const handleViewTenantDetails = (tenant) => {
                   placeholder="e.g., 1234567890"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Enter the PRN from your iTax payment confirmation
                 </p>
               </div>
@@ -6107,7 +6107,7 @@ const handleViewTenantDetails = (tenant) => {
             <option value="property_manager">Property Manager</option>
             <option value="maintenance">Maintenance Staff</option>
           </select>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {newTeamMember.role === 'property_manager' 
               ? 'Can manage properties, tenants, and view reports' 
               : 'Can view and update maintenance requests'}
@@ -6184,7 +6184,7 @@ const handleViewTenantDetails = (tenant) => {
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">{property.name}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{property.location}</p>
-                  <p className="text-xs text-gray-500 mt-1">{property.units} units • {property.occupied} occupied</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{property.units} units • {property.occupied} occupied</p>
                 </div>
               </label>
             ))
@@ -6205,7 +6205,7 @@ const handleViewTenantDetails = (tenant) => {
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
       <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-        <h3 className="text-2xl font-bold text-gray-900">Tenant Details</h3>
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Tenant Details</h3>
         <button
           onClick={() => {
             setShowTenantDetailsModal(false);
