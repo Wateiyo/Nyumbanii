@@ -2727,19 +2727,19 @@ const handleViewTenantDetails = (tenant) => {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="flex gap-2 w-full">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
                       placeholder="Search tenants..."
                       value={tenantSearchQuery}
                       onChange={(e) => setTenantSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent w-full"
+                      className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     />
                   </div>
                   <select
                     value={tenantFilter}
                     onChange={(e) => setTenantFilter(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     <option value="all">All Properties</option>
                     {properties.map(prop => (
@@ -2779,11 +2779,11 @@ const handleViewTenantDetails = (tenant) => {
                     <div key={property.id} className="mb-8">
                       {/* Property Header */}
                       <div className="mb-4">
-                        <h3 className="text-lg font-bold text-gray-900">{property.name}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{property.name}</h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <MapPin className="w-4 h-4" />
                           <span>{property.location}</span>
-                          <span className="ml-4 text-[#003366] font-semibold">
+                          <span className="ml-4 text-[#003366] dark:text-blue-400 font-semibold">
                             {propertyTenants.length} {propertyTenants.length === 1 ? 'Tenant' : 'Tenants'}
                           </span>
                         </div>
@@ -2799,11 +2799,11 @@ const handleViewTenantDetails = (tenant) => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h4 className="font-semibold text-gray-900">{tenant.name}</h4>
+                                  <h4 className="font-semibold text-gray-900 dark:text-white">{tenant.name}</h4>
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    tenant.status === 'active' ? 'bg-green-100 text-green-800' :
-                                    tenant.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-gray-100 text-gray-800'
+                                    tenant.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                                    tenant.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                                    'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                                   }`}>
                                     {tenant.status}
                                   </span>
@@ -2823,7 +2823,7 @@ const handleViewTenantDetails = (tenant) => {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Banknote className="w-4 h-4 flex-shrink-0" />
-                                <span className="font-semibold text-gray-900">{formatCurrency(tenant.rent, businessPreferences.currency)}/month</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(tenant.rent, businessPreferences.currency)}/month</span>
                               </div>
                               {tenant.leaseEnd && (
                                 <div className="flex items-center gap-2">
@@ -2841,7 +2841,7 @@ const handleViewTenantDetails = (tenant) => {
                               </button>
                               <button
                                 onClick={() => handleMessageTenant(tenant)}
-                                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm relative">
+                                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm relative">
                                 Message
                                  {unreadMessages[tenant.id] > 0 && (
                                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
@@ -3015,22 +3015,22 @@ const handleViewTenantDetails = (tenant) => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Tenant
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Property
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Due Date
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -3045,7 +3045,7 @@ const handleViewTenantDetails = (tenant) => {
                             {payment.tenant?.charAt(0) || 'T'}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{payment.tenant}</p>
+                            <p className="font-medium text-gray-900 dark:text-white">{payment.tenant}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{payment.unit}</p>
                           </div>
                         </div>
@@ -3061,7 +3061,7 @@ const handleViewTenantDetails = (tenant) => {
 
                       {/* Amount */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="font-bold text-gray-900">
+                        <p className="font-bold text-gray-900 dark:text-white">
                           {formatCurrency(payment.amount, businessPreferences.currency)}
                         </p>
                         {payment.method && (
@@ -3333,25 +3333,25 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* ===== UPCOMING EVENTS WITH MOCK DATA ===== */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Upcoming Events</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Upcoming Events</h2>
           
           <div className="space-y-4">
             {/* Mock Event 1 - Viewing */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-gray-200 dark:border-gray-700">
               <div className="flex-shrink-0 text-center">
-                <div className="text-blue-600 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900">7</div>
+                <div className="text-blue-600 dark:text-blue-400 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900 dark:text-white">7</div>
               </div>
-              
+
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Property Viewing</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Property Viewing</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Sarah Johnson - Sunset Apartments</p>
                 <p className="text-gray-500 dark:text-gray-400 text-xs">10:00</p>
               </div>
-              
+
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <CalendarCheck className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                  <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </div>
@@ -3359,79 +3359,79 @@ const handleViewTenantDetails = (tenant) => {
             {/* Mock Event 2 - Viewing */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-gray-200 dark:border-gray-700">
               <div className="flex-shrink-0 text-center">
-                <div className="text-blue-600 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900">8</div>
+                <div className="text-blue-600 dark:text-blue-400 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900 dark:text-white">8</div>
               </div>
-              
+
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Property Viewing</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Property Viewing</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Michael Ochieng - Sunset Apartments</p>
                 <p className="text-gray-500 dark:text-gray-400 text-xs">14:00</p>
               </div>
-              
+
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <CalendarCheck className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                  <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </div>
 
             {/* Mock Event 3 - Maintenance */}
-            <div className="bg-orange-50 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6">
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-transparent dark:border-orange-800/30">
               <div className="flex-shrink-0 text-center">
-                <div className="text-orange-600 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900">7</div>
+                <div className="text-orange-600 dark:text-orange-400 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900 dark:text-orange-200">7</div>
               </div>
-              
+
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Leaking faucet - Sunset Apartments</p>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">09:00</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-orange-200 mb-1">Maintenance</h3>
+                <p className="text-gray-600 dark:text-orange-300/80 text-sm mb-1">Leaking faucet - Sunset Apartments</p>
+                <p className="text-gray-500 dark:text-orange-300/70 text-xs">09:00</p>
               </div>
-              
+
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <Wrench className="w-6 h-6 text-orange-600" />
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-800/40 rounded-full flex items-center justify-center">
+                  <Wrench className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
             </div>
 
             {/* Mock Event 4 - Maintenance */}
-            <div className="bg-orange-50 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6">
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-transparent dark:border-orange-800/30">
               <div className="flex-shrink-0 text-center">
-                <div className="text-orange-600 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900">8</div>
+                <div className="text-orange-600 dark:text-orange-400 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900 dark:text-orange-200">8</div>
               </div>
-              
+
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Broken AC - Garden View</p>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">14:00</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-orange-200 mb-1">Maintenance</h3>
+                <p className="text-gray-600 dark:text-orange-300/80 text-sm mb-1">Broken AC - Garden View</p>
+                <p className="text-gray-500 dark:text-orange-300/70 text-xs">14:00</p>
               </div>
-              
+
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <Wrench className="w-6 h-6 text-orange-600" />
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-800/40 rounded-full flex items-center justify-center">
+                  <Wrench className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
             </div>
 
             {/* Mock Event 5 - Maintenance */}
-            <div className="bg-orange-50 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6">
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-transparent dark:border-orange-800/30">
               <div className="flex-shrink-0 text-center">
-                <div className="text-orange-600 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900">9</div>
+                <div className="text-orange-600 dark:text-orange-400 text-sm font-semibold">Oct</div>
+                <div className="text-4xl font-bold text-gray-900 dark:text-orange-200">9</div>
               </div>
-              
+
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Maintenance</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Faulty door lock - Riverside Towers</p>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">10:00</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-orange-200 mb-1">Maintenance</h3>
+                <p className="text-gray-600 dark:text-orange-300/80 text-sm mb-1">Faulty door lock - Riverside Towers</p>
+                <p className="text-gray-500 dark:text-orange-300/70 text-xs">10:00</p>
               </div>
-              
+
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <Wrench className="w-6 h-6 text-orange-600" />
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-800/40 rounded-full flex items-center justify-center">
+                  <Wrench className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
             </div>
@@ -3478,7 +3478,7 @@ const handleViewTenantDetails = (tenant) => {
                 <Users className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </div>
             </div>
-            <p className="text-4xl font-bold text-gray-900">{teamMembers.length}</p>
+            <p className="text-4xl font-bold text-green-600 dark:text-green-400">{teamMembers.length}</p>
           </div>
 
           {/* Property Managers */}
@@ -4529,9 +4529,9 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         {/* Team Management Permissions Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Team Management & Permissions</h2>
+        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800">
+          <div className="p-4 sm:p-6 border-b border-blue-200 dark:border-blue-800">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Team Management & Permissions</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Control what your team members can access and do</p>
           </div>
 
