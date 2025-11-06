@@ -1813,7 +1813,7 @@ const handleViewTenantDetails = (tenant) => {
         <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <span className="font-medium text-gray-900 dark:text-white text-xs lg:text-sm">Collection Rate</span>
-            <span className="font-bold text-[#003366] dark:text-blue-400 text-base lg:text-lg">
+            <span className="font-bold text-[#003366] dark:text-blue-400 dark:text-blue-400 text-base lg:text-lg">
               {paymentStats.expected > 0 ? Math.round((paymentStats.received / paymentStats.expected) * 100) : 0}%
             </span>
           </div>
@@ -1883,7 +1883,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Blue Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Property Management</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Property Management</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Manage your properties and track occupancy rates</p>
           </div>
           {canManageProperties(userRole, teamPermissions) && (
@@ -1948,24 +1948,24 @@ const handleViewTenantDetails = (tenant) => {
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{property.name}</h3>
-                      <div className="flex items-center gap-2 text-gray-600">
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <MapPin className="w-4 h-4" />
                         <span className="text-sm">{property.location}</span>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => {
                           setEditingProperty(property);
                           setShowEditPropertyModal(true);
                         }}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
                       >
                         <Settings className="w-5 h-5" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDeleteProperty(property.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -1975,12 +1975,12 @@ const handleViewTenantDetails = (tenant) => {
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Total Units</p>
-                      <p className="text-2xl font-bold text-gray-900">{property.units}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Units</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{property.units}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Occupied</p>
-                      <p className="text-2xl font-bold text-green-600">{property.occupied}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Occupied</p>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">{property.occupied}</p>
                     </div>
                   </div>
 
@@ -1988,20 +1988,20 @@ const handleViewTenantDetails = (tenant) => {
                   <div className="mb-4">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Occupancy Rate</span>
-                      <span className="text-sm font-bold text-gray-900">
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">
                         {Math.round((property.occupied / property.units) * 100)}% occupied
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                      <div 
-                        className="bg-[#003366] h-full rounded-full transition-all duration-500"
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="bg-[#003366] dark:bg-blue-500 h-full rounded-full transition-all duration-500"
                         style={{ width: `${(property.occupied / property.units) * 100}%` }}
                       />
                     </div>
                   </div>
 
                   {/* Monthly Revenue */}
-                  <div className="pt-4 border-t border-gray-200">
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Monthly Revenue</span>
                       <span className="text-xl font-bold text-gray-900 dark:text-white">
@@ -2025,7 +2025,7 @@ const handleViewTenantDetails = (tenant) => {
     {/* Blue Banner */}
     <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6">
       <div>
-        <h3 className="font-semibold text-gray-900 mb-1">Property Listings</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Property Listings</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">Manage your available units for rent</p>
       </div>
       <div className="flex gap-2">
@@ -2142,7 +2142,7 @@ const handleViewTenantDetails = (tenant) => {
               <div className="pt-4 border-t space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Monthly Rent</span>
-                  <span className="font-bold text-[#003366] text-lg">{formatCurrency(listing.rent, businessPreferences.currency)}</span>
+                  <span className="font-bold text-[#003366] dark:text-blue-400 text-lg">{formatCurrency(listing.rent, businessPreferences.currency)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500">Deposit: {formatCurrency(listing.deposit, businessPreferences.currency)}</span>
@@ -2170,7 +2170,7 @@ const handleViewTenantDetails = (tenant) => {
     {/* Blue Banner */}
     <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6">
       <div>
-        <h3 className="font-semibold text-gray-900 mb-1">Viewing Requests</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Viewing Requests</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">Manage property viewing appointments and requests</p>
       </div>
     </div>
@@ -2330,7 +2330,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Blue Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Maintenance Requests</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Maintenance Requests</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Track and manage property maintenance issues</p>
           </div>
           <button
@@ -2656,7 +2656,7 @@ const handleViewTenantDetails = (tenant) => {
               {/* Blue Banner */}
               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Tenant Directory</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Tenant Directory</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Manage and communicate with your tenants</p>
                 </div>
                 {canAddTenant(userRole, teamPermissions) && (
@@ -2839,7 +2839,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Blue Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Payment Tracking</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Payment Tracking</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Monitor rent payments and track outstanding balances</p>
           </div>
           <button
@@ -3045,7 +3045,7 @@ const handleViewTenantDetails = (tenant) => {
                           {payment.status !== 'paid' && (
                             <button 
                               onClick={() => handleMarkPaymentPaid(payment.id)}
-                              className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition"
+                              className="text-green-600 dark:text-green-400 hover:bg-green-50 p-2 rounded-lg transition"
                               title="Mark as Paid"
                             >
                               <CheckCircle className="w-5 h-5" />
@@ -3053,7 +3053,7 @@ const handleViewTenantDetails = (tenant) => {
                           )}
                           <button 
                             onClick={() => handleDownloadReceipt(payment.id)}
-                            className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition"
+                            className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 p-2 rounded-lg transition"
                             title="Download Receipt"
                           >
                             <Download className="w-5 h-5" />
@@ -3091,7 +3091,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Blue Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Updates & Memos</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Updates & Memos</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Send announcements and updates to your tenants</p>
           </div>
           <button
@@ -3175,7 +3175,7 @@ const handleViewTenantDetails = (tenant) => {
         <div className="mb-8">
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
-            <h2 className="text-2xl font-bold text-gray-900">Schedule Calendar</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Schedule Calendar</h2>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -3400,7 +3400,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Blue Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Team Management</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Team Management</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Manage your property management team members</p>
           </div>
           {canManageTeam(userRole) && (
@@ -4919,7 +4919,7 @@ const handleViewTenantDetails = (tenant) => {
     />
     <label htmlFor="property-images-upload" className="cursor-pointer block">
                     {uploadingImages ? (
-                      <div className="text-[#003366]">
+                      <div className="text-[#003366] dark:text-blue-400">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003366] mx-auto mb-2"></div>
                         <p>Uploading...</p>
                       </div>
@@ -5041,7 +5041,7 @@ const handleViewTenantDetails = (tenant) => {
             />
             <label htmlFor="edit-property-images" className="cursor-pointer">
               {uploadingImages ? (
-                <div className="text-[#003366]">
+                <div className="text-[#003366] dark:text-blue-400">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003366] mx-auto mb-2"></div>
                   <p>Uploading...</p>
                 </div>
@@ -5339,7 +5339,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                   <label htmlFor="listing-images" className="cursor-pointer">
                     {uploadingImages ? (
-                      <div className="text-[#003366]">
+                      <div className="text-[#003366] dark:text-blue-400">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003366] mx-auto mb-2"></div>
                         <p>Uploading...</p>
                       </div>
@@ -5827,7 +5827,7 @@ const handleViewTenantDetails = (tenant) => {
               {/* Prospect Info */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-[#003366]" />
+                  <Users className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   Prospect Information
                 </h3>
                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
@@ -5861,7 +5861,7 @@ const handleViewTenantDetails = (tenant) => {
               {/* Property & Viewing Info */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Building className="w-5 h-5 text-[#003366]" />
+                  <Building className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   Property & Viewing Details
                 </h3>
                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
