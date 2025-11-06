@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../config/firebase';
+import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
 import {
   collection,
   doc,
@@ -8,10 +10,11 @@ import {
   where,
   updateDoc,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  getDocs
 } from 'firebase/firestore';
-import { 
-  Home, 
+import {
+  Home,
   Building,
   Wrench,
   LogOut,
@@ -23,13 +26,61 @@ import {
   MapPin
 } from 'lucide-react';
 
-const MaintenanceStaffDashboard = ({ teamMember, onLogout }) => {
+const MaintenanceStaffDashboard = () => {
+  const navigate = useNavigate();
+  const { currentUser, logout } = useAuth();
+  const [teamMember, setTeamMember] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [properties, setProperties] = useState([]);
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Fetch team member data for the current user
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      navigate('/login');
+      return;
+    }
+
+    const fetchTeamMember = async () => {
+      try {
+        const q = query(
+          collection(db, 'team-members'),
+          where('userId', '==', currentUser.uid),
+          where('role', '==', 'maintenance')
+        );
+
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          const memberData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+          setTeamMember(memberData);
+          console.log('Team member data loaded:', memberData);
+        } else {
+          console.error('No team member record found for user');
+          alert('Your account is not properly set up. Please contact your landlord.');
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('Error fetching team member:', error);
+        alert('Error loading your profile. Please try again.');
+        navigate('/login');
+      }
+    };
+
+    fetchTeamMember();
+  }, [currentUser, navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      alert('Error logging out. Please try again.');
+    }
+  };
 
   // Fetch assigned properties
   useEffect(() => {
@@ -128,12 +179,13 @@ const MaintenanceStaffDashboard = ({ teamMember, onLogout }) => {
     return request.status === statusFilter;
   });
 
-  if (loading) {
+  // Show loading screen while fetching team member data or other data
+  if (!teamMember || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -174,7 +226,7 @@ const MaintenanceStaffDashboard = ({ teamMember, onLogout }) => {
         </nav>
 
         <div className="p-4 border-t border-orange-700">
-          <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-orange-700 transition text-orange-100">
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-orange-700 transition text-orange-100">
             <LogOut className="w-5 h-5" />
             <span className="text-sm">Logout</span>
           </button>
