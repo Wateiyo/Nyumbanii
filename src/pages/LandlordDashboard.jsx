@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, storage } from '../firebase';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -121,6 +121,10 @@ const LandlordDashboard = () => {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [conversationFilter, setConversationFilter] = useState('all'); // all, tenant, property-manager, maintenance
   const [conversationSearchQuery, setConversationSearchQuery] = useState('');
+  const [conversationMessages, setConversationMessages] = useState([]);
+  const [newConversationMessage, setNewConversationMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const conversationMessagesEndRef = useRef(null);
   const [showTenantDetailsModal, setShowTenantDetailsModal] = useState(false);
   const [selectedTenantForDetails, setSelectedTenantForDetails] = useState(null);
   const [taxTrackingEnabled, setTaxTrackingEnabled] = useState(false);
@@ -760,6 +764,99 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
         return bTime - aTime;
       });
     });
+  };
+
+  // Fetch messages for selected conversation
+  useEffect(() => {
+    if (!selectedConversation?.conversationId) {
+      setConversationMessages([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'messages'),
+      where('conversationId', '==', selectedConversation.conversationId),
+      orderBy('timestamp', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const messages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setConversationMessages(messages);
+
+      // Scroll to bottom when messages change
+      setTimeout(() => {
+        conversationMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    });
+
+    return () => unsubscribe();
+  }, [selectedConversation]);
+
+  // Send message in conversation
+  const handleSendConversationMessage = async () => {
+    if (!newConversationMessage.trim() || sendingMessage || !selectedConversation) return;
+
+    const messageText = newConversationMessage.trim();
+    setNewConversationMessage('');
+    setSendingMessage(true);
+
+    try {
+      await addDoc(collection(db, 'messages'), {
+        conversationId: selectedConversation.conversationId,
+        senderId: currentUser.uid,
+        senderName: userProfile?.displayName || 'Landlord',
+        senderRole: 'landlord',
+        recipientId: selectedConversation.otherUserId,
+        recipientName: selectedConversation.otherUserName,
+        recipientRole: selectedConversation.otherUserRole,
+        text: messageText,
+        timestamp: serverTimestamp(),
+        read: false,
+        propertyName: selectedConversation.propertyName,
+        unit: selectedConversation.unit
+      });
+
+      // Send notification
+      await addDoc(collection(db, 'notifications'), {
+        userId: selectedConversation.otherUserId,
+        type: 'message',
+        title: 'New Message from Landlord',
+        message: `You have a new message: "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"`,
+        read: false,
+        timestamp: serverTimestamp(),
+        senderId: currentUser.uid,
+        senderName: userProfile?.displayName || 'Landlord'
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+      setNewConversationMessage(messageText);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  // Format time for messages
+  const formatMessageTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    } else if (isYesterday) {
+      return 'Yesterday ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+             date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
   };
 
   // Image upload handler
@@ -3894,20 +3991,95 @@ const handleViewTenantDetails = (tenant) => {
               </div>
             </div>
 
-            {/* Use MessageModal Component */}
-            <div className="flex-1 relative">
-              <MessageModal
-                tenant={{
-                  id: selectedConversation.otherUserId,
-                  name: selectedConversation.otherUserName,
-                  property: selectedConversation.propertyName,
-                  unit: selectedConversation.unit
-                }}
-                currentUser={currentUser}
-                userProfile={userProfile}
-                isOpen={true}
-                onClose={() => setSelectedConversation(null)}
-              />
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+              {conversationMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  <User className="w-16 h-16 mb-4 opacity-50" />
+                  <p>No messages yet</p>
+                  <p className="text-sm mt-1">Start a conversation with {selectedConversation.otherUserName}</p>
+                </div>
+              ) : (
+                <>
+                  {conversationMessages.map((message, index) => {
+                    const isOwnMessage = message.senderId === currentUser?.uid;
+                    const showDate = index === 0 ||
+                      (message.timestamp && conversationMessages[index - 1].timestamp &&
+                       new Date(message.timestamp.toDate ? message.timestamp.toDate() : message.timestamp).toDateString() !==
+                       new Date(conversationMessages[index - 1].timestamp.toDate ? conversationMessages[index - 1].timestamp.toDate() : conversationMessages[index - 1].timestamp).toDateString());
+
+                    return (
+                      <React.Fragment key={message.id}>
+                        {showDate && (
+                          <div className="flex justify-center my-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                              {message.timestamp && new Date(message.timestamp.toDate ? message.timestamp.toDate() : message.timestamp).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        )}
+                        <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[70%] ${isOwnMessage ? 'order-2' : 'order-1'}`}>
+                            <div className={`rounded-lg px-4 py-2 ${
+                              isOwnMessage
+                                ? 'bg-[#003366] dark:bg-[#004080] text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                            }`}>
+                              <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
+                              <div className={`flex items-center gap-1 mt-1 ${
+                                isOwnMessage ? 'justify-end' : 'justify-start'
+                              }`}>
+                                <span className={`text-xs ${
+                                  isOwnMessage ? 'text-blue-100 dark:text-blue-200' : 'text-gray-500 dark:text-gray-400'
+                                }`}>
+                                  {formatMessageTime(message.timestamp)}
+                                </span>
+                                {isOwnMessage && (
+                                  <span className="text-blue-100 dark:text-blue-200">
+                                    {message.read ? <CheckCheck className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                  <div ref={conversationMessagesEndRef} />
+                </>
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newConversationMessage}
+                  onChange={(e) => setNewConversationMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendConversationMessage();
+                    }
+                  }}
+                  placeholder="Type a message..."
+                  disabled={sendingMessage}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-[#003366] dark:focus:ring-[#004080] focus:border-transparent disabled:opacity-50"
+                />
+                <button
+                  onClick={handleSendConversationMessage}
+                  disabled={!newConversationMessage.trim() || sendingMessage}
+                  className="px-4 py-2 bg-[#003366] dark:bg-[#004080] text-white rounded-lg hover:bg-[#002244] dark:hover:bg-[#003366] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  Send
+                </button>
+              </div>
             </div>
           </>
         ) : (
