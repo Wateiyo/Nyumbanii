@@ -383,9 +383,9 @@ const Register = () => {
                       <div className="flex items-start gap-3 mb-3">
                         <User className="w-5 h-5 text-blue-300 flex-shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-white text-sm font-semibold mb-1">Are you a Tenant?</p>
+                          <p className="text-white text-sm font-semibold mb-1">Are you a Tenant, Property Manager, or Maintenance Staff?</p>
                           <p className="text-blue-100 text-xs">
-                            Tenants can only register through a landlord invitation. Ask your landlord for an invitation link or enter your invitation code below.
+                            You can only register through a landlord invitation. Ask your landlord for an invitation link or enter your invitation code below.
                           </p>
                         </div>
                       </div>
@@ -631,7 +631,7 @@ const Register = () => {
               </div>
 
               <p className="text-gray-600 text-sm mb-4">
-                Enter the invitation code provided by your landlord to register as a tenant.
+                Enter the invitation code provided by your landlord. This works for tenants, property managers, and maintenance staff.
               </p>
 
               <div className="mb-4">
