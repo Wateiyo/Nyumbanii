@@ -26,6 +26,10 @@ const ProtectedRoute = ({ children, requiredRole }) => {
       return <Navigate to="/landlord/dashboard" replace />;
     } else if (userRole === 'tenant') {
       return <Navigate to="/tenant/dashboard" replace />;
+    } else if (userRole === 'property_manager') {
+      return <Navigate to="/property-manager/dashboard" replace />;
+    } else if (userRole === 'maintenance') {
+      return <Navigate to="/maintenance/dashboard" replace />;
     }
     return <Navigate to="/" replace />;
   }

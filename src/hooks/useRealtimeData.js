@@ -306,30 +306,53 @@ export const useListings = (landlordId) => {
 
 // ============= MEMOS =============
 
-export const useMemos = (landlordId) => {
+export const useMemos = (userId, userRole) => {
   const [memos, setMemos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!landlordId) {
+    if (!userId || !userRole) {
       setLoading(false);
       return;
     }
 
-    const q = query(
-      collection(db, 'memos'),
-      where('landlordId', '==', landlordId),
-      orderBy('createdAt', 'desc')
-    );
+    let q;
+    if (userRole === 'landlord') {
+      // Landlord sees memos they created
+      q = query(
+        collection(db, 'memos'),
+        where('landlordId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      // Tenants see memos where they are in recipients or memos for all tenants
+      q = query(
+        collection(db, 'memos'),
+        where('recipientType', 'in', ['all', 'specific']),
+        orderBy('createdAt', 'desc')
+      );
+    }
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const memosData = snapshot.docs.map(doc => ({
+        let memosData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+
+        // For tenants, filter to show only memos for them
+        if (userRole === 'tenant') {
+          memosData = memosData.filter(memo => {
+            if (memo.recipientType === 'all') return true;
+            if (memo.recipientType === 'specific' && memo.recipients) {
+              return memo.recipients.includes(userId);
+            }
+            return false;
+          });
+        }
+
         setMemos(memosData);
         setLoading(false);
       },
@@ -342,7 +365,7 @@ export const useMemos = (landlordId) => {
     );
 
     return () => unsubscribe();
-  }, [landlordId]);
+  }, [userId, userRole]);
 
   return { memos, loading, error };
 };
@@ -469,6 +492,50 @@ export const useMessages = (conversationId) => {
 
     return () => unsubscribe();
   }, [conversationId]);
+
+  return { messages, loading, error };
+};
+
+// ============= ALL MESSAGES (Direct Messages Collection) =============
+
+export const useAllMessages = (userId, userRole) => {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!userId || !userRole) {
+      setLoading(false);
+      return;
+    }
+
+    const field = userRole === 'landlord' ? 'landlordId' : 'tenantId';
+    const q = query(
+      collection(db, 'messages'),
+      where(field, '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const messagesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setMessages(messagesData);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Error fetching all messages:', err);
+        setError(err);
+        setMessages([]);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [userId, userRole]);
 
   return { messages, loading, error };
 };

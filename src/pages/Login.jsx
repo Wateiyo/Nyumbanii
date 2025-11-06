@@ -41,6 +41,10 @@ const Login = () => {
         navigate('/landlord/dashboard');
       } else if (role === 'tenant' || role === 'prospect') {
         navigate('/tenant/dashboard');
+      } else if (role === 'property_manager') {
+        navigate('/property-manager/dashboard');
+      } else if (role === 'maintenance') {
+        navigate('/maintenance/dashboard');
       } else {
         navigate('/'); // fallback
       }
@@ -77,12 +81,16 @@ const Login = () => {
       
       // For now, let's detect from existing account or default to tenant
       const { role } = await signInWithGoogle('tenant'); // or show modal to select
-      
+
       // Redirect based on role
       if (role === 'landlord') {
         navigate('/landlord/dashboard');
       } else if (role === 'tenant' || role === 'prospect') {
         navigate('/tenant/dashboard');
+      } else if (role === 'property_manager') {
+        navigate('/property-manager/dashboard');
+      } else if (role === 'maintenance') {
+        navigate('/maintenance/dashboard');
       }
     } catch (err) {
       console.error('Google sign-in error:', err);
