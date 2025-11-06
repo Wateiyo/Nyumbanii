@@ -6529,16 +6529,16 @@ const handleViewTenantDetails = (tenant) => {
 
 {/* Tenant Details Modal */}
 {showTenantDetailsModal && selectedTenantForDetails && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-      <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+  <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Tenant Details</h3>
         <button
           onClick={() => {
             setShowTenantDetailsModal(false);
             setSelectedTenantForDetails(null);
           }}
-          className="text-gray-400 hover:text-gray-600 transition"
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
         >
           <X className="w-6 h-6" />
         </button>
@@ -6548,28 +6548,28 @@ const handleViewTenantDetails = (tenant) => {
         {/* Personal Information */}
         <div>
           <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <User className="w-5 h-5" />
+            <User className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             Personal Information
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
             <div>
-              <label className="text-sm font-medium text-gray-600">Full Name</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Full Name</label>
               <p className="text-base font-semibold text-gray-900 dark:text-white">{selectedTenantForDetails.name}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Email</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
               <p className="text-base text-gray-900 dark:text-white">{selectedTenantForDetails.email}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Phone</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone</label>
               <p className="text-base text-gray-900 dark:text-white">{selectedTenantForDetails.phone}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Status</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
               <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                selectedTenantForDetails.status === 'active' ? 'bg-green-100 text-green-800' :
-                selectedTenantForDetails.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-gray-100 text-gray-800'
+                selectedTenantForDetails.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' :
+                selectedTenantForDetails.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300' :
+                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
               }`}>
                 {selectedTenantForDetails.status}
               </span>
@@ -6580,20 +6580,20 @@ const handleViewTenantDetails = (tenant) => {
         {/* Property Information */}
         <div>
           <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Home className="w-5 h-5" />
+            <Home className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             Property Information
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
             <div>
-              <label className="text-sm font-medium text-gray-600">Property</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Property</label>
               <p className="text-base font-semibold text-gray-900 dark:text-white">{selectedTenantForDetails.property}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Unit Number</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Unit Number</label>
               <p className="text-base text-gray-900 dark:text-white">{selectedTenantForDetails.unit}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Monthly Rent</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Rent</label>
               <p className="text-base font-semibold text-gray-900 dark:text-white">{formatCurrency(selectedTenantForDetails.rent, businessPreferences.currency)}</p>
             </div>
           </div>
@@ -6602,16 +6602,16 @@ const handleViewTenantDetails = (tenant) => {
         {/* Lease Information */}
         <div>
           <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
+            <Calendar className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             Lease Information
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
             <div>
-              <label className="text-sm font-medium text-gray-600">Lease Start Date</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Lease Start Date</label>
               <p className="text-base text-gray-900 dark:text-white">{formatDate(selectedTenantForDetails.leaseStart, businessPreferences.dateFormat)}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Lease End Date</label>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Lease End Date</label>
               <p className="text-base text-gray-900 dark:text-white">{formatDate(selectedTenantForDetails.leaseEnd, businessPreferences.dateFormat)}</p>
             </div>
           </div>
@@ -6624,7 +6624,7 @@ const handleViewTenantDetails = (tenant) => {
               setShowTenantDetailsModal(false);
               handleMessageTenant(selectedTenantForDetails);
             }}
-            className="flex-1 px-4 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-3 bg-[#003366] dark:bg-[#004080] text-white rounded-lg hover:bg-[#002244] dark:hover:bg-[#003366] transition flex items-center justify-center gap-2"
           >
             <Mail className="w-5 h-5" />
             Send Message
@@ -6637,7 +6637,7 @@ const handleViewTenantDetails = (tenant) => {
                 setSelectedTenantForDetails(null);
               }
             }}
-            className="px-4 py-3 bg-white border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition flex items-center gap-2"
+            className="px-4 py-3 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center gap-2"
           >
             <Trash2 className="w-5 h-5" />
             Delete
