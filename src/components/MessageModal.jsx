@@ -46,7 +46,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
 
   // Fetch available recipients based on type
   useEffect(() => {
-    if (!isOpen || !currentUser || senderRole !== 'property_manager') return;
+    // Only fetch recipients if property manager AND no pre-selected tenant
+    if (!isOpen || !currentUser || senderRole !== 'property_manager' || tenant) return;
 
     const fetchRecipients = async () => {
       try {
@@ -86,8 +87,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
 
         setRecipientList(recipientsData);
 
-        // Auto-select first recipient if no tenant was pre-selected
-        if (!tenant && recipientsData.length > 0 && !selectedRecipient) {
+        // Auto-select first recipient if available
+        if (recipientsData.length > 0) {
           setSelectedRecipient(recipientsData[0]);
         }
       } catch (error) {
@@ -96,7 +97,7 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
     };
 
     fetchRecipients();
-  }, [isOpen, recipientType, currentUser, senderRole, tenant, selectedRecipient]);
+  }, [isOpen, recipientType, currentUser, senderRole, tenant]);
 
   // Create unique conversation ID
   const getConversationId = () => {
