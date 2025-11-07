@@ -369,6 +369,29 @@ const TenantDashboard = () => {
     return () => unsubscribe();
   }, [tenantData]);
 
+  // Fetch notifications from Firebase
+  useEffect(() => {
+    if (!tenantData?.id) return;
+
+    const notificationsQuery = query(
+      collection(db, 'notifications'),
+      where('userId', '==', tenantData.id),
+      orderBy('timestamp', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+      const notificationsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setNotifications(notificationsData);
+    }, (error) => {
+      console.error('Error fetching notifications:', error);
+    });
+
+    return () => unsubscribe();
+  }, [tenantData]);
+
   // Handle navbar auto-hide on scroll
   useEffect(() => {
     const handleScroll = () => {
@@ -848,23 +871,47 @@ const TenantDashboard = () => {
       return;
     }
 
+    console.log('Attempting to delete maintenance request:', request.id);
+
     try {
       // Delete from maintenance collection (primary collection for tenant dashboard)
+      console.log('Deleting from maintenance collection...');
       await deleteDoc(doc(db, 'maintenance', request.id));
+      console.log('Successfully deleted from maintenance collection');
 
       // Also try to delete from maintenanceRequests collection (for compatibility)
       // This might not exist for older requests, so we catch errors silently
       try {
+        console.log('Attempting to delete from maintenanceRequests collection...');
         await deleteDoc(doc(db, 'maintenanceRequests', request.id));
+        console.log('Successfully deleted from maintenanceRequests collection');
       } catch (compatError) {
-        console.log('Note: Request not found in maintenanceRequests collection (this is okay for older requests)');
+        console.log('Note: Request not found in maintenanceRequests collection (this is okay for older requests)', compatError);
       }
 
+      console.log('Deletion complete');
       alert('Maintenance request deleted successfully!');
     } catch (error) {
       console.error('Error deleting maintenance request:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       alert(`Failed to delete maintenance request: ${error.message}`);
     }
+  };
+
+  // Helper function to get time ago
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const handleLogout = async () => {
@@ -1098,10 +1145,15 @@ const TenantDashboard = () => {
     }
   };
 
-  const markNotificationAsRead = (id) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const markNotificationAsRead = async (id) => {
+    try {
+      const notificationRef = doc(db, 'notifications', id);
+      await updateDoc(notificationRef, {
+        read: true
+      });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   const filteredListings = availableListings.filter(listing =>
@@ -1186,16 +1238,41 @@ const TenantDashboard = () => {
                       <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white">Notifications</h3>
                     </div>
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          onClick={() => markNotificationAsRead(notification.id)}
-                          className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                        >
-                          <p className="text-sm text-gray-900 dark:text-gray-100">{notification.message}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.time}</p>
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <Bell className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
                         </div>
-                      ))}
+                      ) : (
+                        notifications.map((notification) => {
+                          const timestamp = notification.timestamp?.toDate?.();
+                          const timeAgo = timestamp ? getTimeAgo(timestamp) : '';
+
+                          return (
+                            <div
+                              key={notification.id}
+                              onClick={() => markNotificationAsRead(notification.id)}
+                              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  {notification.title && (
+                                    <p className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{notification.title}</p>
+                                  )}
+                                  <p className="text-sm text-gray-700 dark:text-gray-200">{notification.message}</p>
+                                  {notification.senderName && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">From: {notification.senderName}</p>
+                                  )}
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{timeAgo}</p>
+                                </div>
+                                {!notification.read && (
+                                  <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1"></span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 )}
@@ -1300,7 +1377,9 @@ const TenantDashboard = () => {
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Messages</h4>
                     <MessageSquare className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   </div>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">{messages.filter(m => !m.read).length}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
+                    {messages.filter(m => !m.read && m.senderId !== tenantData?.id).length}
+                  </p>
                   <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Unread</p>
                 </div>
               </div>
@@ -1615,24 +1694,47 @@ const TenantDashboard = () => {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-                  {messages.map((message) => (
-                    <div key={message.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition cursor-pointer">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-sm lg:text-base text-gray-900 dark:text-white">{message.subject}</h4>
-                            {!message.read && (
-                              <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0"></span>
-                            )}
+                <div className="space-y-4">
+                  {messages
+                    .sort((a, b) => {
+                      const timeA = a.timestamp?.toDate?.() || new Date(0);
+                      const timeB = b.timestamp?.toDate?.() || new Date(0);
+                      return timeB - timeA; // Most recent first
+                    })
+                    .map((message) => {
+                      const isFromMe = message.senderId === tenantData?.id;
+                      const displayName = isFromMe ? 'You' : (message.senderName || 'Unknown');
+                      const timestamp = message.timestamp?.toDate?.();
+                      const formattedDate = timestamp ?
+                        timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' +
+                        timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+
+                      return (
+                        <div key={message.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
+                                isFromMe ? 'bg-green-500' : 'bg-[#003366] dark:bg-[#004080]'
+                              }`}>
+                                {displayName.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-sm lg:text-base text-gray-900 dark:text-white">{displayName}</h4>
+                                {message.senderRole && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{message.senderRole.replace('_', ' ')}</p>
+                                )}
+                              </div>
+                              {!message.read && !isFromMe && (
+                                <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0"></span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{formattedDate}</span>
                           </div>
-                          <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-2">{message.from}</p>
-                          <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">{message.preview}</p>
+                          <p className="text-sm lg:text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{message.text}</p>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{message.date}</span>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })
+                  }
                 </div>
               )}
             </div>

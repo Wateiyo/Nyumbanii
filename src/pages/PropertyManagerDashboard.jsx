@@ -1106,6 +1106,7 @@ const PropertyManagerDashboard = () => {
         userProfile={userProfile}
         isOpen={isMessageModalOpen}
         onClose={handleCloseMessageModal}
+        senderRole="property_manager"
       />
     )}
   </>
