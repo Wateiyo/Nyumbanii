@@ -468,13 +468,22 @@ const PropertyManagerDashboard = () => {
 
   const handleUpdateViewingStatus = async (id, status) => {
     try {
+      console.log('📝 Updating viewing status:', { id, status });
       await updateDoc(doc(db, 'viewings', id), { status });
+      console.log('✅ Viewing status updated successfully');
       if (status === 'confirmed') {
-        alert('Viewing confirmed! Notification sent to prospect.');
+        alert('Viewing confirmed!');
+      } else if (status === 'declined') {
+        alert('Viewing declined.');
       }
     } catch (error) {
-      console.error('Error updating viewing:', error);
-      alert('Error updating viewing status.');
+      console.error('❌ Error updating viewing:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        id: id
+      });
+      alert(`Error updating viewing status: ${error.message}`);
     }
   };
 
