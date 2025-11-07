@@ -428,39 +428,25 @@ const PropertyManagerDashboard = () => {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
+    // Fetch all messages and filter client-side since Firestore doesn't support OR queries easily
     const messagesQuery = query(
       collection(db, 'messages'),
-      where('participants', 'array-contains', currentUser.uid),
       orderBy('timestamp', 'desc')
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => ({
+      const allMessages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      setMessages(messagesData);
-    }, (error) => {
-      console.error('Error fetching messages:', error);
-      // Fallback: fetch messages by checking senderId or recipientId
-      const altQuery = query(
-        collection(db, 'messages'),
-        orderBy('timestamp', 'desc')
+      // Filter messages where user is sender or recipient
+      const filteredMessages = allMessages.filter(msg =>
+        msg.senderId === currentUser.uid || msg.recipientId === currentUser.uid
       );
-
-      const altUnsubscribe = onSnapshot(altQuery, (snapshot) => {
-        const allMessages = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        // Filter messages where user is sender or recipient
-        const filteredMessages = allMessages.filter(msg =>
-          msg.senderId === currentUser.uid || msg.recipientId === currentUser.uid
-        );
-        setMessages(filteredMessages);
-      });
-
-      return altUnsubscribe;
+      console.log('💬 Fetched messages for property manager:', filteredMessages.length);
+      setMessages(filteredMessages);
+    }, (error) => {
+      console.error('❌ Error fetching messages:', error);
     });
 
     return unsubscribe;

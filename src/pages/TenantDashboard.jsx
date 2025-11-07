@@ -320,32 +320,33 @@ const TenantDashboard = () => {
     return () => unsubscribe();
   }, [tenantData]);
 
-  // Fetch messages from Firebase using conversationId
+  // Fetch messages from Firebase - fetch all and filter by sender/recipient
   useEffect(() => {
-    if (!tenantData?.id || !tenantData?.landlordId) return;
+    if (!currentUser?.uid) return;
 
-    // Create conversationId the same way MessageModal does
-    const ids = [tenantData.landlordId, tenantData.id].sort();
-    const conversationId = `${ids[0]}_${ids[1]}`;
-
+    // Fetch all messages and filter client-side
     const messagesQuery = query(
       collection(db, 'messages'),
-      where('conversationId', '==', conversationId),
-      orderBy('timestamp', 'asc')
+      orderBy('timestamp', 'desc')
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => ({
+      const allMessages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      setMessages(messagesData);
+      // Filter messages where tenant is sender or recipient
+      const filteredMessages = allMessages.filter(msg =>
+        msg.senderId === currentUser.uid || msg.recipientId === currentUser.uid
+      );
+      console.log('💬 Fetched messages for tenant:', filteredMessages.length);
+      setMessages(filteredMessages);
     }, (error) => {
-      console.error('Error fetching messages:', error);
+      console.error('❌ Error fetching messages:', error);
     });
 
     return () => unsubscribe();
-  }, [tenantData]);
+  }, [currentUser]);
 
   // Fetch documents from Firebase
   useEffect(() => {
