@@ -340,7 +340,8 @@ const PropertyManagerDashboard = () => {
     const propertyNames = properties.map(p => p.name);
     const q = query(
       collection(db, 'viewings'),
-      where('property', 'in', propertyNames.slice(0, 10))
+      where('property', 'in', propertyNames.slice(0, 10)),
+      orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -348,6 +349,7 @@ const PropertyManagerDashboard = () => {
         id: doc.id,
         ...doc.data()
       }));
+      console.log('📅 Fetched viewing bookings:', viewingsData.length, 'for properties:', propertyNames);
       setViewingBookings(viewingsData);
     });
 
@@ -466,7 +468,7 @@ const PropertyManagerDashboard = () => {
 
   const handleUpdateViewingStatus = async (id, status) => {
     try {
-      await updateDoc(doc(db, 'viewingBookings', id), { status });
+      await updateDoc(doc(db, 'viewings', id), { status });
       if (status === 'confirmed') {
         alert('Viewing confirmed! Notification sent to prospect.');
       }
