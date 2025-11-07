@@ -1053,6 +1053,26 @@ const handleEditProperty = async () => {
 
     console.log('Adding tenant with currentUser.uid:', currentUser.uid);
 
+    // Calculate next rent due date (based on lease start date's day of month)
+    const calculateNextRentDueDate = (leaseStartDate) => {
+      if (!leaseStartDate) return null;
+
+      const today = new Date();
+      const leaseStart = new Date(leaseStartDate);
+      const dayOfMonth = leaseStart.getDate();
+
+      // Create a date for this month on the same day
+      const thisMonthDue = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+
+      // If that date has passed, use next month
+      if (thisMonthDue < today) {
+        const nextMonthDue = new Date(today.getFullYear(), today.getMonth() + 1, dayOfMonth);
+        return nextMonthDue.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      }
+
+      return thisMonthDue.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    };
+
     // Add tenant to Firestore
     const tenantData = {
       name: newTenant.name,
@@ -1063,6 +1083,7 @@ const handleEditProperty = async () => {
       rent: parseFloat(newTenant.rent) || 0,
       leaseStart: newTenant.leaseStart,
       leaseEnd: newTenant.leaseEnd,
+      rentDueDate: calculateNextRentDueDate(newTenant.leaseStart), // Add rent due date
       landlordId: currentUser.uid,
       landlordName: userProfile?.displayName || 'Your Landlord',
       status: newTenant.sendInvitation ? 'pending' : 'active', // pending if sending invitation
@@ -2667,24 +2688,24 @@ const handleViewTenantDetails = (tenant) => {
 {currentView === 'listings' && (
   <>
     {/* Blue Banner */}
-    <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6">
+    <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
       <div>
         <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Property Listings</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">Manage your available units for rent</p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
         <button
           onClick={() => navigate('/listings')}
-          className="px-6 py-3 bg-white dark:bg-gray-800 border-2 border-[#003366] text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] hover:text-white dark:hover:bg-blue-600 transition font-semibold whitespace-nowrap flex items-center gap-2"
+          className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border-2 border-[#003366] text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] hover:text-white dark:hover:bg-blue-600 transition font-semibold whitespace-nowrap flex items-center justify-center gap-2 text-sm sm:text-base"
         >
-          <Eye className="w-5 h-5" />
+          <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
           View Listings
         </button>
         <button
           onClick={() => setShowListingModal(true)}
-          className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+          className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center justify-center gap-2 text-sm sm:text-base"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
           Create Listing
         </button>
       </div>
@@ -6016,51 +6037,51 @@ const handleViewTenantDetails = (tenant) => {
       {/* Add Tenant Modal */}
       {showTenantModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gradient-to-br dark:from-blue-900 dark:to-blue-950 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-blue-800 flex justify-between items-center sticky top-0 bg-white dark:bg-gradient-to-r dark:from-blue-900 dark:to-blue-950">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add New Tenant</h2>
-              <button onClick={() => setShowTenantModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-blue-300" /></button>
+              <button onClick={() => setShowTenantModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-blue-200 mb-1">Full Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
                 <input
                   type="text"
                   value={newTenant.name}
                   onChange={(e) => setNewTenant({...newTenant, name: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-blue-700 rounded-lg bg-white dark:bg-blue-950/50 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-blue-400 focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                   placeholder="John Doe"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-blue-200 mb-1">Email *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
                   <input
                     type="email"
                     value={newTenant.email}
                     onChange={(e) => setNewTenant({...newTenant, email: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-blue-700 rounded-lg bg-white dark:bg-blue-950/50 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-blue-400 focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                     placeholder="john@example.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-blue-200 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                   <input
                     type="tel"
                     value={newTenant.phone}
                     onChange={(e) => setNewTenant({...newTenant, phone: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-blue-700 rounded-lg bg-white dark:bg-blue-950/50 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-blue-400 focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                     placeholder="+254 712 345 678"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-blue-200 mb-1">Property *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property *</label>
                   <select
                     value={newTenant.property}
                     onChange={(e) => setNewTenant({...newTenant, property: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-blue-700 rounded-lg bg-white dark:bg-blue-950/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                   >
                     <option value="">Select Property</option>
                     {properties.map(prop => (
@@ -6069,12 +6090,12 @@ const handleViewTenantDetails = (tenant) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-blue-200 mb-1">Unit Number *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Number *</label>
                   <input
                     type="text"
                     value={newTenant.unit}
                     onChange={(e) => setNewTenant({...newTenant, unit: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-blue-700 rounded-lg bg-white dark:bg-blue-950/50 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-blue-400 focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                     placeholder="A12"
                   />
                 </div>
@@ -6085,13 +6106,13 @@ const handleViewTenantDetails = (tenant) => {
                   type="number"
                   value={newTenant.rent}
                   onChange={(e) => setNewTenant({...newTenant, rent: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-blue-700 rounded-lg bg-white dark:bg-blue-950/50 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-blue-400 focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                   placeholder="30000"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-blue-200 mb-1">Lease Start Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lease Start Date</label>
                   <input
                     type="date"
                     value={newTenant.leaseStart}
@@ -6100,7 +6121,7 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-blue-200 mb-1">Lease End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lease End Date</label>
                   <input
                     type="date"
                     value={newTenant.leaseEnd}
@@ -6110,23 +6131,30 @@ const handleViewTenantDetails = (tenant) => {
                 </div>
               </div>
             </div>
-        <div className="flex items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/40 rounded-lg mx-6">
-            <input
-             type="checkbox"
-             id="sendInvitation"
-             checked={newTenant.sendInvitation}
-             onChange={(e) => setNewTenant({...newTenant, sendInvitation: e.target.checked})}
-             className="w-4 h-4 text-[#003366] dark:text-blue-500 border-gray-300 dark:border-blue-600 rounded focus:ring-[#003366] dark:focus:ring-blue-500"
-             />
-          <label htmlFor="sendInvitation" className="text-sm text-gray-700 dark:text-blue-200">
-          Send invitation email to tenant
-          </label>
-        </div>
-            <div className="p-6 border-t border-gray-200 dark:border-blue-800 flex gap-3">
-              <button onClick={() => setShowTenantModal(false)} className="flex-1 px-4 py-2 bg-gray-200 dark:bg-blue-900/50 text-gray-700 dark:text-blue-200 rounded-lg hover:bg-gray-300 dark:hover:bg-blue-900/70 transition">
+            <div className="px-6 pb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                  <strong>Note:</strong> The tenant will receive an email invitation to create their account and access the tenant portal.
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="sendInvitation"
+                    checked={newTenant.sendInvitation}
+                    onChange={(e) => setNewTenant({...newTenant, sendInvitation: e.target.checked})}
+                    className="w-4 h-4 text-[#003366] border-gray-300 dark:border-blue-600 rounded focus:ring-[#003366]"
+                  />
+                  <label htmlFor="sendInvitation" className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                    Send invitation email to tenant
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              <button onClick={() => setShowTenantModal(false)} className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                 Cancel
               </button>
-              <button onClick={handleAddTenant} className="flex-1 px-4 py-2 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition">
+              <button onClick={handleAddTenant} className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition">
                 Add Tenant
               </button>
             </div>
