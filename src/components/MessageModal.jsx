@@ -281,8 +281,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
             </button>
           </div>
 
-          {/* Recipient Type Selector - Only for Property Managers */}
-          {senderRole === 'property_manager' && (
+          {/* Recipient Type Selector - Only for Property Managers composing NEW messages (no pre-selected tenant) */}
+          {senderRole === 'property_manager' && !tenant && (
             <div className="flex gap-2">
               <button
                 onClick={() => setRecipientType('tenant')}
@@ -317,8 +317,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
             </div>
           )}
 
-          {/* Recipient Selector Dropdown - Only for Property Managers */}
-          {senderRole === 'property_manager' && recipientList.length > 0 && (
+          {/* Recipient Selector Dropdown - Only for Property Managers composing NEW messages */}
+          {senderRole === 'property_manager' && !tenant && recipientList.length > 0 && (
             <div className="mt-2 relative">
               <button
                 onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
