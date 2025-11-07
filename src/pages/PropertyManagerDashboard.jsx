@@ -12,7 +12,8 @@ import {
   addDoc,
   serverTimestamp,
   getDocs,
-  deleteDoc
+  deleteDoc,
+  orderBy
 } from 'firebase/firestore';
 import {
   Home,
@@ -1223,16 +1224,14 @@ const PropertyManagerDashboard = () => {
     </div>
 
     {/* Message Modal */}
-    {selectedTenant && (
-      <MessageModal
-        tenant={selectedTenant}
-        currentUser={currentUser}
-        userProfile={userProfile}
-        isOpen={isMessageModalOpen}
-        onClose={handleCloseMessageModal}
-        senderRole="property_manager"
-      />
-    )}
+    <MessageModal
+      tenant={selectedTenant}
+      currentUser={currentUser}
+      userProfile={userProfile}
+      isOpen={isMessageModalOpen}
+      onClose={handleCloseMessageModal}
+      senderRole="property_manager"
+    />
   </>
   );
 };
