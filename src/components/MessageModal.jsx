@@ -6,17 +6,22 @@ import {
   where,
   orderBy,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  getDocs
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { X, Send, Check, CheckCheck, User } from 'lucide-react';
+import { X, Send, Check, CheckCheck, User, ChevronDown } from 'lucide-react';
 
-const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose }) => {
+const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, senderRole = 'landlord' }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
+  const [recipientType, setRecipientType] = useState('tenant');
+  const [recipientList, setRecipientList] = useState([]);
+  const [selectedRecipient, setSelectedRecipient] = useState(tenant);
+  const [showRecipientDropdown, setShowRecipientDropdown] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,21 +37,77 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose }) => 
     }
   }, [isOpen]);
 
+  // Initialize selected recipient when modal opens
+  useEffect(() => {
+    if (tenant) {
+      setSelectedRecipient(tenant);
+    }
+  }, [tenant]);
+
+  // Fetch available recipients based on type
+  useEffect(() => {
+    if (!isOpen || !currentUser || senderRole !== 'property_manager') return;
+
+    const fetchRecipients = async () => {
+      try {
+        let recipientsData = [];
+
+        if (recipientType === 'tenant') {
+          const tenantsQuery = query(collection(db, 'tenants'));
+          const snapshot = await getDocs(tenantsQuery);
+          recipientsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            type: 'tenant',
+            displayName: doc.data().name,
+            role: 'tenant'
+          }));
+        } else if (recipientType === 'landlord') {
+          const usersQuery = query(collection(db, 'users'), where('role', '==', 'landlord'));
+          const snapshot = await getDocs(usersQuery);
+          recipientsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            type: 'landlord',
+            displayName: doc.data().displayName || doc.data().email,
+            role: 'landlord'
+          }));
+        } else if (recipientType === 'maintenance') {
+          const teamQuery = query(collection(db, 'teamMembers'), where('role', '==', 'maintenance'));
+          const snapshot = await getDocs(teamQuery);
+          recipientsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            type: 'maintenance',
+            displayName: doc.data().name,
+            role: 'maintenance'
+          }));
+        }
+
+        setRecipientList(recipientsData);
+      } catch (error) {
+        console.error('Error fetching recipients:', error);
+      }
+    };
+
+    fetchRecipients();
+  }, [isOpen, recipientType, currentUser, senderRole]);
+
   // Create unique conversation ID
   const getConversationId = () => {
-    if (!currentUser || !tenant) return null;
-    const ids = [currentUser.uid, tenant.id].sort();
+    if (!currentUser || !selectedRecipient) return null;
+    const ids = [currentUser.uid, selectedRecipient.id].sort();
     const conversationId = `${ids[0]}_${ids[1]}`;
     console.log('🔑 ConversationId generated:', conversationId, {
       currentUserId: currentUser.uid,
-      tenantId: tenant.id
+      recipientId: selectedRecipient.id
     });
     return conversationId;
   };
 
   // Fetch messages
   useEffect(() => {
-    if (!isOpen || !tenant || !currentUser) return;
+    if (!isOpen || !selectedRecipient || !currentUser) return;
 
     const conversationId = getConversationId();
     if (!conversationId) return;
@@ -77,11 +138,11 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose }) => 
     });
 
     return () => unsubscribe();
-  }, [isOpen, tenant, currentUser]);
+  }, [isOpen, selectedRecipient, currentUser]);
 
   // Send message
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || loading) return;
+    if (!newMessage.trim() || loading || !selectedRecipient) return;
 
     const messageText = newMessage.trim();
     setNewMessage('');
@@ -89,26 +150,31 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose }) => 
 
     try {
       const conversationId = getConversationId();
+      const recipientRole = selectedRecipient.role || selectedRecipient.type || 'tenant';
+      const recipientName = selectedRecipient.displayName || selectedRecipient.name || 'Unknown';
+
       console.log('📤 Sending message:', {
         conversationId,
         text: messageText,
         senderId: currentUser.uid,
-        recipientId: tenant.id
+        recipientId: selectedRecipient.id,
+        senderRole,
+        recipientRole
       });
 
       const messageDoc = await addDoc(collection(db, 'messages'), {
         conversationId: conversationId,
         senderId: currentUser.uid,
-        senderName: userProfile?.displayName || 'Landlord',
-        senderRole: 'landlord',
-        recipientId: tenant.id,
-        recipientName: tenant.name,
-        recipientRole: 'tenant',
+        senderName: userProfile?.displayName || userProfile?.name || 'User',
+        senderRole: senderRole,
+        recipientId: selectedRecipient.id,
+        recipientName: recipientName,
+        recipientRole: recipientRole,
         text: messageText,
         timestamp: serverTimestamp(),
         read: false,
-        propertyName: tenant.property,
-        unit: tenant.unit
+        propertyName: selectedRecipient.property || '',
+        unit: selectedRecipient.unit || ''
       });
 
       console.log('✅ Message saved to Firestore:', messageDoc.id);
@@ -116,32 +182,37 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose }) => 
       // Create or update conversation document for easy access
       await addDoc(collection(db, 'conversations'), {
         conversationId: conversationId,
-        participants: [currentUser.uid, tenant.id],
+        participants: [currentUser.uid, selectedRecipient.id],
         participantNames: {
-          [currentUser.uid]: userProfile?.displayName || 'Landlord',
-          [tenant.id]: tenant.name
+          [currentUser.uid]: userProfile?.displayName || userProfile?.name || 'User',
+          [selectedRecipient.id]: recipientName
         },
         lastMessage: messageText,
         lastMessageTime: serverTimestamp(),
         lastMessageSender: currentUser.uid,
         unreadCount: {
           [currentUser.uid]: 0,
-          [tenant.id]: 1
+          [selectedRecipient.id]: 1
         },
-        propertyName: tenant.property,
-        unit: tenant.unit
+        propertyName: selectedRecipient.property || '',
+        unit: selectedRecipient.unit || ''
       });
 
-      // Optionally create a notification for the tenant
+      // Create notification for the recipient
+      const senderTitle = senderRole === 'landlord' ? 'Landlord' :
+                         senderRole === 'property_manager' ? 'Property Manager' :
+                         senderRole === 'maintenance' ? 'Maintenance Team' : 'User';
+
       await addDoc(collection(db, 'notifications'), {
-        userId: tenant.id,
+        userId: selectedRecipient.id,
         type: 'message',
-        title: 'New Message from Landlord',
+        title: `New Message from ${senderTitle}`,
         message: `You have a new message: "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"`,
         read: false,
         timestamp: serverTimestamp(),
         senderId: currentUser.uid,
-        senderName: userProfile?.displayName || 'Landlord'
+        senderName: userProfile?.displayName || userProfile?.name || senderTitle,
+        conversationId: conversationId
       });
 
     } catch (error) {
@@ -184,22 +255,99 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose }) => 
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl h-[600px] flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#003366] dark:bg-[#004080] rounded-full flex items-center justify-center text-white font-semibold">
-              {tenant.name.split(' ').map(n => n[0]).join('')}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#003366] dark:bg-[#004080] rounded-full flex items-center justify-center text-white font-semibold">
+                {selectedRecipient?.name?.split(' ').map(n => n[0]).join('') || selectedRecipient?.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{selectedRecipient?.displayName || selectedRecipient?.name || 'Select Recipient'}</h3>
+                {selectedRecipient?.property && selectedRecipient?.unit && (
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{selectedRecipient.property} - Unit {selectedRecipient.unit}</p>
+                )}
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">{tenant.name}</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400">{tenant.property} - Unit {tenant.unit}</p>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            >
+              <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-          >
-            <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
+
+          {/* Recipient Type Selector - Only for Property Managers */}
+          {senderRole === 'property_manager' && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRecipientType('tenant')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  recipientType === 'tenant'
+                    ? 'bg-[#003366] dark:bg-[#004080] text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Tenant
+              </button>
+              <button
+                onClick={() => setRecipientType('landlord')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  recipientType === 'landlord'
+                    ? 'bg-[#003366] dark:bg-[#004080] text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Landlord
+              </button>
+              <button
+                onClick={() => setRecipientType('maintenance')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  recipientType === 'maintenance'
+                    ? 'bg-[#003366] dark:bg-[#004080] text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Maintenance
+              </button>
+            </div>
+          )}
+
+          {/* Recipient Selector Dropdown - Only for Property Managers */}
+          {senderRole === 'property_manager' && recipientList.length > 0 && (
+            <div className="mt-2 relative">
+              <button
+                onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-left flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+              >
+                <span className="text-gray-900 dark:text-white">
+                  {selectedRecipient?.displayName || selectedRecipient?.name || 'Select a recipient'}
+                </span>
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              </button>
+
+              {showRecipientDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {recipientList.map((recipient) => (
+                    <button
+                      key={recipient.id}
+                      onClick={() => {
+                        setSelectedRecipient(recipient);
+                        setShowRecipientDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition"
+                    >
+                      {recipient.displayName || recipient.name}
+                      {recipient.property && recipient.unit && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                          ({recipient.property} - Unit {recipient.unit})
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Messages Area */}
