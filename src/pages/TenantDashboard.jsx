@@ -872,10 +872,15 @@ const TenantDashboard = () => {
     }
 
     try {
-      await deleteDoc(doc(db, 'messages', message.id));
+      console.log('Attempting to delete message:', message.id);
+      const messageRef = doc(db, 'messages', message.id);
+      await deleteDoc(messageRef);
       console.log('✅ Message deleted successfully');
+      alert('Message deleted successfully!');
     } catch (error) {
       console.error('❌ Error deleting message:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       alert(`Failed to delete message: ${error.message}`);
     }
   };
