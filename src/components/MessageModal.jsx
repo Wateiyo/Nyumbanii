@@ -362,7 +362,9 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
             <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
               <User className="w-16 h-16 mb-4 opacity-50" />
               <p>No messages yet</p>
-              <p className="text-sm mt-1">Start a conversation with {tenant.name}</p>
+              {selectedRecipient && (
+                <p className="text-sm mt-1">Start a conversation with {selectedRecipient.displayName || selectedRecipient.name}</p>
+              )}
             </div>
           ) : (
             <>

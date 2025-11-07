@@ -51,7 +51,8 @@ service cloud.firestore {
     match /viewings/{viewingId} {
       allow read: if isAuthenticated();
       allow create: if true; // Allow public users to book viewings from Listings page
-      allow update, delete: if isAuthenticated();
+      allow update: if isAuthenticated(); // Allow any authenticated user to update status
+      allow delete: if isAuthenticated();
     }
     
     // Notifications collection
