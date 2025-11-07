@@ -13,20 +13,20 @@ import {
   useNotifications,
   useListings,
   useMemos,
-  useTeamMembers,
-  useAllMessages
+  useTeamMembers
 } from '../hooks/useRealtimeData';
 import { useNavigate } from 'react-router-dom';
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
   onSnapshot,
-  query, 
+  query,
   where,
-  serverTimestamp 
+  serverTimestamp,
+  orderBy
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
@@ -229,7 +229,8 @@ const { viewings, loading: loadingViewings } = useViewings(currentUser?.uid, 'la
 const { listings, loading: loadingListings } = useListings(currentUser?.uid);
 const { memos, loading: loadingMemos } = useMemos(currentUser?.uid, 'landlord');
 const { teamMembers, loading: loadingTeam } = useTeamMembers(currentUser?.uid);
-const { messages, loading: loadingMessages } = useAllMessages(currentUser?.uid, 'landlord');
+// Disabled old hook - now using conversation-based messaging
+// const { messages, loading: loadingMessages } = useAllMessages(currentUser?.uid, 'landlord');
   
   // Mock maintenance data for display
   const mockMaintenanceRequests = [
@@ -726,11 +727,15 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
 
   // Process messages into conversations
   const processConversations = (messages, type) => {
+    console.log(`📨 Processing ${messages.length} ${type} messages into conversations`);
     const conversationMap = new Map();
 
     messages.forEach(message => {
       const conversationId = message.conversationId;
-      if (!conversationId) return;
+      if (!conversationId) {
+        console.log('⚠️ Message missing conversationId:', message.id);
+        return;
+      }
 
       const existingConv = conversationMap.get(conversationId);
 
@@ -753,25 +758,32 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
       }
     });
 
+    console.log('🗂️ Created', conversationMap.size, 'conversation entries');
+
     setConversations(prev => {
       const merged = new Map(prev.map(c => [c.conversationId, c]));
       conversationMap.forEach((value, key) => {
         merged.set(key, value);
       });
-      return Array.from(merged.values()).sort((a, b) => {
+      const sorted = Array.from(merged.values()).sort((a, b) => {
         const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
         const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
         return bTime - aTime;
       });
+      console.log('💾 Total conversations after merge:', sorted.length);
+      return sorted;
     });
   };
 
   // Fetch messages for selected conversation
   useEffect(() => {
     if (!selectedConversation?.conversationId) {
+      console.log('🚫 No selected conversation');
       setConversationMessages([]);
       return;
     }
+
+    console.log('💬 Loading conversation:', selectedConversation.conversationId);
 
     const q = query(
       collection(db, 'messages'),
@@ -780,6 +792,7 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('📬 Loaded', snapshot.size, 'messages for conversation');
       const messages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -790,6 +803,13 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
       setTimeout(() => {
         conversationMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+    }, (error) => {
+      console.error('❌ Error loading conversation messages:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        conversationId: selectedConversation.conversationId
+      });
     });
 
     return () => unsubscribe();
@@ -4302,7 +4322,10 @@ const handleViewTenantDetails = (tenant) => {
             .map(conversation => (
               <div
                 key={conversation.conversationId}
-                onClick={() => setSelectedConversation(conversation)}
+                onClick={() => {
+                  console.log('👆 Clicked conversation:', conversation);
+                  setSelectedConversation(conversation);
+                }}
                 className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition ${
                   selectedConversation?.conversationId === conversation.conversationId ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                 }`}
