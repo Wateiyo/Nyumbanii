@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { 
+import {
   Home,
   MapPin,
   BedDouble,
@@ -17,7 +17,9 @@ import {
   CheckCircle,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LogOut,
+  User
 } from 'lucide-react';
 
 const ImageCarousel = ({ images, alt }) => {
@@ -106,12 +108,39 @@ const Listings = () => {
     references: ''
   });
   const navigate = useNavigate();
-  const { currentUser } = useAuth(); 
+  const { currentUser, logout } = useAuth();
 
   // STATE FOR REAL-TIME LISTINGS FROM FIREBASE
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [propertyDetails, setPropertyDetails] = useState({});
+  const [userData, setUserData] = useState(null);
+
+  // FETCH USER DATA IF LOGGED IN
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (currentUser) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setUserData(data);
+            // Pre-populate booking form with user data
+            setBookingData(prev => ({
+              ...prev,
+              name: data.fullName || data.name || '',
+              email: data.email || currentUser.email || '',
+              phone: data.phone || ''
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser]);
 
   // FETCH ALL PROPERTIES TO GET LOCATION DATA
   useEffect(() => {
@@ -234,11 +263,37 @@ const Listings = () => {
             </a>
 
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/login')}
-                className="bg-[#003366] hover:bg-[#002244] text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+              {currentUser ? (
+                <>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <User className="w-5 h-5 text-[#003366]" />
+                    <span className="font-medium">
+                      {userData?.fullName || userData?.name || currentUser.email}
+                    </span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await logout();
+                        navigate('/');
+                      } catch (error) {
+                        console.error('Error logging out:', error);
+                      }
+                    }}
+                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => navigate('/login')}
+                  className="bg-[#003366] hover:bg-[#002244] text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                >
                   Login
-              </button>
+                </button>
+              )}
             </div>
           </div>
         </div>
