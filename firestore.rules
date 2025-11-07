@@ -9,7 +9,8 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated(); // Allow authenticated users to read user profiles
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
     // Landlord Settings collection - only accessible by the landlord themselves
