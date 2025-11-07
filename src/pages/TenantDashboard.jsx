@@ -866,6 +866,20 @@ const TenantDashboard = () => {
     }
   };
 
+  const handleDeleteMessage = async (message) => {
+    if (!window.confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'messages', message.id));
+      console.log('✅ Message deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting message:', error);
+      alert(`Failed to delete message: ${error.message}`);
+    }
+  };
+
   const handleDeleteMaintenanceRequest = async (request) => {
     if (!window.confirm(`Are you sure you want to delete this maintenance request for "${request.issue}"?`)) {
       return;
@@ -1378,7 +1392,7 @@ const TenantDashboard = () => {
                     <MessageSquare className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   </div>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
-                    {messages.filter(m => !m.read && m.senderId !== tenantData?.id).length}
+                    {messages.filter(m => !m.read && m.senderId !== currentUser?.uid).length}
                   </p>
                   <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Unread</p>
                 </div>
@@ -1702,7 +1716,7 @@ const TenantDashboard = () => {
                       return timeB - timeA; // Most recent first
                     })
                     .map((message) => {
-                      const isFromMe = message.senderId === tenantData?.id;
+                      const isFromMe = message.senderId === currentUser?.uid;
                       const displayName = isFromMe ? 'You' : (message.senderName || 'Unknown');
                       const timestamp = message.timestamp?.toDate?.();
                       const formattedDate = timestamp ?
@@ -1710,9 +1724,9 @@ const TenantDashboard = () => {
                         timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
 
                       return (
-                        <div key={message.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+                        <div key={message.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition group">
                           <div className="flex items-start justify-between gap-4 mb-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-1">
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
                                 isFromMe ? 'bg-green-500' : 'bg-[#003366] dark:bg-[#004080]'
                               }`}>
@@ -1728,7 +1742,16 @@ const TenantDashboard = () => {
                                 <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0"></span>
                               )}
                             </div>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{formattedDate}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{formattedDate}</span>
+                              <button
+                                onClick={() => handleDeleteMessage(message)}
+                                className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                title="Delete message"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                           <p className="text-sm lg:text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{message.text}</p>
                         </div>
