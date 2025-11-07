@@ -85,13 +85,18 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
         }
 
         setRecipientList(recipientsData);
+
+        // Auto-select first recipient if no tenant was pre-selected
+        if (!tenant && recipientsData.length > 0 && !selectedRecipient) {
+          setSelectedRecipient(recipientsData[0]);
+        }
       } catch (error) {
         console.error('Error fetching recipients:', error);
       }
     };
 
     fetchRecipients();
-  }, [isOpen, recipientType, currentUser, senderRole]);
+  }, [isOpen, recipientType, currentUser, senderRole, tenant, selectedRecipient]);
 
   // Create unique conversation ID
   const getConversationId = () => {

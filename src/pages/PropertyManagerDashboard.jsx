@@ -11,7 +11,8 @@ import {
   updateDoc,
   addDoc,
   serverTimestamp,
-  getDocs
+  getDocs,
+  deleteDoc
 } from 'firebase/firestore';
 import {
   Home,
@@ -29,7 +30,9 @@ import {
   Menu,
   DollarSign,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
 
@@ -52,6 +55,7 @@ const PropertyManagerDashboard = () => {
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [conversations, setConversations] = useState([]);
+  const [isComposingNewMessage, setIsComposingNewMessage] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [maintenanceForm, setMaintenanceForm] = useState({
     property: '',
@@ -132,11 +136,54 @@ const PropertyManagerDashboard = () => {
   const handleOpenMessageModal = (tenant) => {
     setSelectedTenant(tenant);
     setIsMessageModalOpen(true);
+    setIsComposingNewMessage(false);
+  };
+
+  const handleComposeNewMessage = () => {
+    setSelectedTenant(null); // Clear selected tenant to trigger recipient selection
+    setIsComposingNewMessage(true);
+    setIsMessageModalOpen(true);
   };
 
   const handleCloseMessageModal = () => {
     setIsMessageModalOpen(false);
     setSelectedTenant(null);
+    setIsComposingNewMessage(false);
+  };
+
+  const handleDeleteConversation = async (conversationId, conversationIdString, e) => {
+    e.stopPropagation(); // Prevent opening the conversation
+
+    if (!window.confirm('Are you sure you want to delete this conversation? This will delete all messages in this thread.')) {
+      return;
+    }
+
+    try {
+      // Delete all messages in the conversation
+      const messagesQuery = query(
+        collection(db, 'messages'),
+        where('conversationId', '==', conversationIdString)
+      );
+
+      const messagesSnapshot = await getDocs(messagesQuery);
+      const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      // Delete all conversation documents
+      const conversationsQuery = query(
+        collection(db, 'conversations'),
+        where('conversationId', '==', conversationIdString)
+      );
+
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      const conversationDeletePromises = conversationsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(conversationDeletePromises);
+
+      console.log('✅ Conversation deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting conversation:', error);
+      alert('Failed to delete conversation. Please try again.');
+    }
   };
 
   const handleMaintenanceFormChange = (e) => {
@@ -973,17 +1020,33 @@ const PropertyManagerDashboard = () => {
           )}
 
           {currentView === 'messages' && (
-            <div className="bg-white rounded-xl shadow-sm">
-              <div className="p-6 border-b">
-                <h2 className="text-xl font-bold text-gray-900">Messages</h2>
-                <p className="text-sm text-gray-600 mt-1">Conversations with tenants</p>
+            <div className="space-y-6">
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Messages</h3>
+                  <p className="text-sm text-gray-600">Communicate with tenants, landlords, and maintenance staff</p>
+                </div>
+                <button
+                  onClick={handleComposeNewMessage}
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  New Message
+                </button>
               </div>
-              <div className="divide-y">
+
+              <div className="bg-white rounded-xl shadow-sm">
+                <div className="p-6 border-b">
+                  <h2 className="text-xl font-bold text-gray-900">Conversations</h2>
+                  <p className="text-sm text-gray-600 mt-1">{conversations.length} active conversation{conversations.length !== 1 ? 's' : ''}</p>
+                </div>
+                <div className="divide-y">
                 {conversations.length === 0 ? (
                   <div className="p-12 text-center">
                     <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500">No conversations yet</p>
-                    <p className="text-sm text-gray-400 mt-2">Messages with tenants will appear here</p>
+                    <p className="text-sm text-gray-400 mt-2">Start a new conversation by clicking "Compose New"</p>
                   </div>
                 ) : (
                   conversations.map((conversation) => {
@@ -994,20 +1057,22 @@ const PropertyManagerDashboard = () => {
                     return (
                       <div
                         key={conversation.id}
-                        onClick={() => {
-                          // Find tenant from the conversation
-                          const tenant = tenants.find(t => t.id === otherUserId);
-                          if (tenant) {
-                            handleOpenMessageModal(tenant);
-                          }
-                        }}
-                        className="p-4 hover:bg-gray-50 cursor-pointer transition"
+                        className="p-4 hover:bg-gray-50 transition group"
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                             {otherUserName.split(' ').map(n => n[0]).join('')}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              // Find tenant from the conversation
+                              const tenant = tenants.find(t => t.id === otherUserId);
+                              if (tenant) {
+                                handleOpenMessageModal(tenant);
+                              }
+                            }}
+                          >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-gray-900 truncate">{otherUserName}</h3>
@@ -1036,12 +1101,20 @@ const PropertyManagerDashboard = () => {
                               {conversation.lastMessage}
                             </p>
                           </div>
+                          <button
+                            onClick={(e) => handleDeleteConversation(conversation.id, conversation.conversationId, e)}
+                            className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all flex-shrink-0"
+                            title="Delete conversation"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     );
                   })
                 )}
               </div>
+            </div>
             </div>
           )}
 
@@ -1099,16 +1172,14 @@ const PropertyManagerDashboard = () => {
     </div>
 
     {/* Message Modal */}
-    {selectedTenant && (
-      <MessageModal
-        tenant={selectedTenant}
-        currentUser={currentUser}
-        userProfile={userProfile}
-        isOpen={isMessageModalOpen}
-        onClose={handleCloseMessageModal}
-        senderRole="property_manager"
-      />
-    )}
+    <MessageModal
+      tenant={selectedTenant}
+      currentUser={currentUser}
+      userProfile={userProfile}
+      isOpen={isMessageModalOpen}
+      onClose={handleCloseMessageModal}
+      senderRole="property_manager"
+    />
   </>
   );
 };
