@@ -81,7 +81,9 @@ import {
   FileText,
   Calculator,
   Edit,
-  MessageSquare
+  MessageSquare,
+  Check,
+  CheckCheck
 } from 'lucide-react';
 
 const LandlordDashboard = () => {

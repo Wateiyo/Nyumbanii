@@ -5,13 +5,13 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'fire
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  Home, 
-  DollarSign, 
-  Wrench, 
-  FileText, 
-  Bell, 
-  Settings, 
+import {
+  Home,
+  DollarSign,
+  Wrench,
+  FileText,
+  Bell,
+  Settings,
   LogOut,
   CreditCard,
   Calendar,
@@ -35,7 +35,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Trash2
+  Trash2,
+  Check,
+  CheckCheck,
+  User
 } from 'lucide-react';
 
 // Initialize Firebase services
