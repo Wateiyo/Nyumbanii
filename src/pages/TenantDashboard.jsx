@@ -849,8 +849,17 @@ const TenantDashboard = () => {
     }
 
     try {
-      // Delete from Firestore
-      await deleteDoc(doc(db, 'maintenanceRequests', request.id));
+      // Delete from maintenance collection (primary collection for tenant dashboard)
+      await deleteDoc(doc(db, 'maintenance', request.id));
+
+      // Also try to delete from maintenanceRequests collection (for compatibility)
+      // This might not exist for older requests, so we catch errors silently
+      try {
+        await deleteDoc(doc(db, 'maintenanceRequests', request.id));
+      } catch (compatError) {
+        console.log('Note: Request not found in maintenanceRequests collection (this is okay for older requests)');
+      }
+
       alert('Maintenance request deleted successfully!');
     } catch (error) {
       console.error('Error deleting maintenance request:', error);
