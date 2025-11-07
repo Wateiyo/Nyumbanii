@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, deleteDoc, orderBy, getDocs } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
@@ -320,13 +320,18 @@ const TenantDashboard = () => {
     return () => unsubscribe();
   }, [tenantData]);
 
-  // Fetch messages from Firebase
+  // Fetch messages from Firebase using conversationId
   useEffect(() => {
-    if (!tenantData?.id) return;
+    if (!tenantData?.id || !tenantData?.landlordId) return;
+
+    // Create conversationId the same way MessageModal does
+    const ids = [tenantData.landlordId, tenantData.id].sort();
+    const conversationId = `${ids[0]}_${ids[1]}`;
 
     const messagesQuery = query(
       collection(db, 'messages'),
-      where('tenantId', '==', tenantData.id)
+      where('conversationId', '==', conversationId),
+      orderBy('timestamp', 'asc')
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -635,7 +640,61 @@ const TenantDashboard = () => {
         landlordId: tenantData.landlordId
       };
 
+      // Save maintenance request
       await addDoc(collection(db, 'maintenance'), maintenanceData);
+
+      // Also save to maintenanceRequests collection for compatibility
+      await addDoc(collection(db, 'maintenanceRequests'), {
+        ...maintenanceData,
+        property: tenantData.propertyName || '',
+        unit: tenantData.unit || ''
+      });
+
+      // Create notification for landlord
+      if (tenantData.landlordId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: tenantData.landlordId,
+          title: 'New Maintenance Request',
+          message: `${tenantData.name} has submitted a ${newMaintenance.priority} priority maintenance request: ${newMaintenance.issue} at ${tenantData.propertyName} (Unit: ${tenantData.unit})`,
+          type: 'maintenance',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      // Find property managers assigned to this property and notify them
+      if (tenantData.propertyId && tenantData.landlordId) {
+        const teamMembersQuery = query(
+          collection(db, 'teamMembers'),
+          where('landlordId', '==', tenantData.landlordId),
+          where('role', '==', 'property_manager')
+        );
+
+        const teamMembersSnapshot = await getDocs(teamMembersQuery);
+
+        // Create notifications for property managers assigned to this property
+        const notificationPromises = [];
+        teamMembersSnapshot.forEach((doc) => {
+          const teamMemberData = doc.data();
+          if (teamMemberData.assignedProperties && teamMemberData.assignedProperties.includes(tenantData.propertyId)) {
+            // This property manager is assigned to this property
+            if (teamMemberData.userId) {
+              notificationPromises.push(
+                addDoc(collection(db, 'notifications'), {
+                  userId: teamMemberData.userId,
+                  title: 'New Maintenance Request',
+                  message: `${tenantData.name} has submitted a ${newMaintenance.priority} priority maintenance request: ${newMaintenance.issue} at ${tenantData.propertyName} (Unit: ${tenantData.unit})`,
+                  type: 'maintenance',
+                  read: false,
+                  createdAt: serverTimestamp()
+                })
+              );
+            }
+          }
+        });
+
+        await Promise.all(notificationPromises);
+      }
 
       setShowMaintenanceModal(false);
       setNewMaintenance({ issue: '', description: '', priority: 'Medium', location: '' });
@@ -781,6 +840,21 @@ const TenantDashboard = () => {
     } catch (error) {
       console.error('Error deleting document:', error);
       alert(`Failed to delete document: ${error.message}`);
+    }
+  };
+
+  const handleDeleteMaintenanceRequest = async (request) => {
+    if (!window.confirm(`Are you sure you want to delete this maintenance request for "${request.issue}"?`)) {
+      return;
+    }
+
+    try {
+      // Delete from Firestore
+      await deleteDoc(doc(db, 'maintenanceRequests', request.id));
+      alert('Maintenance request deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting maintenance request:', error);
+      alert(`Failed to delete maintenance request: ${error.message}`);
     }
   };
 
@@ -1390,8 +1464,8 @@ const TenantDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                 {maintenanceRequests.map((request) => (
                   <div key={request.id} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div className="flex-1">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
                           <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white">{request.issue}</h4>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -1412,8 +1486,12 @@ const TenantDashboard = () => {
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{request.description}</p>
                         <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Reported on {request.date}</p>
                       </div>
-                      <button className="self-end lg:self-center text-[#003366] dark:text-blue-400 hover:text-[#002244] dark:hover:text-blue-300 text-xs lg:text-sm font-medium whitespace-nowrap">
-                        View Details
+                      <button
+                        onClick={() => handleDeleteMaintenanceRequest(request)}
+                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition flex-shrink-0"
+                        title="Delete maintenance request"
+                      >
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
@@ -1558,7 +1636,7 @@ const TenantDashboard = () => {
             <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Looking for Properties in Other Areas?</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Browse all available properties from different landlords and locations</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Browse all available properties from different locations</p>
             </div>
             <button
            onClick={() => navigate('/listings')}

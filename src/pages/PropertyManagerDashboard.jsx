@@ -51,6 +51,7 @@ const PropertyManagerDashboard = () => {
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [conversations, setConversations] = useState([]);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [maintenanceForm, setMaintenanceForm] = useState({
     property: '',
@@ -269,7 +270,7 @@ const PropertyManagerDashboard = () => {
 
     const propertyNames = properties.map(p => p.name);
     const q = query(
-      collection(db, 'viewingBookings'),
+      collection(db, 'viewings'),
       where('property', 'in', propertyNames.slice(0, 10))
     );
 
@@ -325,6 +326,32 @@ const PropertyManagerDashboard = () => {
 
     return unsubscribe;
   }, [teamMember]);
+
+  // Fetch conversations for property manager
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const q = query(
+      collection(db, 'conversations'),
+      where('participants', 'array-contains', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const conversationsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      // Sort by last message time
+      conversationsData.sort((a, b) => {
+        const timeA = a.lastMessageTime?.toDate?.() || new Date(0);
+        const timeB = b.lastMessageTime?.toDate?.() || new Date(0);
+        return timeB - timeA;
+      });
+      setConversations(conversationsData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
 
   const handleUpdateViewingStatus = async (id, status) => {
     try {
@@ -426,13 +453,13 @@ const PropertyManagerDashboard = () => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'properties', 'viewings', 'tenants', 'maintenance', 'calendar'].map((view) => {
-            const icons = { dashboard: Home, properties: Building, viewings: CalendarCheck, tenants: Users, maintenance: Wrench, calendar: Calendar };
+          {['dashboard', 'properties', 'viewings', 'tenants', 'maintenance', 'messages', 'calendar'].map((view) => {
+            const icons = { dashboard: Home, properties: Building, viewings: CalendarCheck, tenants: Users, maintenance: Wrench, messages: MessageSquare, calendar: Calendar };
             const Icon = icons[view];
             return (
-              <button 
-                key={view} 
-                onClick={() => { setCurrentView(view); setSidebarOpen(false); }} 
+              <button
+                key={view}
+                onClick={() => { setCurrentView(view); setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}
               >
                 <Icon className="w-5 h-5" />
@@ -943,6 +970,79 @@ const PropertyManagerDashboard = () => {
               )}
             </div>
             </>
+          )}
+
+          {currentView === 'messages' && (
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="p-6 border-b">
+                <h2 className="text-xl font-bold text-gray-900">Messages</h2>
+                <p className="text-sm text-gray-600 mt-1">Conversations with tenants</p>
+              </div>
+              <div className="divide-y">
+                {conversations.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No conversations yet</p>
+                    <p className="text-sm text-gray-400 mt-2">Messages with tenants will appear here</p>
+                  </div>
+                ) : (
+                  conversations.map((conversation) => {
+                    const otherUserId = conversation.participants.find(id => id !== currentUser.uid);
+                    const otherUserName = conversation.participantNames?.[otherUserId] || 'Unknown';
+                    const unreadCount = conversation.unreadCount?.[currentUser.uid] || 0;
+
+                    return (
+                      <div
+                        key={conversation.id}
+                        onClick={() => {
+                          // Find tenant from the conversation
+                          const tenant = tenants.find(t => t.id === otherUserId);
+                          if (tenant) {
+                            handleOpenMessageModal(tenant);
+                          }
+                        }}
+                        className="p-4 hover:bg-gray-50 cursor-pointer transition"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                            {otherUserName.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 truncate">{otherUserName}</h3>
+                                {conversation.propertyName && (
+                                  <p className="text-xs text-gray-500">
+                                    {conversation.propertyName} {conversation.unit && `- Unit ${conversation.unit}`}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end gap-1">
+                                <span className="text-xs text-gray-500">
+                                  {conversation.lastMessageTime && new Date(conversation.lastMessageTime.toDate()).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })}
+                                </span>
+                                {unreadCount > 0 && (
+                                  <span className="bg-[#003366] text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                                    {unreadCount}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1 truncate">
+                              {conversation.lastMessageSender === currentUser.uid ? 'You: ' : ''}
+                              {conversation.lastMessage}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           )}
 
           {currentView === 'calendar' && (
