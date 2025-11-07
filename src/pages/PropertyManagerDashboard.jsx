@@ -32,7 +32,8 @@ import {
   Clock,
   MessageSquare,
   Trash2,
-  Plus
+  Plus,
+  Send
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
 
@@ -55,6 +56,7 @@ const PropertyManagerDashboard = () => {
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [conversations, setConversations] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [isComposingNewMessage, setIsComposingNewMessage] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [maintenanceForm, setMaintenanceForm] = useState({
@@ -149,6 +151,25 @@ const PropertyManagerDashboard = () => {
     setIsMessageModalOpen(false);
     setSelectedTenant(null);
     setIsComposingNewMessage(false);
+  };
+
+  const handleDeleteMessage = async (message) => {
+    if (!window.confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    try {
+      console.log('Attempting to delete message:', message.id);
+      const messageRef = doc(db, 'messages', message.id);
+      await deleteDoc(messageRef);
+      console.log('✅ Message deleted successfully');
+      alert('Message deleted successfully!');
+    } catch (error) {
+      console.error('❌ Error deleting message:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      alert(`Failed to delete message: ${error.message}`);
+    }
   };
 
   const handleDeleteConversation = async (conversationId, conversationIdString, e) => {
@@ -395,6 +416,48 @@ const PropertyManagerDashboard = () => {
         return timeB - timeA;
       });
       setConversations(conversationsData);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  // Fetch all messages for property manager
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const messagesQuery = query(
+      collection(db, 'messages'),
+      where('participants', 'array-contains', currentUser.uid),
+      orderBy('timestamp', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      const messagesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMessages(messagesData);
+    }, (error) => {
+      console.error('Error fetching messages:', error);
+      // Fallback: fetch messages by checking senderId or recipientId
+      const altQuery = query(
+        collection(db, 'messages'),
+        orderBy('timestamp', 'desc')
+      );
+
+      const altUnsubscribe = onSnapshot(altQuery, (snapshot) => {
+        const allMessages = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        // Filter messages where user is sender or recipient
+        const filteredMessages = allMessages.filter(msg =>
+          msg.senderId === currentUser.uid || msg.recipientId === currentUser.uid
+        );
+        setMessages(filteredMessages);
+      });
+
+      return altUnsubscribe;
     });
 
     return unsubscribe;
@@ -1020,84 +1083,89 @@ const PropertyManagerDashboard = () => {
           )}
 
           {currentView === 'messages' && (
-            <div className="bg-white rounded-xl shadow-sm">
-              <div className="p-6 border-b">
-                <h2 className="text-xl font-bold text-gray-900">Messages</h2>
-                <p className="text-sm text-gray-600 mt-1">Conversations</p>
+            <div className="space-y-6">
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Messages</h3>
+                  <p className="text-sm text-gray-600">Communicate with tenants, landlords, and maintenance staff</p>
+                </div>
+                <button
+                  onClick={handleComposeNewMessage}
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  New Message
+                </button>
               </div>
-              <div className="divide-y">
-                {conversations.length === 0 ? (
-                  <div className="p-12 text-center">
-                    <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No conversations yet</p>
-                    <p className="text-sm text-gray-400 mt-2">Messages bwill appear here</p>
-                  </div>
-                ) : (
-                  conversations.map((conversation) => {
-                    const otherUserId = conversation.participants.find(id => id !== currentUser.uid);
-                    const otherUserName = conversation.participantNames?.[otherUserId] || 'Unknown';
-                    const unreadCount = conversation.unreadCount?.[currentUser.uid] || 0;
+
+              {/* Messages as individual cards */}
+              {messages.length === 0 ? (
+                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
+                  <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Messages Yet</h3>
+                  <p className="text-gray-600 mb-6">
+                    You haven't sent or received any messages yet.
+                  </p>
+                  <button
+                    onClick={handleComposeNewMessage}
+                    className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
+                  >
+                    <Send className="w-5 h-5" />
+                    Send Your First Message
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => {
+                    const isFromMe = message.senderId === currentUser?.uid;
+                    const displayName = isFromMe ? 'You' : (message.senderName || 'Unknown');
+                    const timestamp = message.timestamp?.toDate?.();
+                    const formattedDate = timestamp ?
+                      timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' +
+                      timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
 
                     return (
-                      <div
-                        key={conversation.id}
-                        className="p-4 hover:bg-gray-50 transition group"
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                            {otherUserName.split(' ').map(n => n[0]).join('')}
-                          </div>
-                          <div
-                            className="flex-1 min-w-0 cursor-pointer"
-                            onClick={() => {
-                              // Find tenant from the conversation
-                              const tenant = tenants.find(t => t.id === otherUserId);
-                              if (tenant) {
-                                handleOpenMessageModal(tenant);
-                              }
-                            }}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 truncate">{otherUserName}</h3>
-                                {conversation.propertyName && (
-                                  <p className="text-xs text-gray-500">
-                                    {conversation.propertyName} {conversation.unit && `- Unit ${conversation.unit}`}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex flex-col items-end gap-1">
-                                <span className="text-xs text-gray-500">
-                                  {conversation.lastMessageTime && new Date(conversation.lastMessageTime.toDate()).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric'
-                                  })}
-                                </span>
-                                {unreadCount > 0 && (
-                                  <span className="bg-[#003366] text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
-                                    {unreadCount}
-                                  </span>
-                                )}
-                              </div>
+                      <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition group">
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="flex items-center gap-2 flex-1">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
+                              isFromMe ? 'bg-green-500' : 'bg-[#003366]'
+                            }`}>
+                              {displayName.split(' ').map(n => n[0]).join('').substring(0, 2)}
                             </div>
-                            <p className="text-sm text-gray-600 mt-1 truncate">
-                              {conversation.lastMessageSender === currentUser.uid ? 'You: ' : ''}
-                              {conversation.lastMessage}
-                            </p>
+                            <div>
+                              <h4 className="font-semibold text-sm lg:text-base text-gray-900">{displayName}</h4>
+                              {message.senderRole && (
+                                <p className="text-xs text-gray-500 capitalize">{message.senderRole.replace('_', ' ')}</p>
+                              )}
+                            </div>
+                            {!message.read && !isFromMe && (
+                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                            )}
                           </div>
-                          <button
-                            onClick={(e) => handleDeleteConversation(conversation.id, conversation.conversationId, e)}
-                            className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all flex-shrink-0"
-                            title="Delete conversation"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 flex-shrink-0">{formattedDate}</span>
+                            <button
+                              onClick={() => handleDeleteMessage(message)}
+                              className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                              title="Delete message"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
+                        <p className="text-sm lg:text-base text-gray-700 whitespace-pre-wrap">{message.text}</p>
+                        {message.recipientName && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            {isFromMe ? `To: ${message.recipientName}` : `From: ${message.senderName}`}
+                          </p>
+                        )}
                       </div>
                     );
-                  })
-                )}
-              </div>
+                  })}
+                </div>
+              )}
             </div>
           )}
 
