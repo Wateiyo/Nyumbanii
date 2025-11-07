@@ -58,13 +58,24 @@ const InvitationModal = ({
 
   // Share via WhatsApp
   const handleWhatsAppShare = () => {
-    const message = encodeURIComponent(
-      `Hello ${invitationData.name}!\n\n` +
-      `You've been invited to join Nyumbanii as a ${invitationData.role === 'property_manager' ? 'Property Manager' : invitationData.role === 'maintenance' ? 'Maintenance Staff' : 'Tenant'}.\n\n` +
-      `Click the link below to complete your registration:\n` +
+    const roleText = invitationData.role === 'property_manager' ? 'Property Manager' :
+                     invitationData.role === 'maintenance' ? 'Maintenance Staff' :
+                     'Tenant';
+
+    let messageText = `Hello ${invitationData.name}!\n\n` +
+      `You've been invited to join Nyumbanii as a ${roleText}.\n\n`;
+
+    // Add property details for tenants
+    if (invitationData.role === 'tenant' && invitationData.property) {
+      messageText += `Property: ${invitationData.property}\n` +
+                     `Unit: ${invitationData.unit}\n\n`;
+    }
+
+    messageText += `Click the link below to complete your registration:\n` +
       `${getInvitationLink()}\n\n` +
-      `Welcome aboard!`
-    );
+      `Welcome aboard!`;
+
+    const message = encodeURIComponent(messageText);
 
     // For mobile, use WhatsApp app link, for desktop use web.whatsapp.com
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -127,8 +138,23 @@ const InvitationModal = ({
         ? 'Maintenance Staff'
         : 'Tenant';
 
-      wrapText(ctx, `You have been invited to join as a ${roleText}.`, 80, 380, canvas.width - 160, 30);
-      wrapText(ctx, 'Scan the QR code below or use the invitation link to complete your registration.', 80, 450, canvas.width - 160, 30);
+      let currentY = 380;
+      wrapText(ctx, `You have been invited to join as a ${roleText}.`, 80, currentY, canvas.width - 160, 30);
+      currentY += 60;
+
+      // Add property details for tenants
+      if (invitationData.role === 'tenant' && invitationData.property) {
+        ctx.font = 'bold 18px Arial';
+        ctx.fillStyle = '#003366';
+        ctx.fillText(`Property: ${invitationData.property}`, 80, currentY);
+        currentY += 30;
+        ctx.fillText(`Unit: ${invitationData.unit}`, 80, currentY);
+        currentY += 40;
+        ctx.font = '20px Arial';
+        ctx.fillStyle = '#555555';
+      }
+
+      wrapText(ctx, 'Scan the QR code below or use the invitation link to complete your registration.', 80, currentY, canvas.width - 160, 30);
 
       // QR Code
       if (qrCodeUrl) {
@@ -138,7 +164,7 @@ const InvitationModal = ({
           qrImage.onload = () => {
             const qrSize = 250;
             const qrX = (canvas.width - qrSize) / 2;
-            const qrY = 530;
+            const qrY = currentY + 50;
 
             // QR code background
             ctx.fillStyle = '#F3F4F6';
@@ -301,9 +327,21 @@ const InvitationModal = ({
                 <span className="font-medium text-gray-900 dark:text-white capitalize">
                   {invitationData.role === 'property_manager' ? 'Property Manager' :
                    invitationData.role === 'maintenance' ? 'Maintenance Staff' :
-                   invitationData.role}
+                   'Tenant'}
                 </span>
               </div>
+              {invitationData.role === 'tenant' && invitationData.property && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Property:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{invitationData.property}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Unit:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{invitationData.unit}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

@@ -1107,6 +1107,7 @@ const handleEditProperty = async () => {
         tenantName: newTenant.name,
         property: newTenant.property,
         unit: newTenant.unit,
+        type: 'tenant', // Distinguish from team member invitations
         status: 'pending', // pending, accepted, expired
         createdAt: serverTimestamp(),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
@@ -1114,33 +1115,50 @@ const handleEditProperty = async () => {
 
       await addDoc(collection(db, 'invitations'), invitationData);
 
-      // Generate invitation link using the correct domain
-      const invitationLink = `https://nyumbanii.web.app/register?invite=${invitationToken}`;
+      // Store invitation data and show invitation modal
+      setPendingInvitation({
+        token: invitationToken,
+        name: newTenant.name,
+        email: newTenant.email,
+        phone: newTenant.phone,
+        role: 'tenant',
+        property: newTenant.property,
+        unit: newTenant.unit
+      });
 
-      // Copy to clipboard
-      try {
-        await navigator.clipboard.writeText(invitationLink);
-        alert(`Tenant added successfully!\n\nInvitation link copied to clipboard:\n${invitationLink}\n\nShare this link with ${newTenant.name} to complete registration.`);
-      } catch (err) {
-        alert(`Tenant added successfully!\n\nInvitation link:\n${invitationLink}\n\nPlease share this link with ${newTenant.name}.`);
-      }
+      // Reset form and close tenant modal
+      setNewTenant({
+        name: '',
+        email: '',
+        phone: '',
+        property: '',
+        unit: '',
+        rent: '',
+        leaseStart: '',
+        leaseEnd: '',
+        sendInvitation: true
+      });
+      setShowTenantModal(false);
+
+      // Show invitation modal
+      setShowInvitationModal(true);
     } else {
       alert('Tenant added successfully!');
-    }
 
-    // Reset form and close modal
-    setNewTenant({
-      name: '',
-      email: '',
-      phone: '',
-      property: '',
-      unit: '',
-      rent: '',
-      leaseStart: '',
-      leaseEnd: '',
-      sendInvitation: true
-    });
-    setShowTenantModal(false);
+      // Reset form and close modal
+      setNewTenant({
+        name: '',
+        email: '',
+        phone: '',
+        property: '',
+        unit: '',
+        rent: '',
+        leaseStart: '',
+        leaseEnd: '',
+        sendInvitation: true
+      });
+      setShowTenantModal(false);
+    }
   } catch (error) {
     console.error('Error adding tenant:', error);
     console.error('Error details:', error.message, error.code);

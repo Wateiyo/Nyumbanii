@@ -62,7 +62,15 @@ const Register = () => {
         console.log('Invitation data:', inviteData);
 
         // Check if invitation has expired
-        const expiresAt = inviteData.expiresAt?.toDate();
+        let expiresAt = inviteData.expiresAt;
+        // Convert Firestore Timestamp to Date if needed
+        if (expiresAt && typeof expiresAt.toDate === 'function') {
+          expiresAt = expiresAt.toDate();
+        } else if (expiresAt && !(expiresAt instanceof Date)) {
+          // If it's not a Date object or Timestamp, try to convert it
+          expiresAt = new Date(expiresAt);
+        }
+
         if (expiresAt && expiresAt < new Date()) {
           setError('This invitation has expired. Please contact your landlord for a new invitation.');
           setValidatingInvite(false);
