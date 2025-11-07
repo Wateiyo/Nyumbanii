@@ -1041,20 +1041,22 @@ const PropertyManagerDashboard = () => {
                     return (
                       <div
                         key={conversation.id}
-                        onClick={() => {
-                          // Find tenant from the conversation
-                          const tenant = tenants.find(t => t.id === otherUserId);
-                          if (tenant) {
-                            handleOpenMessageModal(tenant);
-                          }
-                        }}
-                        className="p-4 hover:bg-gray-50 cursor-pointer transition"
+                        className="p-4 hover:bg-gray-50 transition group"
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                             {otherUserName.split(' ').map(n => n[0]).join('')}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              // Find tenant from the conversation
+                              const tenant = tenants.find(t => t.id === otherUserId);
+                              if (tenant) {
+                                handleOpenMessageModal(tenant);
+                              }
+                            }}
+                          >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-gray-900 truncate">{otherUserName}</h3>
@@ -1083,6 +1085,13 @@ const PropertyManagerDashboard = () => {
                               {conversation.lastMessage}
                             </p>
                           </div>
+                          <button
+                            onClick={(e) => handleDeleteConversation(conversation.id, conversation.conversationId, e)}
+                            className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all flex-shrink-0"
+                            title="Delete conversation"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     );
