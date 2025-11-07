@@ -322,7 +322,12 @@ const TenantDashboard = () => {
 
   // Fetch messages from Firebase - fetch all and filter by sender/recipient
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid) {
+      console.log('🚫 No currentUser.uid for message fetching');
+      return;
+    }
+
+    console.log('📩 Starting message fetch for tenant with UID:', currentUser.uid);
 
     // Fetch all messages and filter client-side
     const messagesQuery = query(
@@ -331,14 +336,24 @@ const TenantDashboard = () => {
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      console.log('📬 Total messages in database:', snapshot.size);
       const allMessages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      console.log('🔍 All messages:', allMessages.map(m => ({
+        id: m.id,
+        senderId: m.senderId,
+        recipientId: m.recipientId,
+        senderName: m.senderName,
+        recipientName: m.recipientName
+      })));
       // Filter messages where tenant is sender or recipient
-      const filteredMessages = allMessages.filter(msg =>
-        msg.senderId === currentUser.uid || msg.recipientId === currentUser.uid
-      );
+      const filteredMessages = allMessages.filter(msg => {
+        const isMatch = msg.senderId === currentUser.uid || msg.recipientId === currentUser.uid;
+        console.log(`📧 Message ${msg.id}: senderId=${msg.senderId}, recipientId=${msg.recipientId}, currentUser=${currentUser.uid}, match=${isMatch}`);
+        return isMatch;
+      });
       console.log('💬 Fetched messages for tenant:', filteredMessages.length);
       setMessages(filteredMessages);
     }, (error) => {
