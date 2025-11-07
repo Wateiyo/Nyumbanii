@@ -28,8 +28,10 @@ import {
   MapPin,
   Menu,
   DollarSign,
-  Clock
+  Clock,
+  MessageSquare
 } from 'lucide-react';
+import MessageModal from '../components/MessageModal';
 
 const PropertyManagerDashboard = () => {
   const navigate = useNavigate();
@@ -46,6 +48,19 @@ const PropertyManagerDashboard = () => {
   const [selectedViewing, setSelectedViewing] = useState(null);
   const [viewingFilter, setViewingFilter] = useState('all');
   const [maintenanceStaff, setMaintenanceStaff] = useState([]);
+  const [selectedTenant, setSelectedTenant] = useState(null);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [maintenanceForm, setMaintenanceForm] = useState({
+    property: '',
+    unit: '',
+    issue: '',
+    description: '',
+    priority: 'medium',
+    scheduledDate: '',
+    scheduledTime: ''
+  });
 
   // Fetch team member data for the current user
   useEffect(() => {
@@ -90,6 +105,96 @@ const PropertyManagerDashboard = () => {
     } catch (error) {
       console.error('Error logging out:', error);
       alert('Error logging out. Please try again.');
+    }
+  };
+
+  // Fetch user profile for messaging
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const fetchUserProfile = async () => {
+      try {
+        const userDoc = await getDocs(
+          query(collection(db, 'users'), where('uid', '==', currentUser.uid))
+        );
+        if (!userDoc.empty) {
+          setUserProfile(userDoc.docs[0].data());
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [currentUser]);
+
+  const handleOpenMessageModal = (tenant) => {
+    setSelectedTenant(tenant);
+    setIsMessageModalOpen(true);
+  };
+
+  const handleCloseMessageModal = () => {
+    setIsMessageModalOpen(false);
+    setSelectedTenant(null);
+  };
+
+  const handleMaintenanceFormChange = (e) => {
+    const { name, value } = e.target;
+    setMaintenanceForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitMaintenanceRequest = async (e) => {
+    e.preventDefault();
+
+    if (!maintenanceForm.property || !maintenanceForm.unit || !maintenanceForm.issue || !maintenanceForm.description) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'maintenanceRequests'), {
+        property: maintenanceForm.property,
+        unit: maintenanceForm.unit,
+        issue: maintenanceForm.issue,
+        description: maintenanceForm.description,
+        priority: maintenanceForm.priority,
+        date: maintenanceForm.scheduledDate || new Date().toISOString().split('T')[0],
+        scheduledTime: maintenanceForm.scheduledTime || 'TBD',
+        status: 'pending',
+        requestedBy: teamMember.name,
+        requestedByRole: 'property_manager',
+        requestedById: currentUser.uid,
+        landlordId: teamMember.landlordId,
+        createdAt: serverTimestamp()
+      });
+
+      // Create notification for landlord
+      await addDoc(collection(db, 'notifications'), {
+        userId: teamMember.landlordId,
+        type: 'maintenance_request',
+        title: 'New Maintenance Request',
+        message: `${teamMember.name} created a maintenance request: ${maintenanceForm.issue} at ${maintenanceForm.property} - Unit ${maintenanceForm.unit}`,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+
+      alert('Maintenance request created successfully!');
+      setShowMaintenanceForm(false);
+      setMaintenanceForm({
+        property: '',
+        unit: '',
+        issue: '',
+        description: '',
+        priority: 'medium',
+        scheduledDate: '',
+        scheduledTime: ''
+      });
+    } catch (error) {
+      console.error('Error creating maintenance request:', error);
+      alert('Failed to create maintenance request. Please try again.');
     }
   };
 
@@ -301,6 +406,7 @@ const PropertyManagerDashboard = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 flex">
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
@@ -308,13 +414,15 @@ const PropertyManagerDashboard = () => {
 
       <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
         <div className="p-6">
-          <div className="flex items-center gap-3">
-            <Home className="w-8 h-8" />
+          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
+            </div>
             <div>
               <span className="text-xl font-bold">Nyumbanii</span>
               <p className="text-xs text-gray-300">Property Manager</p>
             </div>
-          </div>
+          </a>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
@@ -334,10 +442,10 @@ const PropertyManagerDashboard = () => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-[#002244]">
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#002244] transition text-red-300">
+        <div className="absolute bottom-0 w-full p-4 border-t border-white/10">
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition">
             <LogOut className="w-5 h-5" />
-            <span className="text-sm">Logout</span>
+            <span>Logout</span>
           </button>
         </div>
       </aside>
@@ -601,6 +709,13 @@ const PropertyManagerDashboard = () => {
                           </span>
                         </div>
                       </div>
+                      <button
+                        onClick={() => handleOpenMessageModal(tenant)}
+                        className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center gap-2"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Message
+                      </button>
                     </div>
                   </div>
                 ))
@@ -609,14 +724,141 @@ const PropertyManagerDashboard = () => {
           )}
 
           {currentView === 'maintenance' && (
-            <div className="grid gap-4">
-              {maintenanceRequests.length === 0 ? (
-                <div className="bg-white p-12 rounded-xl shadow-sm text-center">
-                  <Wrench className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No maintenance requests</p>
+            <>
+              <div className="mb-6 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">Maintenance Requests</h2>
+                <button
+                  onClick={() => setShowMaintenanceForm(!showMaintenanceForm)}
+                  className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center gap-2"
+                >
+                  <Wrench className="w-4 h-4" />
+                  {showMaintenanceForm ? 'Cancel' : 'Create Request'}
+                </button>
+              </div>
+
+              {showMaintenanceForm && (
+                <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">New Maintenance Request</h3>
+                  <form onSubmit={handleSubmitMaintenanceRequest} className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Property *</label>
+                        <select
+                          name="property"
+                          value={maintenanceForm.property}
+                          onChange={handleMaintenanceFormChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                        >
+                          <option value="">Select property</option>
+                          {properties.map(prop => (
+                            <option key={prop.id} value={prop.name}>{prop.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Unit Number *</label>
+                        <input
+                          type="text"
+                          name="unit"
+                          value={maintenanceForm.unit}
+                          onChange={handleMaintenanceFormChange}
+                          required
+                          placeholder="e.g., A101"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Issue Title *</label>
+                      <input
+                        type="text"
+                        name="issue"
+                        value={maintenanceForm.issue}
+                        onChange={handleMaintenanceFormChange}
+                        required
+                        placeholder="e.g., Leaking faucet"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                      <textarea
+                        name="description"
+                        value={maintenanceForm.description}
+                        onChange={handleMaintenanceFormChange}
+                        required
+                        rows="3"
+                        placeholder="Describe the issue in detail..."
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select
+                          name="priority"
+                          value={maintenanceForm.priority}
+                          onChange={handleMaintenanceFormChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Scheduled Date</label>
+                        <input
+                          type="date"
+                          name="scheduledDate"
+                          value={maintenanceForm.scheduledDate}
+                          onChange={handleMaintenanceFormChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Scheduled Time</label>
+                        <input
+                          type="time"
+                          name="scheduledTime"
+                          value={maintenanceForm.scheduledTime}
+                          onChange={handleMaintenanceFormChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        className="px-6 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium"
+                      >
+                        Submit Request
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowMaintenanceForm(false)}
+                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              ) : (
-                maintenanceRequests.map(request => (
+              )}
+
+              <div className="grid gap-4">
+                {maintenanceRequests.length === 0 ? (
+                  <div className="bg-white p-12 rounded-xl shadow-sm text-center">
+                    <Wrench className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No maintenance requests</p>
+                  </div>
+                ) : (
+                  maintenanceRequests.map(request => (
                   <div key={request.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
                     <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                       <div className="flex-1">
@@ -700,6 +942,7 @@ const PropertyManagerDashboard = () => {
                 ))
               )}
             </div>
+            </>
           )}
 
           {currentView === 'calendar' && (
@@ -754,6 +997,18 @@ const PropertyManagerDashboard = () => {
         </div>
       </div>
     </div>
+
+    {/* Message Modal */}
+    {selectedTenant && (
+      <MessageModal
+        tenant={selectedTenant}
+        currentUser={currentUser}
+        userProfile={userProfile}
+        isOpen={isMessageModalOpen}
+        onClose={handleCloseMessageModal}
+      />
+    )}
+  </>
   );
 };
 
