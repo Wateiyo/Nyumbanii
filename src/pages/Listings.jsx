@@ -224,8 +224,7 @@ const Listings = () => {
   const handleBookViewing = async () => {
   if (bookingData.name && bookingData.email && bookingData.phone && bookingData.date && bookingData.time) {
     try {
-      // Save to Firebase
-      await addDoc(collection(db, 'viewings'), {
+      const viewingData = {
         landlordId: selectedProperty.landlordId,  // The landlord who owns this property
         tenantId: currentUser?.uid || 'guest',     // Current user ID or 'guest' if not logged in
         property: selectedProperty.propertyName,
@@ -238,7 +237,61 @@ const Listings = () => {
         status: 'pending',
         credibilityScore: 85, // Default score, you can calculate this later
         createdAt: serverTimestamp()
+      };
+
+      // Save to Firebase
+      await addDoc(collection(db, 'viewings'), viewingData);
+
+      // Create notification for landlord
+      await addDoc(collection(db, 'notifications'), {
+        userId: selectedProperty.landlordId,
+        title: 'New Viewing Request',
+        message: `${bookingData.name} has requested a viewing for ${selectedProperty.propertyName} (Unit: ${selectedProperty.unit}) on ${bookingData.date} at ${bookingData.time}`,
+        type: 'viewing',
+        read: false,
+        createdAt: serverTimestamp()
       });
+
+      // Find property managers assigned to this property and notify them
+      const propertyDoc = await getDocs(
+        query(collection(db, 'properties'), where('name', '==', selectedProperty.propertyName))
+      );
+
+      if (!propertyDoc.empty) {
+        const propertyId = propertyDoc.docs[0].id;
+
+        // Find team members (property managers) who have this property assigned
+        const teamMembersQuery = query(
+          collection(db, 'teamMembers'),
+          where('landlordId', '==', selectedProperty.landlordId),
+          where('role', '==', 'property_manager')
+        );
+
+        const teamMembersSnapshot = await getDocs(teamMembersQuery);
+
+        // Create notifications for property managers assigned to this property
+        const notificationPromises = [];
+        teamMembersSnapshot.forEach((doc) => {
+          const teamMemberData = doc.data();
+          if (teamMemberData.assignedProperties && teamMemberData.assignedProperties.includes(propertyId)) {
+            // This property manager is assigned to this property
+            if (teamMemberData.userId) {
+              notificationPromises.push(
+                addDoc(collection(db, 'notifications'), {
+                  userId: teamMemberData.userId,
+                  title: 'New Viewing Request',
+                  message: `${bookingData.name} has requested a viewing for ${selectedProperty.propertyName} (Unit: ${selectedProperty.unit}) on ${bookingData.date} at ${bookingData.time}`,
+                  type: 'viewing',
+                  read: false,
+                  createdAt: serverTimestamp()
+                })
+              );
+            }
+          }
+        });
+
+        await Promise.all(notificationPromises);
+      }
 
       alert(`Viewing booked successfully for ${selectedProperty.propertyName} on ${bookingData.date} at ${bookingData.time}. You will receive a confirmation email shortly.`);
       setShowBookingModal(false);
