@@ -184,7 +184,7 @@ const MaintenanceStaffDashboard = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
@@ -197,13 +197,13 @@ const MaintenanceStaffDashboard = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
       )}
 
-      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-orange-600 text-white transition-transform duration-300 flex flex-col`}>
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
         <div className="p-6">
           <div className="flex items-center gap-3">
             <Wrench className="w-8 h-8" />
             <div>
               <span className="text-xl font-bold">Nyumbanii</span>
-              <p className="text-xs text-orange-100">Maintenance Staff</p>
+              <p className="text-xs text-gray-300">Maintenance Staff</p>
             </div>
           </div>
         </div>
@@ -213,10 +213,10 @@ const MaintenanceStaffDashboard = () => {
             const icons = { dashboard: Home, requests: Wrench, properties: Building, calendar: Calendar };
             const Icon = icons[view];
             return (
-              <button 
-                key={view} 
-                onClick={() => { setCurrentView(view); setSidebarOpen(false); }} 
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-orange-700' : 'hover:bg-orange-700'}`}
+              <button
+                key={view}
+                onClick={() => { setCurrentView(view); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${currentView === view ? 'bg-[#002244]' : 'hover:bg-[#002244]'}`}
               >
                 <Icon className="w-5 h-5" />
                 <span className="capitalize text-sm">{view}</span>
@@ -245,7 +245,7 @@ const MaintenanceStaffDashboard = () => {
                 <p className="text-sm text-gray-600">Welcome back, {teamMember.name}!</p>
               </div>
             </div>
-            <div className="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white font-semibold">
+            <div className="w-10 h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold">
               {teamMember.name.split(' ').map(n => n[0]).join('')}
             </div>
           </div>
@@ -307,7 +307,7 @@ const MaintenanceStaffDashboard = () => {
 
               <div className="bg-white p-6 rounded-xl shadow-sm">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-orange-600" />
+                  <Clock className="w-5 h-5 text-[#003366]" />
                   In Progress
                 </h3>
                 {maintenanceRequests.filter(r => r.status === 'in-progress').length === 0 ? (
@@ -340,7 +340,7 @@ const MaintenanceStaffDashboard = () => {
                     key={filter}
                     onClick={() => setStatusFilter(filter)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
-                      statusFilter === filter ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      statusFilter === filter ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     {filter.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
@@ -437,7 +437,7 @@ const MaintenanceStaffDashboard = () => {
                       {property.images?.[0] ? (
                         <img src={property.images[0]} alt={property.name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-500 to-orange-700">
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#003366] to-[#002244]">
                           <Building className="w-16 h-16 text-white opacity-50" />
                         </div>
                       )}
@@ -451,7 +451,7 @@ const MaintenanceStaffDashboard = () => {
                       <div className="pt-4 border-t">
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">Open Requests</span>
-                          <span className="font-semibold text-orange-600">
+                          <span className="font-semibold text-[#003366]">
                             {maintenanceRequests.filter(r => r.property === property.name && r.status !== 'completed').length}
                           </span>
                         </div>
@@ -471,12 +471,12 @@ const MaintenanceStaffDashboard = () => {
                   <p className="text-gray-500 text-center py-8">No scheduled maintenance</p>
                 ) : (
                   maintenanceRequests.filter(r => r.status !== 'completed').map(request => (
-                    <div key={request.id} className="flex items-center gap-4 p-4 bg-orange-50 rounded-lg">
-                      <div className="w-16 h-16 bg-orange-100 rounded-lg flex flex-col items-center justify-center">
-                        <span className="text-xs text-orange-600 font-medium">
+                    <div key={request.id} className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
+                      <div className="w-16 h-16 bg-blue-100 rounded-lg flex flex-col items-center justify-center">
+                        <span className="text-xs text-blue-600 font-medium">
                           {new Date(request.date).toLocaleDateString('en-US', { month: 'short' })}
                         </span>
-                        <span className="text-2xl font-bold text-orange-900">
+                        <span className="text-2xl font-bold text-blue-900">
                           {new Date(request.date).getDate()}
                         </span>
                       </div>
