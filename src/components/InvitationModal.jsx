@@ -47,12 +47,27 @@ const InvitationModal = ({
   // Copy link to clipboard
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(getInvitationLink());
+      const fullLink = getInvitationLink();
+      await navigator.clipboard.writeText(fullLink);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 3000);
     } catch (error) {
       console.error('Error copying to clipboard:', error);
-      alert('Failed to copy link. Please try again.');
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = getInvitationLink();
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      } catch (err) {
+        alert('Failed to copy link. Please manually select and copy the link below.');
+      }
+      document.body.removeChild(textArea);
     }
   };
 
@@ -77,11 +92,23 @@ const InvitationModal = ({
 
     const message = encodeURIComponent(messageText);
 
+    // Format phone number for WhatsApp (ensure it starts with country code without + or spaces)
+    let phoneNumber = invitationData.phone.replace(/\D/g, ''); // Remove all non-digits
+
+    // If phone starts with 0, replace with 254 (Kenya country code)
+    if (phoneNumber.startsWith('0')) {
+      phoneNumber = '254' + phoneNumber.substring(1);
+    }
+    // If it doesn't start with country code, add 254
+    else if (!phoneNumber.startsWith('254') && phoneNumber.length <= 10) {
+      phoneNumber = '254' + phoneNumber;
+    }
+
     // For mobile, use WhatsApp app link, for desktop use web.whatsapp.com
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const whatsappUrl = isMobile
-      ? `whatsapp://send?phone=${invitationData.phone}&text=${message}`
-      : `https://web.whatsapp.com/send?phone=${invitationData.phone}&text=${message}`;
+      ? `whatsapp://send?phone=${phoneNumber}&text=${message}`
+      : `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${message}`;
 
     window.open(whatsappUrl, '_blank');
   };
@@ -407,10 +434,23 @@ const InvitationModal = ({
               <Share2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
               <div className="flex-1">
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Invitation Link</h4>
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600 mb-3">
                   <code className="text-sm text-gray-700 dark:text-gray-300 break-all">
                     {getInvitationLink()}
                   </code>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                  <p className="text-xs font-semibold text-green-900 dark:text-green-100 mb-2">
+                    📋 For Manual Sharing - Copy This Entire Link:
+                  </p>
+                  <div className="bg-white dark:bg-gray-800 rounded p-2 border-2 border-green-400 dark:border-green-600">
+                    <code className="text-xs text-green-700 dark:text-green-300 break-all font-mono">
+                      {getInvitationLink()}
+                    </code>
+                  </div>
+                  <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+                    ✓ Make sure to copy the complete URL including "?invite=" and "&type=" parameters
+                  </p>
                 </div>
               </div>
             </div>
