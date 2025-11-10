@@ -29,6 +29,7 @@ import {
   Plus,
   Send
 } from 'lucide-react';
+import MessageModal from '../components/MessageModal';
 
 const MaintenanceStaffDashboard = () => {
   const navigate = useNavigate();
@@ -300,6 +301,7 @@ const MaintenanceStaffDashboard = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 flex">
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
@@ -719,6 +721,17 @@ const MaintenanceStaffDashboard = () => {
         </div>
       </div>
     </div>
+
+    {/* Message Modal */}
+    <MessageModal
+      tenant={selectedTenant}
+      currentUser={currentUser}
+      userProfile={userProfile}
+      isOpen={isMessageModalOpen}
+      onClose={handleCloseMessageModal}
+      senderRole="maintenance"
+    />
+  </>
   );
 };
 
