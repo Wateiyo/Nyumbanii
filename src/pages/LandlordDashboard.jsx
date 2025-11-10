@@ -1868,18 +1868,35 @@ const handleEditProperty = async () => {
   const handleSendMemo = async () => {
     if (newMemo.title && newMemo.message) {
       try {
+        // Determine recipient details based on target audience
+        const isAllTenants = newMemo.targetAudience === 'all';
+        const recipientType = isAllTenants ? 'all' : 'specific';
+        const recipientCount = isAllTenants
+          ? tenants.length
+          : properties.find(p => p.name === newMemo.targetAudience)?.occupied || 0;
+
+        // Get list of tenant IDs if targeting specific property
+        let recipientIds = [];
+        if (!isAllTenants) {
+          recipientIds = tenants
+            .filter(t => t.property === newMemo.targetAudience)
+            .map(t => t.id);
+        }
+
         await addDoc(collection(db, 'memos'), {
           title: newMemo.title,
           message: newMemo.message,
           priority: newMemo.priority,
           targetAudience: newMemo.targetAudience,
+          recipientType: recipientType, // Add this for the query
+          recipients: isAllTenants ? [] : recipientIds, // Array of tenant IDs or empty for all
+          recipientCount: recipientCount, // Number for display
           sentBy: profileSettings.name,
           sentAt: new Date().toISOString(),
-          recipients: newMemo.targetAudience === 'all' ? tenants.length : properties.find(p => p.name === newMemo.targetAudience)?.occupied || 0,
           landlordId: currentUser.uid,
           createdAt: serverTimestamp()
         });
-        
+
         setNewMemo({ title: '', message: '', priority: 'normal', targetAudience: 'all' });
         setShowMemoModal(false);
         alert('Memo sent successfully to all recipients!');

@@ -278,7 +278,10 @@ const MaintenanceStaffDashboard = () => {
 
   const stats = [
     { label: 'Assigned Properties', value: properties.length, icon: Building, color: 'bg-blue-100 text-blue-900' },
-    { label: 'Open Requests', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'pending').length, icon: AlertCircle, color: 'bg-red-100 text-red-900' },
+    { label: 'Open Requests', value: maintenanceRequests.filter(r => {
+      const status = r.status?.toLowerCase();
+      return status === 'pending' || !status; // Include pending and requests without status
+    }).length, icon: AlertCircle, color: 'bg-red-100 text-red-900' },
     { label: 'In Progress', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'in-progress').length, icon: Clock, color: 'bg-yellow-100 text-yellow-900' },
     { label: 'Completed', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'completed').length, icon: CheckCircle, color: 'bg-green-100 text-green-900' }
   ];
@@ -387,10 +390,10 @@ const MaintenanceStaffDashboard = () => {
                   <AlertCircle className="w-5 h-5 text-red-600" />
                   Urgent Requests
                 </h3>
-                {maintenanceRequests.filter(r => r.priority === 'high' && r.status?.toLowerCase() !== 'completed').length === 0 ? (
+                {maintenanceRequests.filter(r => r.priority?.toLowerCase() === 'high' && r.status?.toLowerCase() !== 'completed').length === 0 ? (
                   <p className="text-gray-500 text-center py-4">No urgent requests</p>
                 ) : (
-                  maintenanceRequests.filter(r => r.priority === 'high' && r.status?.toLowerCase() !== 'completed').map(request => (
+                  maintenanceRequests.filter(r => r.priority?.toLowerCase() === 'high' && r.status?.toLowerCase() !== 'completed').map(request => (
                     <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-0">
                       <div className="flex-1">
                         <p className="font-medium text-gray-900 text-sm">{request.issue}</p>
@@ -487,8 +490,14 @@ const MaintenanceStaffDashboard = () => {
                           <div className="flex items-start justify-between mb-3">
                             <div>
                               <h3 className="font-semibold text-gray-900 text-lg">{request.issue}</h3>
-                              <p className="text-sm text-gray-600 mt-1">{request.property} - Unit {request.unit}</p>
-                              <p className="text-sm text-gray-600">Tenant: {request.tenant}</p>
+                              <div className="mt-2 space-y-1">
+                                <p className="text-sm text-gray-700 font-medium">
+                                  <span className="text-gray-500">Tenant:</span> {request.tenant}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  <span className="text-gray-500">Location:</span> {request.property} - Unit {request.unit}
+                                </p>
+                              </div>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                               request.priority === 'high' ? 'bg-red-100 text-red-800' :
@@ -592,7 +601,13 @@ const MaintenanceStaffDashboard = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">Open Requests</span>
                           <span className="font-semibold text-[#003366]">
-                            {maintenanceRequests.filter(r => r.property === property.name && r.status?.toLowerCase() !== 'completed').length}
+                            {maintenanceRequests.filter(r => {
+                              // Match by property name or property ID
+                              const matchByName = r.property === property.name;
+                              const matchById = r.propertyId === property.id;
+                              const isNotCompleted = r.status?.toLowerCase() !== 'completed';
+                              return (matchByName || matchById) && isNotCompleted;
+                            }).length}
                           </span>
                         </div>
                       </div>
@@ -622,8 +637,13 @@ const MaintenanceStaffDashboard = () => {
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900">{request.issue}</h3>
-                        <p className="text-sm text-gray-600">{request.property} - Unit {request.unit}</p>
-                        <p className="text-xs text-gray-500">{request.scheduledTime}</p>
+                        <p className="text-sm text-gray-700 font-medium mt-1">
+                          <span className="text-gray-500">Tenant:</span> {request.tenant}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          <span className="text-gray-500">Location:</span> {request.property} - Unit {request.unit}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">{request.scheduledTime}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         request.priority === 'high' ? 'bg-red-100 text-red-800' :
