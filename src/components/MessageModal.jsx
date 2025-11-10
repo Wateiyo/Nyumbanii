@@ -186,7 +186,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
         timestamp: serverTimestamp(),
         read: false,
         propertyName: selectedRecipient.property || '',
-        unit: selectedRecipient.unit || ''
+        unit: selectedRecipient.unit || '',
+        participants: [currentUser.uid, selectedRecipient.id] // Add participants array for queries
       });
 
       console.log('✅ Message saved to Firestore:', messageDoc.id);

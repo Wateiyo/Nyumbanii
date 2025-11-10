@@ -209,11 +209,11 @@ const TenantDashboard = () => {
       return;
     }
 
-    console.log('Fetching tenant data for email:', currentUser.email);
+    console.log('Fetching tenant data for user:', currentUser.uid);
 
     const tenantsQuery = query(
       collection(db, 'tenants'),
-      where('email', '==', currentUser.email.toLowerCase())
+      where('userId', '==', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(tenantsQuery, (snapshot) => {
@@ -224,7 +224,26 @@ const TenantDashboard = () => {
         console.log('Tenant data found:', data);
         setTenantData(data);
       } else {
-        console.log('No tenant data found for email:', currentUser.email.toLowerCase());
+        console.log('No tenant data found for userId:', currentUser.uid);
+        // Fallback: Try querying by email for backward compatibility
+        const emailQuery = query(
+          collection(db, 'tenants'),
+          where('email', '==', currentUser.email.toLowerCase())
+        );
+        onSnapshot(emailQuery, (emailSnapshot) => {
+          if (!emailSnapshot.empty) {
+            const tenantDoc = emailSnapshot.docs[0];
+            const data = { id: tenantDoc.id, ...tenantDoc.data() };
+            console.log('Tenant data found by email:', data);
+            setTenantData(data);
+            // Update the document with userId for future queries
+            updateDoc(doc(db, 'tenants', tenantDoc.id), {
+              userId: currentUser.uid
+            }).catch(err => console.error('Error updating tenant with userId:', err));
+          } else {
+            console.log('No tenant data found for email either:', currentUser.email.toLowerCase());
+          }
+        });
       }
     }, (error) => {
       console.error('Error fetching tenant data:', error);
