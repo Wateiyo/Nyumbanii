@@ -46,8 +46,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
 
   // Fetch available recipients based on type
   useEffect(() => {
-    // Only fetch recipients if property manager AND no pre-selected tenant
-    if (!isOpen || !currentUser || senderRole !== 'property_manager' || tenant) return;
+    // Only fetch recipients if property manager/maintenance AND no pre-selected tenant
+    if (!isOpen || !currentUser || (senderRole !== 'property_manager' && senderRole !== 'maintenance') || tenant) return;
 
     const fetchRecipients = async () => {
       try {
@@ -282,8 +282,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
             </button>
           </div>
 
-          {/* Recipient Type Selector - Only for Property Managers composing NEW messages (no pre-selected tenant) */}
-          {senderRole === 'property_manager' && !tenant && (
+          {/* Recipient Type Selector - Only for Property Managers/Maintenance composing NEW messages (no pre-selected tenant) */}
+          {(senderRole === 'property_manager' || senderRole === 'maintenance') && !tenant && (
             <div className="flex gap-2">
               <button
                 onClick={() => setRecipientType('tenant')}
@@ -318,8 +318,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
             </div>
           )}
 
-          {/* Recipient Selector Dropdown - Only for Property Managers composing NEW messages */}
-          {senderRole === 'property_manager' && !tenant && recipientList.length > 0 && (
+          {/* Recipient Selector Dropdown - Only for Property Managers/Maintenance composing NEW messages */}
+          {(senderRole === 'property_manager' || senderRole === 'maintenance') && !tenant && recipientList.length > 0 && (
             <div className="mt-2 relative">
               <button
                 onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
