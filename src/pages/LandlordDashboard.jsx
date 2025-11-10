@@ -83,7 +83,8 @@ import {
   Edit,
   MessageSquare,
   Check,
-  CheckCheck
+  CheckCheck,
+  Share2
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -1165,6 +1166,53 @@ const handleEditProperty = async () => {
     alert(`Failed to add tenant: ${error.message}\n\nPlease try again or contact support if the issue persists.`);
   }
 };
+
+  // RESEND/CREATE TENANT INVITATION
+  const handleResendTenantInvitation = async (tenant) => {
+    try {
+      // Generate a new invitation token
+      const invitationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+      // Update tenant with new invitation token and set status to pending
+      await updateDoc(doc(db, 'tenants', tenant.id), {
+        invitationToken: invitationToken,
+        status: 'pending'
+      });
+
+      // Create or update invitation record
+      const invitationData = {
+        token: invitationToken,
+        email: tenant.email.toLowerCase(),
+        landlordId: currentUser.uid,
+        landlordName: userProfile?.displayName || 'Your Landlord',
+        tenantName: tenant.name,
+        property: tenant.property,
+        unit: tenant.unit,
+        type: 'tenant',
+        status: 'pending',
+        createdAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, 'invitations'), invitationData);
+
+      // Show invitation modal with sharing options
+      setPendingInvitation({
+        token: invitationToken,
+        name: tenant.name,
+        email: tenant.email,
+        phone: tenant.phone,
+        role: 'tenant',
+        property: tenant.property,
+        unit: tenant.unit
+      });
+      setShowInvitationModal(true);
+
+      alert('Invitation created successfully! You can now share it with the tenant.');
+    } catch (error) {
+      console.error('Error creating invitation:', error);
+      alert('Error creating invitation. Please try again.');
+    }
+  };
 
   // DELETE TENANT
   const handleDeleteTenant = async (tenantId, tenantName) => {
@@ -3386,6 +3434,37 @@ const handleViewTenantDetails = (tenant) => {
                 )}
               </div>
 
+              {/* Info Banner for Sharing Options */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <Share2 className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Easy Tenant Registration</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                      Share registration invitations with your tenants using multiple convenient methods:
+                    </p>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                        <strong>WhatsApp:</strong> Send invitation directly via WhatsApp
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                        <strong>Email:</strong> Send invitation link via email
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                        <strong>Copy Link:</strong> Copy and share the registration link anywhere
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                        <strong>QR Code:</strong> Generate and share a scannable QR code
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="flex gap-2 w-full">
                   <div className="relative flex-1">
@@ -3460,14 +3539,18 @@ const handleViewTenantDetails = (tenant) => {
                                 {tenant.name.split(' ').map(n => n[0]).join('')}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <h4 className="font-semibold text-gray-900 dark:text-white">{tenant.name}</h4>
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    tenant.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                                    tenant.status === 'active' && tenant.userId ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
                                     tenant.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                                    tenant.status === 'active' && !tenant.userId ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400' :
                                     'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                                   }`}>
-                                    {tenant.status}
+                                    {tenant.status === 'active' && tenant.userId ? 'Registered' :
+                                     tenant.status === 'pending' ? 'Invitation Sent' :
+                                     tenant.status === 'active' && !tenant.userId ? 'Not Registered' :
+                                     tenant.status}
                                   </span>
                                 </div>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">Unit {tenant.unit}</p>
@@ -3495,27 +3578,60 @@ const handleViewTenantDetails = (tenant) => {
                               )}
                             </div>
 
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleViewTenantDetails(tenant)}
-                                className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm">
-                                View Details
-                              </button>
-                              <button
-                                onClick={() => handleMessageTenant(tenant)}
-                                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm relative">
-                                Message
-                                 {unreadMessages[tenant.id] > 0 && (
-                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                                 {unreadMessages[tenant.id]}
-                                </span>
-                                  )}
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTenant(tenant.id, tenant.name)}
-                                className="px-4 py-2 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center gap-2">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleViewTenantDetails(tenant)}
+                                  className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm">
+                                  View Details
+                                </button>
+                                <button
+                                  onClick={() => handleMessageTenant(tenant)}
+                                  className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm relative">
+                                  Message
+                                   {unreadMessages[tenant.id] > 0 && (
+                                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                                   {unreadMessages[tenant.id]}
+                                  </span>
+                                    )}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTenant(tenant.id, tenant.name)}
+                                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center gap-2">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              {/* Show share invitation button for pending tenants with token */}
+                              {tenant.status === 'pending' && tenant.invitationToken && (
+                                <button
+                                  onClick={() => {
+                                    setPendingInvitation({
+                                      token: tenant.invitationToken,
+                                      name: tenant.name,
+                                      email: tenant.email,
+                                      phone: tenant.phone,
+                                      role: 'tenant',
+                                      property: tenant.property,
+                                      unit: tenant.unit
+                                    });
+                                    setShowInvitationModal(true);
+                                  }}
+                                  className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm flex items-center justify-center gap-2">
+                                  <Share2 className="w-4 h-4" />
+                                  Share Invitation
+                                </button>
+                              )}
+
+                              {/* Show send/resend invitation button for tenants without token or needing resend */}
+                              {(!tenant.invitationToken || (tenant.status === 'active' && !tenant.userId)) && (
+                                <button
+                                  onClick={() => handleResendTenantInvitation(tenant)}
+                                  className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm flex items-center justify-center gap-2">
+                                  <Send className="w-4 h-4" />
+                                  {tenant.invitationToken ? 'Resend Invitation' : 'Send Invitation'}
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
