@@ -336,89 +336,7 @@ const mockViewings = [
 // Use real or mock viewings
 const displayViewings = viewings.length > 0 ? viewings : mockViewings;
 
-// Mock memos
-const mockMemos = [
-  {
-    id: 'memo1',
-    title: 'Water Maintenance Notice',
-    message: 'Water will be shut off on Sunday, October 13th from 8 AM to 2 PM for routine maintenance. Please plan accordingly.',
-    priority: 'high',
-    targetAudience: 'all',
-    sentBy: 'Tom Doe',
-    sentAt: '2025-10-04T10:30:00',
-    recipients: 18,
-    landlordId: currentUser?.uid
-  },
-  {
-    id: 'memo2',
-    title: 'Rent Payment Reminder',
-    message: 'Friendly reminder that rent for October is due by the 5th. Please ensure timely payment to avoid late fees.',
-    priority: 'normal',
-    targetAudience: 'all',
-    sentBy: 'Tom Doe',
-    sentAt: '2025-10-01T09:00:00',
-    recipients: 18,
-    landlordId: currentUser?.uid
-  }
-];
 
-// Use real or mock memos
-const displayMemos = memos.length > 0 ? memos : mockMemos;
-
-// Mock tenants
-const mockTenants = [
-  {
-    id: 'tenant1',
-    name: 'John Doe',
-    email: 'john@email.com',
-    phone: '+254 712 345 678',
-    property: 'Sunset Apartments',
-    unit: '4A',
-    rent: 45000,
-    leaseStart: '2024-01-15',
-    leaseEnd: '2025-01-14',
-    status: 'active'
-  },
-  {
-    id: 'tenant2',
-    name: 'Grace Njeri',
-    email: 'grace@email.com',
-    phone: '+254 745 678 901',
-    property: 'Sunset Apartments',
-    unit: '2A',
-    rent: 42000,
-    leaseStart: '2023-11-01',
-    leaseEnd: '2024-10-31',
-    status: 'active'
-  },
-  {
-    id: 'tenant3',
-    name: 'Jane Smith',
-    email: 'jane@email.com',
-    phone: '+254 723 456 789',
-    property: 'Garden View',
-    unit: '2B',
-    rent: 38000,
-    leaseStart: '2024-03-01',
-    leaseEnd: '2025-02-28',
-    status: 'active'
-  },
-  {
-    id: 'tenant4',
-    name: 'Peter Kamau',
-    email: 'peter@email.com',
-    phone: '+254 734 567 890',
-    property: 'Riverside Towers',
-    unit: '8C',
-    rent: 52000,
-    leaseStart: '2024-06-01',
-    leaseEnd: '2025-05-31',
-    status: 'active'
-  }
-];
-
-// Use real or mock tenants
-const displayTenants = tenants.length > 0 ? tenants : mockTenants;
 
   // Mock data for Calendar view
 const mockViewingBookings = [
@@ -2192,11 +2110,11 @@ const handleViewTenantDetails = (tenant) => {
       icon: Home, 
       color: 'bg-blue-100 text-blue-900' 
     },
-    { 
-      label: 'Active Tenants', 
-      value: displayTenants.filter(t => t.status === 'active').length,
-      icon: Users, 
-      color: 'bg-green-100 text-green-900' 
+    {
+      label: 'Active Tenants',
+      value: tenants.filter(t => t.status === 'active').length,
+      icon: Users,
+      color: 'bg-green-100 text-green-900'
     },
     { 
       label: 'Monthly Revenue', 
@@ -3496,17 +3414,17 @@ const handleViewTenantDetails = (tenant) => {
                   // Filter by selected property if not "all"
                   if (tenantFilter !== 'all' && property.name !== tenantFilter) return false;
                   // Check if property has any tenants matching search
-                  const propertyTenants = displayTenants.filter(t => t.property === property.name);
+                  const propertyTenants = tenants.filter(t => t.property === property.name);
                   if (tenantSearchQuery) {
-                    return propertyTenants.some(t => 
-                      t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) || 
+                    return propertyTenants.some(t =>
+                      t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
                       t.email.toLowerCase().includes(tenantSearchQuery.toLowerCase())
                     );
                   }
                   return propertyTenants.length > 0;
                 })
                 .map(property => {
-                  const propertyTenants = displayTenants
+                  const propertyTenants = tenants
                     .filter(tenant => tenant.property === property.name)
                     .filter(tenant => 
                       !tenantSearchQuery || 
@@ -3642,19 +3560,42 @@ const handleViewTenantDetails = (tenant) => {
 
               {/* No results message */}
               {properties.filter(property => {
-                const propertyTenants = displayTenants.filter(t => t.property === property.name);
+                const propertyTenants = tenants.filter(t => t.property === property.name);
                 if (tenantFilter !== 'all' && property.name !== tenantFilter) return false;
                 if (tenantSearchQuery) {
-                  return propertyTenants.some(t => 
-                    t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) || 
+                  return propertyTenants.some(t =>
+                    t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
                     t.email.toLowerCase().includes(tenantSearchQuery.toLowerCase())
                   );
                 }
                 return propertyTenants.length > 0;
               }).length === 0 && (
-                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl">
+                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                   <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No tenants found</p>
+                  {tenants.length === 0 ? (
+                    <>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Tenants Yet</h3>
+                      <p className="text-gray-500 dark:text-gray-400 mb-6">Get started by adding your first tenant to the directory</p>
+                      {canAddTenant(userRole, teamPermissions) && (
+                        <button
+                          onClick={() => setShowTenantModal(true)}
+                          className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
+                        >
+                          <Plus className="w-5 h-5" />
+                          Add Your First Tenant
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Tenants Found</h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {tenantSearchQuery
+                          ? `No tenants match your search "${tenantSearchQuery}"`
+                          : 'No tenants in the selected property'}
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </>
@@ -3935,59 +3876,80 @@ const handleViewTenantDetails = (tenant) => {
           </button>
         </div>
 
-        {/* Mock Memo - Water maintenance */}
+        {/* Memos List - showing real memos only */}
         <div className="space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3 flex-wrap">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Water maintenance</h3>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                      normal
-                    </span>
+          {memos.length === 0 ? (
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Memos Yet</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">Start communicating with your tenants by sending your first memo</p>
+              <button
+                onClick={() => setShowMemoModal(true)}
+                className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
+              >
+                <Send className="w-5 h-5" />
+                Send Your First Memo
+              </button>
+            </div>
+          ) : (
+            memos.map(memo => (
+              <div key={memo.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition border border-gray-200 dark:border-gray-700">
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{memo.title}</h3>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                          memo.priority === 'high' ? 'bg-red-100 text-red-700' :
+                          memo.priority === 'normal' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {memo.priority}
+                        </span>
+                      </div>
+
+                      {/* Message */}
+                      <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                        {memo.message}
+                      </p>
+
+                      {/* Metadata */}
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-gray-400" />
+                          <span>Sent by: {memo.sentBy}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span>Date: {formatDate(memo.sentAt, businessPreferences.dateFormat)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span>Recipients: {memo.recipientCount || 0} {memo.recipientType === 'all' ? 'tenants' : 'selected'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 text-gray-400" />
+                          <span>Target: {memo.targetAudience === 'all' ? 'All Properties' : memo.targetAudience}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 lg:flex-col">
+                      <button
+                        onClick={() => handleDeleteMemo(memo.id)}
+                        className="flex-1 lg:flex-none bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center justify-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Message */}
-                  <p className="text-gray-700 mb-4 leading-relaxed">
-                    Water will be shut off tomorrow for a few hours. Please make prior arrangements
-                  </p>
-
-                  {/* Metadata */}
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gray-400" />
-                      <span>Sent by: Test User</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <span>Date: 16/10/2025</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      <span>Recipients: 10 tenants</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-gray-400" />
-                      <span>Target: Sunset Apartments</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 lg:flex-col">
-                  <button 
-                    onClick={() => handleDeleteMemo('mock1')}
-                    className="flex-1 lg:flex-none bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center justify-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
                 </div>
               </div>
-            </div>
-          </div>
+            ))
+          )}
         </div>
 
       </div>
