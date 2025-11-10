@@ -10,7 +10,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { X, Send, Check, CheckCheck, User, ChevronDown } from 'lucide-react';
+import { X, Send, Check, CheckCheck, User, ChevronDown, Search } from 'lucide-react';
 
 const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, senderRole = 'landlord' }) => {
   const [messages, setMessages] = useState([]);
@@ -22,6 +22,7 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
   const [recipientList, setRecipientList] = useState([]);
   const [selectedRecipient, setSelectedRecipient] = useState(tenant);
   const [showRecipientDropdown, setShowRecipientDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,6 +99,11 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
 
     fetchRecipients();
   }, [isOpen, recipientType, currentUser, senderRole, tenant]);
+
+  // Reset search query when recipient type changes
+  useEffect(() => {
+    setSearchQuery('');
+  }, [recipientType]);
 
   // Create unique conversation ID
   const getConversationId = () => {
@@ -322,7 +328,12 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
           {(senderRole === 'property_manager' || senderRole === 'maintenance') && !tenant && recipientList.length > 0 && (
             <div className="mt-2 relative">
               <button
-                onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
+                onClick={() => {
+                  setShowRecipientDropdown(!showRecipientDropdown);
+                  if (!showRecipientDropdown) {
+                    setSearchQuery('');
+                  }
+                }}
                 className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-left flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-600 transition"
               >
                 <span className="text-gray-900 dark:text-white">
@@ -332,24 +343,61 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
               </button>
 
               {showRecipientDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {recipientList.map((recipient) => (
-                    <button
-                      key={recipient.id}
-                      onClick={() => {
-                        setSelectedRecipient(recipient);
-                        setShowRecipientDropdown(false);
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition"
-                    >
-                      {recipient.displayName || recipient.name}
-                      {recipient.property && recipient.unit && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                          ({recipient.property} - Unit {recipient.unit})
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+                  {/* Search Input */}
+                  <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search recipients..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  {/* Recipients List */}
+                  <div className="max-h-48 overflow-y-auto">
+                    {recipientList
+                      .filter((recipient) => {
+                        const name = (recipient.displayName || recipient.name || '').toLowerCase();
+                        const property = (recipient.property || '').toLowerCase();
+                        const unit = (recipient.unit || '').toLowerCase();
+                        const search = searchQuery.toLowerCase();
+                        return name.includes(search) || property.includes(search) || unit.includes(search);
+                      })
+                      .map((recipient) => (
+                        <button
+                          key={recipient.id}
+                          onClick={() => {
+                            setSelectedRecipient(recipient);
+                            setShowRecipientDropdown(false);
+                            setSearchQuery('');
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition"
+                        >
+                          {recipient.displayName || recipient.name}
+                          {recipient.property && recipient.unit && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                              ({recipient.property} - Unit {recipient.unit})
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    {recipientList.filter((recipient) => {
+                      const name = (recipient.displayName || recipient.name || '').toLowerCase();
+                      const property = (recipient.property || '').toLowerCase();
+                      const unit = (recipient.unit || '').toLowerCase();
+                      const search = searchQuery.toLowerCase();
+                      return name.includes(search) || property.includes(search) || unit.includes(search);
+                    }).length === 0 && (
+                      <div className="px-3 py-4 text-center text-sm text-gray-500">
+                        No recipients found
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
