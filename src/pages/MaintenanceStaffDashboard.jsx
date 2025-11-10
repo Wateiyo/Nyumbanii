@@ -23,7 +23,11 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  MapPin
+  MapPin,
+  MessageSquare,
+  Trash2,
+  Plus,
+  Send
 } from 'lucide-react';
 
 const MaintenanceStaffDashboard = () => {
@@ -36,6 +40,11 @@ const MaintenanceStaffDashboard = () => {
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [messages, setMessages] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
+  const [isComposingNewMessage, setIsComposingNewMessage] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState(null);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
 
   // Fetch team member data for the current user
   useEffect(() => {
@@ -105,14 +114,15 @@ const MaintenanceStaffDashboard = () => {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [teamMember]);
 
-  // Fetch maintenance requests assigned to this staff member
+  // Fetch maintenance requests assigned to this staff member or unassigned
   useEffect(() => {
-    if (!teamMember?.id) return;
+    if (!teamMember?.id || !teamMember?.landlordId) return;
 
-    // Fetch requests assigned to this maintenance staff
+    // Fetch ALL maintenance requests for this landlord
+    // We'll filter client-side to show assigned and unassigned requests
     const q = query(
       collection(db, 'maintenanceRequests'),
-      where('assignedTo', '==', teamMember.id)
+      where('landlordId', '==', teamMember.landlordId)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -120,11 +130,109 @@ const MaintenanceStaffDashboard = () => {
         id: doc.id,
         ...doc.data()
       }));
-      setMaintenanceRequests(requestsData);
+
+      // Filter to show:
+      // 1. Requests assigned to this maintenance staff
+      // 2. Unassigned requests (no assignedTo field or null)
+      const filteredRequests = requestsData.filter(request =>
+        request.assignedTo === teamMember.id || !request.assignedTo
+      );
+
+      setMaintenanceRequests(filteredRequests);
     });
 
     return unsubscribe;
   }, [teamMember]);
+
+  // Fetch user profile for messaging
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const fetchUserProfile = async () => {
+      try {
+        const userDoc = await getDocs(
+          query(collection(db, 'users'), where('uid', '==', currentUser.uid))
+        );
+        if (!userDoc.empty) {
+          setUserProfile(userDoc.docs[0].data());
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [currentUser]);
+
+  // Fetch all messages for maintenance staff
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const messagesQuery = query(
+      collection(db, 'messages'),
+      where('participants', 'array-contains', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      const allMessages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Sort by timestamp, newest first
+      allMessages.sort((a, b) => {
+        const timeA = a.timestamp?.toDate?.() || new Date(0);
+        const timeB = b.timestamp?.toDate?.() || new Date(0);
+        return timeB - timeA;
+      });
+
+      setMessages(allMessages);
+    }, (error) => {
+      console.error('Error fetching messages:', error);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
+
+  const handleComposeNewMessage = () => {
+    setSelectedTenant(null);
+    setIsComposingNewMessage(true);
+    setIsMessageModalOpen(true);
+  };
+
+  const handleCloseMessageModal = () => {
+    setIsMessageModalOpen(false);
+    setSelectedTenant(null);
+    setIsComposingNewMessage(false);
+  };
+
+  const handleSelfAssign = async (requestId, request) => {
+    try {
+      await updateDoc(doc(db, 'maintenanceRequests', requestId), {
+        assignedTo: teamMember.id,
+        assignedToName: teamMember.name,
+        assignedAt: serverTimestamp()
+      });
+
+      // Send notification to landlord
+      if (teamMember?.landlordId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: teamMember.landlordId,
+          type: 'maintenance_assigned',
+          title: 'Maintenance Request Assigned',
+          message: `${teamMember.name} has taken responsibility for: ${request.issue} at ${request.property} - Unit ${request.unit}`,
+          maintenanceRequestId: requestId,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      alert('Request assigned to you successfully!');
+    } catch (error) {
+      console.error('Error assigning request:', error);
+      alert('Error assigning request. Please try again.');
+    }
+  };
 
   const handleUpdateStatus = async (id, status, request) => {
     try {
@@ -169,14 +277,14 @@ const MaintenanceStaffDashboard = () => {
 
   const stats = [
     { label: 'Assigned Properties', value: properties.length, icon: Building, color: 'bg-blue-100 text-blue-900' },
-    { label: 'Open Requests', value: maintenanceRequests.filter(r => r.status === 'pending').length, icon: AlertCircle, color: 'bg-red-100 text-red-900' },
-    { label: 'In Progress', value: maintenanceRequests.filter(r => r.status === 'in-progress').length, icon: Clock, color: 'bg-yellow-100 text-yellow-900' },
-    { label: 'Completed', value: maintenanceRequests.filter(r => r.status === 'completed').length, icon: CheckCircle, color: 'bg-green-100 text-green-900' }
+    { label: 'Open Requests', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'pending').length, icon: AlertCircle, color: 'bg-red-100 text-red-900' },
+    { label: 'In Progress', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'in-progress').length, icon: Clock, color: 'bg-yellow-100 text-yellow-900' },
+    { label: 'Completed', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'completed').length, icon: CheckCircle, color: 'bg-green-100 text-green-900' }
   ];
 
   const filteredRequests = maintenanceRequests.filter(request => {
     if (statusFilter === 'all') return true;
-    return request.status === statusFilter;
+    return request.status?.toLowerCase() === statusFilter;
   });
 
   // Show loading screen while fetching team member data or other data
@@ -199,18 +307,20 @@ const MaintenanceStaffDashboard = () => {
 
       <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transition-transform duration-300 flex flex-col`}>
         <div className="p-6">
-          <div className="flex items-center gap-3">
-            <Wrench className="w-8 h-8" />
+          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
+            </div>
             <div>
               <span className="text-xl font-bold">Nyumbanii</span>
               <p className="text-xs text-gray-300">Maintenance Staff</p>
             </div>
-          </div>
+          </a>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'requests', 'properties', 'calendar'].map((view) => {
-            const icons = { dashboard: Home, requests: Wrench, properties: Building, calendar: Calendar };
+          {['dashboard', 'requests', 'properties', 'messages', 'calendar'].map((view) => {
+            const icons = { dashboard: Home, requests: Wrench, properties: Building, messages: MessageSquare, calendar: Calendar };
             const Icon = icons[view];
             return (
               <button
@@ -275,16 +385,29 @@ const MaintenanceStaffDashboard = () => {
                   <AlertCircle className="w-5 h-5 text-red-600" />
                   Urgent Requests
                 </h3>
-                {maintenanceRequests.filter(r => r.priority === 'high' && r.status !== 'completed').length === 0 ? (
+                {maintenanceRequests.filter(r => r.priority === 'high' && r.status?.toLowerCase() !== 'completed').length === 0 ? (
                   <p className="text-gray-500 text-center py-4">No urgent requests</p>
                 ) : (
-                  maintenanceRequests.filter(r => r.priority === 'high' && r.status !== 'completed').map(request => (
+                  maintenanceRequests.filter(r => r.priority === 'high' && r.status?.toLowerCase() !== 'completed').map(request => (
                     <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-0">
                       <div className="flex-1">
                         <p className="font-medium text-gray-900 text-sm">{request.issue}</p>
                         <p className="text-xs text-gray-600">{request.property} - Unit {request.unit}</p>
+                        {!request.assignedTo && (
+                          <span className="inline-flex px-2 py-0.5 mt-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                            Unassigned
+                          </span>
+                        )}
                       </div>
-                      {request.status === 'pending' && (
+                      {!request.assignedTo && (
+                        <button
+                          onClick={() => handleSelfAssign(request.id, request)}
+                          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-sm"
+                        >
+                          Assign to Me
+                        </button>
+                      )}
+                      {request.assignedTo === teamMember.id && request.status?.toLowerCase() === 'pending' && (
                         <button
                           onClick={() => handleUpdateStatus(request.id, 'in-progress', request)}
                           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
@@ -292,7 +415,7 @@ const MaintenanceStaffDashboard = () => {
                           Start Work
                         </button>
                       )}
-                      {request.status === 'in-progress' && (
+                      {request.assignedTo === teamMember.id && request.status?.toLowerCase() === 'in-progress' && (
                         <button
                           onClick={() => handleUpdateStatus(request.id, 'completed', request)}
                           className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm"
@@ -310,10 +433,10 @@ const MaintenanceStaffDashboard = () => {
                   <Clock className="w-5 h-5 text-[#003366]" />
                   In Progress
                 </h3>
-                {maintenanceRequests.filter(r => r.status === 'in-progress').length === 0 ? (
+                {maintenanceRequests.filter(r => r.status?.toLowerCase() === 'in-progress').length === 0 ? (
                   <p className="text-gray-500 text-center py-4">No work in progress</p>
                 ) : (
-                  maintenanceRequests.filter(r => r.status === 'in-progress').map(request => (
+                  maintenanceRequests.filter(r => r.status?.toLowerCase() === 'in-progress').map(request => (
                     <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-0">
                       <div className="flex-1">
                         <p className="font-medium text-gray-900 text-sm">{request.issue}</p>
@@ -383,17 +506,32 @@ const MaintenanceStaffDashboard = () => {
                               {request.scheduledTime}
                             </span>
                           </div>
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            request.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            request.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {request.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                              request.status?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
+                              request.status?.toLowerCase() === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {request.status}
+                            </span>
+                            {!request.assignedTo && (
+                              <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                Unassigned
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        
-                        <div className="flex gap-2">
-                          {request.status === 'pending' && (
+
+                        <div className="flex flex-col gap-2">
+                          {!request.assignedTo && (
+                            <button
+                              onClick={() => handleSelfAssign(request.id, request)}
+                              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-sm whitespace-nowrap"
+                            >
+                              Assign to Me
+                            </button>
+                          )}
+                          {request.assignedTo === teamMember.id && request.status?.toLowerCase() === 'pending' && (
                             <button
                               onClick={() => handleUpdateStatus(request.id, 'in-progress', request)}
                               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
@@ -401,7 +539,7 @@ const MaintenanceStaffDashboard = () => {
                               Start Work
                             </button>
                           )}
-                          {request.status === 'in-progress' && (
+                          {request.assignedTo === teamMember.id && request.status?.toLowerCase() === 'in-progress' && (
                             <button
                               onClick={() => handleUpdateStatus(request.id, 'completed', request)}
                               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
@@ -409,8 +547,8 @@ const MaintenanceStaffDashboard = () => {
                               Mark Complete
                             </button>
                           )}
-                          {request.status === 'completed' && (
-                            <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg">
+                          {request.status?.toLowerCase() === 'completed' && (
+                            <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-center">
                               Completed ✓
                             </span>
                           )}
@@ -452,7 +590,7 @@ const MaintenanceStaffDashboard = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">Open Requests</span>
                           <span className="font-semibold text-[#003366]">
-                            {maintenanceRequests.filter(r => r.property === property.name && r.status !== 'completed').length}
+                            {maintenanceRequests.filter(r => r.property === property.name && r.status?.toLowerCase() !== 'completed').length}
                           </span>
                         </div>
                       </div>
@@ -467,10 +605,10 @@ const MaintenanceStaffDashboard = () => {
             <div className="bg-white p-6 rounded-xl shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Scheduled Maintenance</h2>
               <div className="space-y-4">
-                {maintenanceRequests.filter(r => r.status !== 'completed').length === 0 ? (
+                {maintenanceRequests.filter(r => r.status?.toLowerCase() !== 'completed').length === 0 ? (
                   <p className="text-gray-500 text-center py-8">No scheduled maintenance</p>
                 ) : (
-                  maintenanceRequests.filter(r => r.status !== 'completed').map(request => (
+                  maintenanceRequests.filter(r => r.status?.toLowerCase() !== 'completed').map(request => (
                     <div key={request.id} className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
                       <div className="w-16 h-16 bg-blue-100 rounded-lg flex flex-col items-center justify-center">
                         <span className="text-xs text-blue-600 font-medium">
@@ -496,6 +634,86 @@ const MaintenanceStaffDashboard = () => {
                   ))
                 )}
               </div>
+            </div>
+          )}
+
+          {currentView === 'messages' && (
+            <div className="space-y-6">
+              {/* Blue Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Messages</h3>
+                  <p className="text-sm text-gray-600">Communicate with landlords, property managers, and tenants</p>
+                </div>
+                <button
+                  onClick={handleComposeNewMessage}
+                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  New Message
+                </button>
+              </div>
+
+              {/* Messages as individual cards */}
+              {messages.length === 0 ? (
+                <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
+                  <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Messages Yet</h3>
+                  <p className="text-gray-600 mb-6">
+                    You haven't sent or received any messages yet.
+                  </p>
+                  <button
+                    onClick={handleComposeNewMessage}
+                    className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
+                  >
+                    <Send className="w-5 h-5" />
+                    Send Your First Message
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => {
+                    const isFromMe = message.senderId === currentUser?.uid;
+                    const displayName = isFromMe ? 'You' : (message.senderName || 'Unknown');
+                    const timestamp = message.timestamp?.toDate?.();
+                    const formattedDate = timestamp ?
+                      timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' +
+                      timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+
+                    return (
+                      <div key={message.id} className="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition group">
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="flex items-center gap-2 flex-1">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
+                              isFromMe ? 'bg-green-500' : 'bg-[#003366]'
+                            }`}>
+                              {displayName.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-sm lg:text-base text-gray-900">{displayName}</h4>
+                              {message.senderRole && (
+                                <p className="text-xs text-gray-500 capitalize">{message.senderRole.replace('_', ' ')}</p>
+                              )}
+                            </div>
+                            {!message.read && !isFromMe && (
+                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 flex-shrink-0">{formattedDate}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm lg:text-base text-gray-700 whitespace-pre-wrap">{message.text}</p>
+                        {message.recipientName && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            {isFromMe ? `To: ${message.recipientName}` : `From: ${message.senderName}`}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
