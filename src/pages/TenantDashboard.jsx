@@ -3456,28 +3456,48 @@ yth              <button
               )}
 
               {/* Message Property Manager Option */}
-              <button
-                onClick={() => {
-                  setShowNewMessageModal(false);
-                  alert('Property Manager messaging will be available soon. Please use the conversations list to continue existing chats.');
-                }}
-                className="w-full px-4 py-4 mb-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition font-medium flex items-center justify-center gap-2"
-              >
-                <MessageSquare className="w-5 h-5" />
-                Message Property Manager
-              </button>
+              {tenantData?.propertyManagerId && (
+                <button
+                  onClick={() => {
+                    setShowNewMessageModal(false);
+                    // Start a new conversation with property manager
+                    setSelectedConversation({
+                      conversationId: `${currentUser.uid}_${tenantData.propertyManagerId}`,
+                      otherUserId: tenantData.propertyManagerId,
+                      otherUserName: tenantData.propertyManagerName || 'Property Manager',
+                      otherUserRole: 'property_manager',
+                      propertyName: tenantData.propertyName || '',
+                      unit: tenantData.unit || ''
+                    });
+                  }}
+                  className="w-full px-4 py-4 mb-3 bg-[#003366] dark:bg-[#004080] text-white rounded-lg hover:bg-[#002244] dark:hover:bg-[#003366] transition font-medium flex items-center justify-center gap-2"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  Message Property Manager
+                </button>
+              )}
 
               {/* Message Maintenance Option */}
-              <button
-                onClick={() => {
-                  setShowNewMessageModal(false);
-                  alert('Maintenance Team messaging will be available soon. Please use the conversations list to continue existing chats.');
-                }}
-                className="w-full px-4 py-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition font-medium flex items-center justify-center gap-2"
-              >
-                <MessageSquare className="w-5 h-5" />
-                Message Maintenance
-              </button>
+              {tenantData?.maintenanceId && (
+                <button
+                  onClick={() => {
+                    setShowNewMessageModal(false);
+                    // Start a new conversation with maintenance
+                    setSelectedConversation({
+                      conversationId: `${currentUser.uid}_${tenantData.maintenanceId}`,
+                      otherUserId: tenantData.maintenanceId,
+                      otherUserName: tenantData.maintenanceName || 'Maintenance Team',
+                      otherUserRole: 'maintenance',
+                      propertyName: tenantData.propertyName || '',
+                      unit: tenantData.unit || ''
+                    });
+                  }}
+                  className="w-full px-4 py-4 bg-[#003366] dark:bg-[#004080] text-white rounded-lg hover:bg-[#002244] dark:hover:bg-[#003366] transition font-medium flex items-center justify-center gap-2"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  Message Maintenance
+                </button>
+              )}
             </div>
           </div>
         </div>
