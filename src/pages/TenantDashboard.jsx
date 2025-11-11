@@ -411,11 +411,13 @@ const TenantDashboard = () => {
 
   // Fetch notifications from Firebase
   useEffect(() => {
-    if (!tenantData?.id) return;
+    if (!currentUser?.uid) return;
+
+    console.log('📬 Setting up notification listener for tenant:', currentUser.uid);
 
     const notificationsQuery = query(
       collection(db, 'notifications'),
-      where('userId', '==', tenantData.id),
+      where('userId', '==', currentUser.uid), // Use currentUser.uid, not tenantData.id
       orderBy('timestamp', 'desc')
     );
 
@@ -424,13 +426,14 @@ const TenantDashboard = () => {
         id: doc.id,
         ...doc.data()
       }));
+      console.log('📬 Received', notificationsData.length, 'notifications for tenant');
       setNotifications(notificationsData);
     }, (error) => {
-      console.error('Error fetching notifications:', error);
+      console.error('❌ Error fetching notifications:', error);
     });
 
     return () => unsubscribe();
-  }, [tenantData]);
+  }, [currentUser]);
 
   // Helper function to format relative time
   const formatRelativeTime = (date) => {

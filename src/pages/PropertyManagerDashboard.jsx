@@ -282,6 +282,41 @@ const PropertyManagerDashboard = () => {
     }
   };
 
+  // ASSIGN MAINTENANCE REQUEST TO STAFF
+  const handleAssignMaintenance = async (requestId, staffId, request) => {
+    try {
+      const staff = maintenanceStaff.find(m => m.id === staffId);
+      if (!staff) {
+        alert('Staff member not found');
+        return;
+      }
+
+      await updateDoc(doc(db, 'maintenanceRequests', requestId), {
+        assignedTo: staffId,
+        assignedToName: staff.name,
+        assignedAt: serverTimestamp()
+      });
+
+      // Send notification to the assigned staff member
+      if (staff.userId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: staff.userId,
+          type: 'maintenance_assigned',
+          title: 'New Maintenance Request Assigned',
+          message: `You have been assigned: ${request.issue} at ${request.property} - Unit ${request.unit}`,
+          maintenanceRequestId: requestId,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      alert(`Request assigned to ${staff.name} successfully!`);
+    } catch (error) {
+      console.error('Error assigning maintenance request:', error);
+      alert('Error assigning request. Please try again.');
+    }
+  };
+
   // Fetch assigned properties
   useEffect(() => {
     if (!teamMember?.assignedProperties || teamMember.assignedProperties.length === 0) {
@@ -412,31 +447,31 @@ const PropertyManagerDashboard = () => {
     return unsubscribe;
   }, [teamMember]);
 
-  // Fetch conversations for property manager
-  useEffect(() => {
-    if (!currentUser?.uid) return;
+  // Fetch conversations for property manager - DISABLED (using message-based approach instead)
+  // useEffect(() => {
+  //   if (!currentUser?.uid) return;
 
-    const q = query(
-      collection(db, 'conversations'),
-      where('participants', 'array-contains', currentUser.uid)
-    );
+  //   const q = query(
+  //     collection(db, 'conversations'),
+  //     where('participants', 'array-contains', currentUser.uid)
+  //   );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const conversationsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      // Sort by last message time
-      conversationsData.sort((a, b) => {
-        const timeA = a.lastMessageTime?.toDate?.() || new Date(0);
-        const timeB = b.lastMessageTime?.toDate?.() || new Date(0);
-        return timeB - timeA;
-      });
-      setConversations(conversationsData);
-    });
+  //   const unsubscribe = onSnapshot(q, (snapshot) => {
+  //     const conversationsData = snapshot.docs.map(doc => ({
+  //       id: doc.id,
+  //       ...doc.data()
+  //     }));
+  //     // Sort by last message time
+  //     conversationsData.sort((a, b) => {
+  //       const timeA = a.lastMessageTime?.toDate?.() || new Date(0);
+  //       const timeB = b.lastMessageTime?.toDate?.() || new Date(0);
+  //       return timeB - timeA;
+  //     });
+  //     setConversations(conversationsData);
+  //   });
 
-    return unsubscribe;
-  }, [currentUser]);
+  //   return unsubscribe;
+  // }, [currentUser]);
 
   // Fetch all messages for property manager
   useEffect(() => {
@@ -506,59 +541,14 @@ const PropertyManagerDashboard = () => {
     }
   };
 
-  // Process messages into conversations
-  const processConversations = (messages, type) => {
-    console.log(`📨 Processing ${messages.length} ${type} messages into conversations`);
-    const conversationMap = new Map();
-
-    messages.forEach(message => {
-      const conversationId = message.conversationId;
-      if (!conversationId) {
-        console.log('⚠️ Message missing conversationId:', message.id);
-        return;
-      }
-
-      const existingConv = conversationMap.get(conversationId);
-
-      if (!existingConv || (message.timestamp && message.timestamp > existingConv.lastMessageTime)) {
-        const otherUserId = message.senderId === currentUser?.uid ? message.recipientId : message.senderId;
-        const otherUserName = message.senderId === currentUser?.uid ? message.recipientName : message.senderName;
-        const otherUserRole = message.senderId === currentUser?.uid ? message.recipientRole : message.senderRole;
-
-        conversationMap.set(conversationId, {
-          conversationId,
-          otherUserId,
-          otherUserName,
-          otherUserRole,
-          lastMessage: message.text,
-          lastMessageTime: message.timestamp,
-          unread: type === 'received' && !message.read,
-          propertyName: message.propertyName,
-          unit: message.unit
-        });
-      }
-    });
-
-    console.log('🗂️ Created', conversationMap.size, 'conversation entries');
-
-    setConversations(prev => {
-      const merged = new Map(prev.map(c => [c.conversationId, c]));
-      conversationMap.forEach((value, key) => {
-        merged.set(key, value);
-      });
-      const sorted = Array.from(merged.values()).sort((a, b) => {
-        const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
-        const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
-        return bTime - aTime;
-      });
-      console.log('💾 Total conversations after merge:', sorted.length);
-      return sorted;
-    });
-  };
-
   // Fetch conversations for Messages view
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid) {
+      console.log('🚫 No current user, skipping message fetch');
+      return;
+    }
+
+    console.log('📡 Setting up message listeners for property manager:', currentUser.uid);
 
     const q = query(
       collection(db, 'messages'),
@@ -570,18 +560,89 @@ const PropertyManagerDashboard = () => {
       where('recipientId', '==', currentUser.uid)
     );
 
+    // Process messages into conversations
+    const processConversations = (messages, type) => {
+      console.log(`📨 Processing ${messages.length} ${type} messages into conversations`);
+      console.log('Current user ID:', currentUser?.uid);
+      if (messages.length > 0) {
+        console.log('Sample message:', messages[0]);
+      }
+
+      const conversationMap = new Map();
+
+      messages.forEach(message => {
+        const conversationId = message.conversationId;
+        if (!conversationId) {
+          console.log('⚠️ Message missing conversationId:', message.id);
+          return;
+        }
+
+        const existingConv = conversationMap.get(conversationId);
+
+        if (!existingConv || (message.timestamp && message.timestamp > existingConv.lastMessageTime)) {
+          const otherUserId = message.senderId === currentUser?.uid ? message.recipientId : message.senderId;
+          const otherUserName = message.senderId === currentUser?.uid ? message.recipientName : message.senderName;
+          const otherUserRole = message.senderId === currentUser?.uid ? message.recipientRole : message.senderRole;
+
+          console.log(`Creating conversation entry: ${conversationId}`, {
+            otherUserId,
+            otherUserName,
+            otherUserRole
+          });
+
+          conversationMap.set(conversationId, {
+            conversationId,
+            otherUserId,
+            otherUserName,
+            otherUserRole,
+            lastMessage: message.text,
+            lastMessageTime: message.timestamp,
+            unread: type === 'received' && !message.read,
+            propertyName: message.propertyName,
+            unit: message.unit
+          });
+        }
+      });
+
+      console.log('🗂️ Created', conversationMap.size, 'conversation entries from', type, 'messages');
+
+      setConversations(prev => {
+        const merged = new Map(prev.map(c => [c.conversationId, c]));
+        conversationMap.forEach((value, key) => {
+          merged.set(key, value);
+        });
+        const sorted = Array.from(merged.values()).sort((a, b) => {
+          const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
+          const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
+          return bTime - aTime;
+        });
+        console.log('💾 Total conversations after merge:', sorted.length);
+        if (sorted.length > 0) {
+          console.log('Conversations:', sorted);
+        }
+        return sorted;
+      });
+    };
+
     // Combine both queries to get all conversations
     const unsubscribe1 = onSnapshot(q, (snapshot) => {
+      console.log('📤 Received sent messages snapshot:', snapshot.size, 'messages');
       const sentMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       processConversations(sentMessages, 'sent');
+    }, (error) => {
+      console.error('❌ Error fetching sent messages:', error);
     });
 
     const unsubscribe2 = onSnapshot(q2, (snapshot) => {
+      console.log('📥 Received incoming messages snapshot:', snapshot.size, 'messages');
       const receivedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       processConversations(receivedMessages, 'received');
+    }, (error) => {
+      console.error('❌ Error fetching received messages:', error);
     });
 
     return () => {
+      console.log('🧹 Cleaning up message listeners');
       unsubscribe1();
       unsubscribe2();
     };
@@ -1231,6 +1292,37 @@ const PropertyManagerDashboard = () => {
                             {request.priority} priority
                           </span>
                         </div>
+
+                        {/* Assignment Section */}
+                        <div className="mb-3">
+                          {request.assignedTo ? (
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 text-purple-700 rounded-lg text-sm">
+                              <Users className="w-4 h-4" />
+                              <span>Assigned to: <strong>{request.assignedToName}</strong></span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <label className="text-sm font-medium text-gray-700">Assign to:</label>
+                              <select
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    handleAssignMaintenance(request.id, e.target.value, request);
+                                  }
+                                }}
+                                className="px-3 py-1 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                defaultValue=""
+                              >
+                                <option value="">Select staff...</option>
+                                {maintenanceStaff.filter(m => m.role === 'maintenance').map(staff => (
+                                  <option key={staff.id} value={staff.id}>
+                                    {staff.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="flex gap-4 text-sm text-gray-600 mb-3">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
