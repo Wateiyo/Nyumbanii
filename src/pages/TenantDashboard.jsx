@@ -502,59 +502,14 @@ const TenantDashboard = () => {
     }
   };
 
-  // Process messages into conversations
-  const processConversations = (messages, type) => {
-    console.log(`📨 Processing ${messages.length} ${type} messages into conversations`);
-    const conversationMap = new Map();
-
-    messages.forEach(message => {
-      const conversationId = message.conversationId;
-      if (!conversationId) {
-        console.log('⚠️ Message missing conversationId:', message.id);
-        return;
-      }
-
-      const existingConv = conversationMap.get(conversationId);
-
-      if (!existingConv || (message.timestamp && message.timestamp > existingConv.lastMessageTime)) {
-        const otherUserId = message.senderId === currentUser?.uid ? message.recipientId : message.senderId;
-        const otherUserName = message.senderId === currentUser?.uid ? message.recipientName : message.senderName;
-        const otherUserRole = message.senderId === currentUser?.uid ? message.recipientRole : message.senderRole;
-
-        conversationMap.set(conversationId, {
-          conversationId,
-          otherUserId,
-          otherUserName,
-          otherUserRole,
-          lastMessage: message.text,
-          lastMessageTime: message.timestamp,
-          unread: type === 'received' && !message.read,
-          propertyName: message.propertyName,
-          unit: message.unit
-        });
-      }
-    });
-
-    console.log('🗂️ Created', conversationMap.size, 'conversation entries');
-
-    setConversations(prev => {
-      const merged = new Map(prev.map(c => [c.conversationId, c]));
-      conversationMap.forEach((value, key) => {
-        merged.set(key, value);
-      });
-      const sorted = Array.from(merged.values()).sort((a, b) => {
-        const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
-        const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
-        return bTime - aTime;
-      });
-      console.log('💾 Total conversations after merge:', sorted.length);
-      return sorted;
-    });
-  };
-
   // Fetch conversations for Messages tab
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid) {
+      console.log('🚫 No currentUser.uid for conversation fetching');
+      return;
+    }
+
+    console.log('📡 Setting up conversation listeners for tenant:', currentUser.uid);
 
     const q = query(
       collection(db, 'messages'),
@@ -566,18 +521,89 @@ const TenantDashboard = () => {
       where('recipientId', '==', currentUser.uid)
     );
 
+    // Process messages into conversations - MUST be inside useEffect to access current user
+    const processConversations = (messages, type) => {
+      console.log(`📨 Processing ${messages.length} ${type} messages into conversations`);
+      console.log('Current user ID:', currentUser?.uid);
+      if (messages.length > 0) {
+        console.log('Sample message:', messages[0]);
+      }
+
+      const conversationMap = new Map();
+
+      messages.forEach(message => {
+        const conversationId = message.conversationId;
+        if (!conversationId) {
+          console.log('⚠️ Message missing conversationId:', message.id);
+          return;
+        }
+
+        const existingConv = conversationMap.get(conversationId);
+
+        if (!existingConv || (message.timestamp && message.timestamp > existingConv.lastMessageTime)) {
+          const otherUserId = message.senderId === currentUser?.uid ? message.recipientId : message.senderId;
+          const otherUserName = message.senderId === currentUser?.uid ? message.recipientName : message.senderName;
+          const otherUserRole = message.senderId === currentUser?.uid ? message.recipientRole : message.senderRole;
+
+          console.log(`Creating conversation entry: ${conversationId}`, {
+            otherUserId,
+            otherUserName,
+            otherUserRole
+          });
+
+          conversationMap.set(conversationId, {
+            conversationId,
+            otherUserId,
+            otherUserName,
+            otherUserRole,
+            lastMessage: message.text,
+            lastMessageTime: message.timestamp,
+            unread: type === 'received' && !message.read,
+            propertyName: message.propertyName,
+            unit: message.unit
+          });
+        }
+      });
+
+      console.log('🗂️ Created', conversationMap.size, 'conversation entries from', type, 'messages');
+
+      setConversations(prev => {
+        const merged = new Map(prev.map(c => [c.conversationId, c]));
+        conversationMap.forEach((value, key) => {
+          merged.set(key, value);
+        });
+        const sorted = Array.from(merged.values()).sort((a, b) => {
+          const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
+          const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
+          return bTime - aTime;
+        });
+        console.log('💾 Total conversations after merge:', sorted.length);
+        if (sorted.length > 0) {
+          console.log('Conversations:', sorted);
+        }
+        return sorted;
+      });
+    };
+
     // Combine both queries to get all conversations
     const unsubscribe1 = onSnapshot(q, (snapshot) => {
+      console.log('📤 Received sent messages snapshot:', snapshot.size, 'messages');
       const sentMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       processConversations(sentMessages, 'sent');
+    }, (error) => {
+      console.error('❌ Error fetching sent messages:', error);
     });
 
     const unsubscribe2 = onSnapshot(q2, (snapshot) => {
+      console.log('📥 Received incoming messages snapshot:', snapshot.size, 'messages');
       const receivedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       processConversations(receivedMessages, 'received');
+    }, (error) => {
+      console.error('❌ Error fetching received messages:', error);
     });
 
     return () => {
+      console.log('🧹 Cleaning up conversation listeners');
       unsubscribe1();
       unsubscribe2();
     };
