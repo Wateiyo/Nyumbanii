@@ -1737,6 +1737,41 @@ const handleEditProperty = async () => {
     }
   };
 
+  // ASSIGN MAINTENANCE REQUEST TO STAFF
+  const handleAssignMaintenance = async (requestId, staffId, request) => {
+    try {
+      const staff = teamMembers.find(m => m.id === staffId);
+      if (!staff) {
+        alert('Staff member not found');
+        return;
+      }
+
+      await updateDoc(doc(db, 'maintenanceRequests', requestId), {
+        assignedTo: staffId,
+        assignedToName: staff.name,
+        assignedAt: serverTimestamp()
+      });
+
+      // Send notification to the assigned staff member
+      if (staff.userId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: staff.userId,
+          type: 'maintenance_assigned',
+          title: 'New Maintenance Request Assigned',
+          message: `You have been assigned: ${request.issue} at ${request.property} - Unit ${request.unit}`,
+          maintenanceRequestId: requestId,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      alert(`Request assigned to ${staff.name} successfully!`);
+    } catch (error) {
+      console.error('Error assigning maintenance request:', error);
+      alert('Error assigning request. Please try again.');
+    }
+  };
+
   // DELETE MAINTENANCE REQUEST
   const handleDeleteMaintenanceRequest = async (id) => {
     if (!window.confirm('Are you sure you want to delete this maintenance request? This action cannot be undone.')) {
@@ -3090,7 +3125,7 @@ const handleViewTenantDetails = (tenant) => {
                         <div className="flex-1 min-w-0">
                           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{request.issue}</h3>
 
-                          <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400 mb-2">
                             <div className="flex items-center gap-2">
                               <Building className="w-4 h-4 flex-shrink-0" />
                               <span className="truncate">{request.property} - Unit {request.unit}</span>
@@ -3103,6 +3138,36 @@ const handleViewTenantDetails = (tenant) => {
                               <Calendar className="w-4 h-4 flex-shrink-0" />
                               <span>{request.date} at {request.scheduledTime || '09:00'}</span>
                             </div>
+                          </div>
+
+                          {/* Assignment Section */}
+                          <div className="mt-3">
+                            {request.assignedTo ? (
+                              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm">
+                                <Users className="w-4 h-4" />
+                                <span>Assigned to: <strong>{request.assignedToName}</strong></span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Assign to:</label>
+                                <select
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      handleAssignMaintenance(request.id, e.target.value, request);
+                                    }
+                                  }}
+                                  className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  defaultValue=""
+                                >
+                                  <option value="">Select staff...</option>
+                                  {teamMembers.filter(m => m.role === 'maintenance').map(staff => (
+                                    <option key={staff.id} value={staff.id}>
+                                      {staff.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
