@@ -214,6 +214,10 @@ const TenantDashboard = () => {
   const [updates, setUpdates] = useState([]);
   const [memos, setMemos] = useState([]);
 
+  // Property Manager and Maintenance Staff data
+  const [propertyManager, setPropertyManager] = useState(null);
+  const [maintenanceStaff, setMaintenanceStaff] = useState(null);
+
   // ============ FIREBASE REALTIME DATA ============
 
   // Fetch tenant data to get their landlordId
@@ -794,6 +798,75 @@ const TenantDashboard = () => {
     });
 
     return unsubscribe;
+  }, [tenantData]);
+
+  // Fetch Property Manager and Maintenance Staff assigned to tenant's property
+  useEffect(() => {
+    if (!tenantData?.landlordId || !tenantData?.propertyId) {
+      console.log('⚠️ Missing landlordId or propertyId for fetching team members');
+      return;
+    }
+
+    console.log('👥 Fetching team members for property:', tenantData.propertyId);
+
+    // Fetch Property Managers
+    const pmQuery = query(
+      collection(db, 'teamMembers'),
+      where('landlordId', '==', tenantData.landlordId),
+      where('role', '==', 'property_manager'),
+      where('status', '==', 'active')
+    );
+
+    const unsubscribePM = onSnapshot(pmQuery, (snapshot) => {
+      const propertyManagers = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(pm =>
+          pm.assignedProperties &&
+          pm.assignedProperties.includes(tenantData.propertyId)
+        );
+
+      if (propertyManagers.length > 0) {
+        console.log('✅ Found property manager:', propertyManagers[0]);
+        setPropertyManager(propertyManagers[0]);
+      } else {
+        console.log('⚠️ No property manager found for this property');
+        setPropertyManager(null);
+      }
+    }, (error) => {
+      console.error('Error fetching property managers:', error);
+    });
+
+    // Fetch Maintenance Staff
+    const maintenanceQuery = query(
+      collection(db, 'teamMembers'),
+      where('landlordId', '==', tenantData.landlordId),
+      where('role', '==', 'maintenance'),
+      where('status', '==', 'active')
+    );
+
+    const unsubscribeMaintenance = onSnapshot(maintenanceQuery, (snapshot) => {
+      const maintenanceStaffList = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(ms =>
+          ms.assignedProperties &&
+          ms.assignedProperties.includes(tenantData.propertyId)
+        );
+
+      if (maintenanceStaffList.length > 0) {
+        console.log('✅ Found maintenance staff:', maintenanceStaffList[0]);
+        setMaintenanceStaff(maintenanceStaffList[0]);
+      } else {
+        console.log('⚠️ No maintenance staff found for this property');
+        setMaintenanceStaff(null);
+      }
+    }, (error) => {
+      console.error('Error fetching maintenance staff:', error);
+    });
+
+    return () => {
+      unsubscribePM();
+      unsubscribeMaintenance();
+    };
   }, [tenantData]);
 
   // ============ FIREBASE FUNCTIONS ============
@@ -3794,15 +3867,16 @@ yth              <button
               )}
 
               {/* Message Property Manager Option */}
-              {tenantData?.propertyManagerId && (
+              {propertyManager?.userId && (
                 <button
                   onClick={() => {
                     setShowNewMessageModal(false);
+                    setCurrentView('messages');
                     // Start a new conversation with property manager
                     setSelectedConversation({
-                      conversationId: `${currentUser.uid}_${tenantData.propertyManagerId}`,
-                      otherUserId: tenantData.propertyManagerId,
-                      otherUserName: tenantData.propertyManagerName || 'Property Manager',
+                      conversationId: `${currentUser.uid}_${propertyManager.userId}`,
+                      otherUserId: propertyManager.userId,
+                      otherUserName: propertyManager.name || 'Property Manager',
                       otherUserRole: 'property_manager',
                       propertyName: tenantData.propertyName || '',
                       unit: tenantData.unit || ''
@@ -3816,15 +3890,16 @@ yth              <button
               )}
 
               {/* Message Maintenance Option */}
-              {tenantData?.maintenanceId && (
+              {maintenanceStaff?.userId && (
                 <button
                   onClick={() => {
                     setShowNewMessageModal(false);
+                    setCurrentView('messages');
                     // Start a new conversation with maintenance
                     setSelectedConversation({
-                      conversationId: `${currentUser.uid}_${tenantData.maintenanceId}`,
-                      otherUserId: tenantData.maintenanceId,
-                      otherUserName: tenantData.maintenanceName || 'Maintenance Team',
+                      conversationId: `${currentUser.uid}_${maintenanceStaff.userId}`,
+                      otherUserId: maintenanceStaff.userId,
+                      otherUserName: maintenanceStaff.name || 'Maintenance Team',
                       otherUserRole: 'maintenance',
                       propertyName: tenantData.propertyName || '',
                       unit: tenantData.unit || ''
