@@ -72,10 +72,23 @@ export const useTenants = (landlordId) => {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const tenantsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const tenantsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: data.userId || doc.id, // Use userId if available, fallback to document ID
+            docId: doc.id, // Keep document ID for reference
+            ...data
+          };
+        });
+        console.log('📋 Loaded tenants:', tenantsData.length, 'tenants');
+        if (tenantsData.length > 0) {
+          console.log('Sample tenant data:', {
+            id: tenantsData[0].id,
+            docId: tenantsData[0].docId,
+            userId: tenantsData[0].userId,
+            name: tenantsData[0].name
+          });
+        }
         setTenants(tenantsData);
         setLoading(false);
       },
