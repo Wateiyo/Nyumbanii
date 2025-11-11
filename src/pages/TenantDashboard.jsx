@@ -1504,6 +1504,48 @@ const TenantDashboard = () => {
     }
   };
 
+  const handleNotificationClick = async (notification) => {
+    // Mark as read
+    await markNotificationAsRead(notification.id);
+
+    // Close notifications dropdown
+    setShowNotifications(false);
+
+    // Handle different notification types
+    if (notification.type === 'message' && notification.conversationId) {
+      // Navigate to messages view
+      setCurrentView('messages');
+
+      // Find and open the conversation
+      setTimeout(() => {
+        const conversation = conversations.find(c => c.conversationId === notification.conversationId);
+        if (conversation) {
+          setSelectedConversation(conversation);
+        } else {
+          // If conversation not found in list, create it from notification data
+          setSelectedConversation({
+            conversationId: notification.conversationId,
+            otherUserId: notification.senderId,
+            otherUserName: notification.senderName || 'User',
+            otherUserRole: notification.senderRole || 'landlord',
+            propertyName: tenantData?.propertyName || '',
+            unit: tenantData?.unit || ''
+          });
+        }
+      }, 100);
+    } else if (notification.type === 'payment') {
+      // Navigate to payments view
+      setCurrentView('payments');
+    } else if (notification.type === 'maintenance') {
+      // Navigate to maintenance view
+      setCurrentView('maintenance');
+    } else if (notification.type === 'document') {
+      // Navigate to documents view
+      setCurrentView('documents');
+    }
+    // Add more notification types as needed
+  };
+
   const filteredListings = availableListings.filter(listing =>
     (listing.property && listing.property.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (listing.unit && listing.unit.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -1599,15 +1641,15 @@ const TenantDashboard = () => {
                           return (
                             <div
                               key={notification.id}
-                              onClick={() => markNotificationAsRead(notification.id)}
-                              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                              onClick={() => handleNotificationClick(notification)}
+                              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'}`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1">
                                   {notification.title && (
                                     <p className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{notification.title}</p>
                                   )}
-                                  <p className="text-sm text-gray-700 dark:text-gray-200">{notification.message}</p>
+                                  <p className="text-sm text-gray-700 dark:text-gray-300">{notification.message}</p>
                                   {notification.senderName && (
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">From: {notification.senderName}</p>
                                   )}

@@ -2365,8 +2365,8 @@ const handleViewTenantDetails = (tenant) => {
           {notifications.map(notification => (
             <div
               key={notification.id}
-              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${
-                !notification.read ? 'bg-blue-50' : ''
+              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
               }`}
               onClick={async () => {
                 // Mark as read
@@ -2380,9 +2380,30 @@ const handleViewTenantDetails = (tenant) => {
                     console.error('Error marking notification as read:', error);
                   }
                 }
-                
+
                 // Navigate based on notification type
-                if (notification.type === 'payment') {
+                if (notification.type === 'message' && notification.conversationId) {
+                  // Navigate to messages view
+                  setCurrentView('messages');
+
+                  // Find and open the conversation
+                  setTimeout(() => {
+                    const conversation = conversations.find(c => c.conversationId === notification.conversationId);
+                    if (conversation) {
+                      setSelectedConversation(conversation);
+                    } else {
+                      // If conversation not found in list, create it from notification data
+                      setSelectedConversation({
+                        conversationId: notification.conversationId,
+                        otherUserId: notification.senderId,
+                        otherUserName: notification.senderName || 'User',
+                        otherUserRole: notification.senderRole || 'tenant',
+                        propertyName: '',
+                        unit: ''
+                      });
+                    }
+                  }, 100);
+                } else if (notification.type === 'payment') {
                   setCurrentView('payments');
                 } else if (notification.type === 'maintenance') {
                   setCurrentView('maintenance');
@@ -2391,36 +2412,38 @@ const handleViewTenantDetails = (tenant) => {
                 } else if (notification.type === 'tenant') {
                   setCurrentView('tenants');
                 }
-                
+
                 setShowNotifications(false);
               }}
             >
               <div className="flex items-start gap-3">
                 {/* Icon based on type */}
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  notification.type === 'payment' ? 'bg-green-100' :
-                  notification.type === 'maintenance' ? 'bg-orange-100' :
-                  notification.type === 'viewing' ? 'bg-blue-100' :
-                  notification.type === 'tenant' ? 'bg-purple-100' :
-                  'bg-gray-100'
+                  notification.type === 'payment' ? 'bg-green-100 dark:bg-green-900/30' :
+                  notification.type === 'maintenance' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                  notification.type === 'viewing' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                  notification.type === 'tenant' ? 'bg-purple-100 dark:bg-purple-900/30' :
+                  notification.type === 'message' ? 'bg-indigo-100 dark:bg-indigo-900/30' :
+                  'bg-gray-100 dark:bg-gray-700'
                 }`}>
-                  {notification.type === 'payment' && <Banknote className="w-5 h-5 text-green-600" />}
-                  {notification.type === 'maintenance' && <Wrench className="w-5 h-5 text-orange-600" />}
-                  {notification.type === 'viewing' && <Eye className="w-5 h-5 text-blue-600" />}
-                  {notification.type === 'tenant' && <Users className="w-5 h-5 text-purple-600" />}
+                  {notification.type === 'payment' && <Banknote className="w-5 h-5 text-green-600 dark:text-green-400" />}
+                  {notification.type === 'maintenance' && <Wrench className="w-5 h-5 text-orange-600 dark:text-orange-400" />}
+                  {notification.type === 'viewing' && <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+                  {notification.type === 'tenant' && <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+                  {notification.type === 'message' && <MessageSquare className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
                   {!notification.type && <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm mb-1 ${!notification.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                  <p className={`text-sm mb-1 ${!notification.read ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                     {notification.title}
                   </p>
-                  <p className="text-xs text-gray-600 line-clamp-2">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
                     {notification.message}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {notification.createdAt && typeof notification.createdAt.toDate === 'function' 
+                    {notification.createdAt && typeof notification.createdAt.toDate === 'function'
                       ? formatRelativeTime(notification.createdAt.toDate())
                       : 'Just now'}
                   </p>
