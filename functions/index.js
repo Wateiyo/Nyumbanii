@@ -8,6 +8,7 @@ const admin = require("firebase-admin");
 const { Resend } = require("resend");
 const axios = require("axios");
 const cheerio = require("cheerio");
+const pdf = require("pdf-parse");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -1070,7 +1071,7 @@ exports.scrapeKenyaPowerInterruptions = onSchedule(
       logger.info("🔌 Starting Kenya Power interruption scrape...");
 
       const db = admin.firestore();
-      const KENYA_POWER_URL = "https://kplc.co.ke/category/view/50/planned-power-interruptions";
+      const KENYA_POWER_URL = "https://www.kplc.co.ke/customer-support#powerschedule";
 
       // Fetch the Kenya Power page
       const response = await axios.get(KENYA_POWER_URL, {
@@ -1083,32 +1084,66 @@ exports.scrapeKenyaPowerInterruptions = onSchedule(
       const $ = cheerio.load(response.data);
       const interruptions = [];
 
-      // Parse the interruption notices
-      // Adjust selectors based on actual Kenya Power website structure
-      $('.article-item, .post-item, .interruption-notice').each((index, element) => {
-        const $element = $(element);
+      // Find PDF links on the power schedule page
+      const pdfLinks = [];
+      $('a[href*=".pdf"]').each((index, element) => {
+        const href = $(element).attr('href');
+        const title = $(element).text().trim();
+        const dateMatch = title.match(/(\d{2}\.\d{2}\.\d{4})/);
 
-        const title = $element.find('h2, h3, .title, .post-title').text().trim();
-        const content = $element.find('p, .content, .description').text().trim();
-        const dateText = $element.find('.date, .post-date, time').text().trim();
-
-        if (title && content) {
-          // Extract location/area from title or content
-          const location = extractLocation(title + ' ' + content);
-
-          interruptions.push({
+        if (href && title.toLowerCase().includes('power') && title.toLowerCase().includes('maintenance')) {
+          pdfLinks.push({
+            url: href.startsWith('http') ? href : `https://www.kplc.co.ke${href}`,
             title: title,
-            content: content,
-            dateText: dateText,
-            location: location,
-            source: 'Kenya Power',
-            sourceUrl: KENYA_POWER_URL,
-            scrapedAt: admin.firestore.FieldValue.serverTimestamp()
+            date: dateMatch ? dateMatch[1] : null
           });
         }
       });
 
-      logger.info(`📊 Found ${interruptions.length} interruption notices`);
+      logger.info(`📄 Found ${pdfLinks.length} PDF notices`);
+
+      // Download and parse up to 3 most recent PDFs
+      for (const pdfLink of pdfLinks.slice(0, 3)) {
+        try {
+          logger.info(`📥 Downloading PDF: ${pdfLink.title}`);
+
+          const pdfResponse = await axios.get(pdfLink.url, {
+            responseType: 'arraybuffer',
+            timeout: 30000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+
+          const pdfBuffer = Buffer.from(pdfResponse.data);
+          const pdfData = await pdf(pdfBuffer);
+          const pdfText = pdfData.text;
+
+          logger.info(`📖 Extracted ${pdfText.length} characters from PDF`);
+
+          // Extract interruption details from PDF text
+          const locations = extractLocationsFromPDF(pdfText);
+          const dateInfo = pdfLink.date || extractDateFromPDF(pdfText);
+
+          // Create an interruption entry for each location found
+          for (const location of locations) {
+            interruptions.push({
+              title: `⚡ Power Interruption - ${location}`,
+              content: `Scheduled power maintenance in ${location}. Check the full notice for specific times and affected areas.`,
+              dateText: dateInfo || 'Check notice for dates',
+              location: location,
+              source: 'Kenya Power',
+              sourceUrl: pdfLink.url,
+              pdfTitle: pdfLink.title,
+              scrapedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        } catch (pdfError) {
+          logger.error(`Error processing PDF ${pdfLink.title}:`, pdfError.message);
+        }
+      }
+
+      logger.info(`📊 Found ${interruptions.length} interruption notices from PDFs`);
 
       // Get all landlord settings to distribute updates
       const settingsSnapshot = await db.collection('landlordSettings').get();
@@ -1236,26 +1271,64 @@ exports.scrapeKenyaPowerInterruptions = onSchedule(
 );
 
 /**
- * Helper function to extract location from text
+ * Helper function to extract locations from PDF text
  */
-function extractLocation(text) {
+function extractLocationsFromPDF(text) {
   const locations = [
     'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Kitale',
     'Malindi', 'Garissa', 'Nyeri', 'Machakos', 'Meru', 'Kakamega', 'Kisii',
     'Kiambu', 'Kajiado', 'Kilifi', 'Ruiru', 'Naivasha', 'Kitui', 'Kericho',
     'Karen', 'Westlands', 'Kasarani', 'Embakasi', 'Dagoretti', 'Langata',
-    'Parklands', 'Industrial Area', 'CBD', 'Ngong', 'Rongai', 'Kikuyu'
+    'Parklands', 'Industrial Area', 'CBD', 'Ngong', 'Rongai', 'Kikuyu',
+    'Lavington', 'Muthaiga', 'Runda', 'Kileleshwa', 'Kilimani', 'Upperhill',
+    'South B', 'South C', 'Kahawa', 'Zimmerman', 'Roysambu', 'Githurai',
+    'Juja', 'Mlolongo', 'Syokimau', 'Kitengela', 'Athi River'
   ];
 
+  const foundLocations = new Set();
   const textLower = text.toLowerCase();
 
   for (const location of locations) {
     if (textLower.includes(location.toLowerCase())) {
-      return location;
+      foundLocations.add(location);
     }
   }
 
-  return 'Kenya'; // Default fallback
+  // If no specific locations found, try to extract from "AREA:" patterns
+  const areaMatches = text.match(/AREA[:\s]+([A-Z\s,]+)/gi);
+  if (areaMatches) {
+    areaMatches.forEach(match => {
+      const area = match.replace(/AREA[:\s]+/i, '').trim();
+      locations.forEach(loc => {
+        if (area.toLowerCase().includes(loc.toLowerCase())) {
+          foundLocations.add(loc);
+        }
+      });
+    });
+  }
+
+  return foundLocations.size > 0 ? Array.from(foundLocations) : ['Multiple Areas'];
+}
+
+/**
+ * Helper function to extract date from PDF text
+ */
+function extractDateFromPDF(text) {
+  // Try multiple date patterns
+  const patterns = [
+    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/,  // DD/MM/YYYY or DD-MM-YYYY
+    /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})/i, // 15 January 2024
+    /(?:DATE|ON)[:\s]+(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return null;
 }
 
 /**

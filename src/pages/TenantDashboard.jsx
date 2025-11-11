@@ -2556,7 +2556,7 @@ const TenantDashboard = () => {
                     </div>
                   </div>
                   <a
-                    href="https://kplc.co.ke/category/view/50/planned-power-interruptions"
+                    href="https://www.kplc.co.ke/customer-support#powerschedule"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium text-sm transition flex items-center gap-2"
