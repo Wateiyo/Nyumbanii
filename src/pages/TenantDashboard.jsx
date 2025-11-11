@@ -38,7 +38,9 @@ import {
   Trash2,
   Check,
   CheckCheck,
-  User
+  User,
+  Megaphone,
+  Clipboard
 } from 'lucide-react';
 
 // Initialize Firebase services
@@ -207,6 +209,10 @@ const TenantDashboard = () => {
     name: '',
     file: null
   });
+
+  // Updates and Memos data
+  const [updates, setUpdates] = useState([]);
+  const [memos, setMemos] = useState([]);
 
   // ============ FIREBASE REALTIME DATA ============
 
@@ -719,6 +725,76 @@ const TenantDashboard = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, [lastScrollY]);
+
+  // Prevent accidental back navigation from dashboard
+  useEffect(() => {
+    // Push a dummy state when component mounts
+    window.history.pushState(null, '', window.location.pathname);
+
+    const handlePopState = (e) => {
+      // Prevent going back by pushing forward again
+      window.history.pushState(null, '', window.location.pathname);
+
+      // Optionally show a confirmation dialog
+      const confirmLeave = window.confirm('Are you sure you want to leave the dashboard?');
+      if (confirmLeave) {
+        // If user confirms, navigate to home or logout
+        navigate('/');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
+
+  // Fetch Updates from Firestore
+  useEffect(() => {
+    if (!tenantData?.landlordId) return;
+
+    const updatesQuery = query(
+      collection(db, 'updates'),
+      where('landlordId', '==', tenantData.landlordId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(updatesQuery, (snapshot) => {
+      const updatesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUpdates(updatesData);
+    }, (error) => {
+      console.error('Error fetching updates:', error);
+    });
+
+    return unsubscribe;
+  }, [tenantData]);
+
+  // Fetch Memos from Firestore
+  useEffect(() => {
+    if (!tenantData?.landlordId) return;
+
+    const memosQuery = query(
+      collection(db, 'memos'),
+      where('landlordId', '==', tenantData.landlordId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(memosQuery, (snapshot) => {
+      const memosData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMemos(memosData);
+    }, (error) => {
+      console.error('Error fetching memos:', error);
+    });
+
+    return unsubscribe;
+  }, [tenantData]);
 
   // ============ FIREBASE FUNCTIONS ============
   
@@ -1554,6 +1630,14 @@ const TenantDashboard = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900 flex overflow-hidden transition-colors duration-200">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
         <div className="p-6">
@@ -1572,6 +1656,8 @@ const TenantDashboard = () => {
             { name: 'Maintenance', icon: Wrench, view: 'maintenance' },
             { name: 'Documents', icon: FileText, view: 'documents' },
             { name: 'Messages', icon: MessageSquare, view: 'messages' },
+            { name: 'Updates', icon: Megaphone, view: 'updates' },
+            { name: 'Memos', icon: Clipboard, view: 'memos' },
             { name: 'Available Listings', icon: Search, view: 'listings' },
             { name: 'Settings', icon: Settings, view: 'settings' }
           ].map((item) => (
@@ -2452,6 +2538,197 @@ const TenantDashboard = () => {
                 ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Updates View */}
+          {currentView === 'updates' && (
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Megaphone className="w-6 h-6 text-[#003366] dark:text-blue-400" />
+                    Updates & Announcements
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Stay informed about important news and announcements</p>
+                </div>
+
+                <div className="p-4 sm:p-6">
+                  {updates.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Megaphone className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400">No updates available</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Check back later for announcements</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {updates.map((update) => {
+                        const isPowerInterruption = update.category === 'power_interruption';
+                        const isSystemAlert = update.category === 'system_alert';
+
+                        return (
+                          <div
+                            key={update.id}
+                            className={`border rounded-lg p-4 hover:shadow-md transition ${
+                              isPowerInterruption
+                                ? 'border-yellow-400 dark:border-yellow-600 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 shadow-sm'
+                                : isSystemAlert
+                                ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20'
+                                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Icon Badge */}
+                              {isPowerInterruption && (
+                                <div className="flex-shrink-0 w-10 h-10 bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center animate-pulse">
+                                  <Bell className="w-5 h-5 text-white" />
+                                </div>
+                              )}
+
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <h3 className={`font-semibold text-lg ${
+                                    isPowerInterruption ? 'text-yellow-900 dark:text-yellow-100' : 'text-gray-900 dark:text-white'
+                                  }`}>
+                                    {update.title}
+                                  </h3>
+
+                                  {/* Category Badge */}
+                                  <div className="flex gap-2 flex-wrap">
+                                    {isPowerInterruption && (
+                                      <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full whitespace-nowrap">
+                                        ⚡ POWER
+                                      </span>
+                                    )}
+                                    {update.type === 'automated' && (
+                                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs rounded-full">
+                                        Auto
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <p className={`text-sm mb-3 ${
+                                  isPowerInterruption ? 'text-yellow-900 dark:text-yellow-100' : 'text-gray-700 dark:text-gray-300'
+                                }`}>
+                                  {update.content}
+                                </p>
+
+                                {/* Metadata */}
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {update.createdAt?.toDate?.().toLocaleDateString() || 'Recently'}
+                                  </span>
+
+                                  {update.location && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />
+                                      {update.location}
+                                    </span>
+                                  )}
+
+                                  {update.dateText && (
+                                    <span className="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">
+                                      {update.dateText}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Source Link */}
+                                {update.sourceUrl && (
+                                  <a
+                                    href={update.sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                  >
+                                    View on {update.source || 'source'} →
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Memos View */}
+          {currentView === 'memos' && (
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Clipboard className="w-6 h-6 text-[#003366] dark:text-blue-400" />
+                    Memos & Notices
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Important memos and notices from your landlord</p>
+                </div>
+
+                <div className="p-4 sm:p-6">
+                  {memos.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Clipboard className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400">No memos available</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Check back later for important notices</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {memos.map((memo) => (
+                        <div
+                          key={memo.id}
+                          className={`border rounded-lg p-4 hover:shadow-md transition ${
+                            memo.priority === 'high'
+                              ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+                              : memo.priority === 'medium'
+                              ? 'border-yellow-300 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20'
+                              : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-semibold text-gray-900 dark:text-white">{memo.title}</h3>
+                                {memo.priority && (
+                                  <span
+                                    className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                                      memo.priority === 'high'
+                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                                        : memo.priority === 'medium'
+                                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300'
+                                    }`}
+                                  >
+                                    {memo.priority}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">{memo.content}</p>
+                              <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {memo.createdAt?.toDate?.().toLocaleDateString() || 'Recently'}
+                                </span>
+                                {memo.expiryDate && (
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    Expires: {new Date(memo.expiryDate).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
