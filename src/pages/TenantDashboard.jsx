@@ -800,14 +800,15 @@ const TenantDashboard = () => {
     return unsubscribe;
   }, [tenantData]);
 
-  // Fetch Property Manager and Maintenance Staff assigned to tenant's property
+  // Fetch Property Manager and Maintenance Staff assigned to tenant's landlord
   useEffect(() => {
-    if (!tenantData?.landlordId || !tenantData?.propertyId) {
-      console.log('⚠️ Missing landlordId or propertyId for fetching team members');
+    if (!tenantData?.landlordId) {
+      console.log('⚠️ Missing landlordId for fetching team members');
       return;
     }
 
-    console.log('👥 Fetching team members for property:', tenantData.propertyId);
+    console.log('👥 Fetching team members for landlord:', tenantData.landlordId);
+    console.log('📋 Tenant propertyId:', tenantData.propertyId);
 
     // Fetch Property Managers
     const pmQuery = query(
@@ -818,19 +819,35 @@ const TenantDashboard = () => {
     );
 
     const unsubscribePM = onSnapshot(pmQuery, (snapshot) => {
-      const propertyManagers = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(pm =>
-          pm.assignedProperties &&
-          pm.assignedProperties.includes(tenantData.propertyId)
-        );
+      console.log(`📊 Found ${snapshot.size} property managers for landlord`);
 
-      if (propertyManagers.length > 0) {
-        console.log('✅ Found property manager:', propertyManagers[0]);
-        setPropertyManager(propertyManagers[0]);
-      } else {
-        console.log('⚠️ No property manager found for this property');
-        setPropertyManager(null);
+      let selectedPM = null;
+
+      // If tenant has propertyId, find PM assigned to that property
+      if (tenantData.propertyId) {
+        const assignedPMs = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(pm =>
+            pm.assignedProperties &&
+            pm.assignedProperties.includes(tenantData.propertyId)
+          );
+
+        if (assignedPMs.length > 0) {
+          selectedPM = assignedPMs[0];
+          console.log('✅ Found property manager assigned to property:', selectedPM.name);
+        }
+      }
+
+      // Fallback: If no property-specific PM found, use first available PM
+      if (!selectedPM && snapshot.size > 0) {
+        selectedPM = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+        console.log('✅ Using first available property manager:', selectedPM.name);
+      }
+
+      setPropertyManager(selectedPM);
+
+      if (!selectedPM) {
+        console.log('⚠️ No property manager found for this landlord');
       }
     }, (error) => {
       console.error('Error fetching property managers:', error);
@@ -845,19 +862,35 @@ const TenantDashboard = () => {
     );
 
     const unsubscribeMaintenance = onSnapshot(maintenanceQuery, (snapshot) => {
-      const maintenanceStaffList = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(ms =>
-          ms.assignedProperties &&
-          ms.assignedProperties.includes(tenantData.propertyId)
-        );
+      console.log(`📊 Found ${snapshot.size} maintenance staff for landlord`);
 
-      if (maintenanceStaffList.length > 0) {
-        console.log('✅ Found maintenance staff:', maintenanceStaffList[0]);
-        setMaintenanceStaff(maintenanceStaffList[0]);
-      } else {
-        console.log('⚠️ No maintenance staff found for this property');
-        setMaintenanceStaff(null);
+      let selectedMS = null;
+
+      // If tenant has propertyId, find maintenance staff assigned to that property
+      if (tenantData.propertyId) {
+        const assignedMS = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(ms =>
+            ms.assignedProperties &&
+            ms.assignedProperties.includes(tenantData.propertyId)
+          );
+
+        if (assignedMS.length > 0) {
+          selectedMS = assignedMS[0];
+          console.log('✅ Found maintenance staff assigned to property:', selectedMS.name);
+        }
+      }
+
+      // Fallback: If no property-specific maintenance found, use first available
+      if (!selectedMS && snapshot.size > 0) {
+        selectedMS = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+        console.log('✅ Using first available maintenance staff:', selectedMS.name);
+      }
+
+      setMaintenanceStaff(selectedMS);
+
+      if (!selectedMS) {
+        console.log('⚠️ No maintenance staff found for this landlord');
       }
     }, (error) => {
       console.error('Error fetching maintenance staff:', error);
