@@ -350,7 +350,7 @@ const TenantDashboard = () => {
     return () => unsubscribe();
   }, [tenantData]);
 
-  // Fetch messages from Firebase - fetch all and filter by sender/recipient
+  // Fetch messages from Firebase - fetch all messages for this user
   useEffect(() => {
     if (!currentUser?.uid) {
       console.log('🚫 No currentUser.uid for message fetching');
@@ -359,33 +359,63 @@ const TenantDashboard = () => {
 
     console.log('📩 Starting message fetch for tenant with UID:', currentUser.uid);
 
-    // Use participants array for better querying
-    const messagesQuery = query(
+    // Query messages where this user is the recipient
+    const receivedQuery = query(
       collection(db, 'messages'),
-      where('participants', 'array-contains', currentUser.uid)
+      where('recipientId', '==', currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      console.log('📬 Messages found:', snapshot.size);
-      const messagesData = snapshot.docs.map(doc => ({
+    // Query messages where this user is the sender
+    const sentQuery = query(
+      collection(db, 'messages'),
+      where('senderId', '==', currentUser.uid)
+    );
+
+    let allReceivedMessages = [];
+    let allSentMessages = [];
+
+    const unsubscribe1 = onSnapshot(receivedQuery, (snapshot) => {
+      console.log('📬 Received messages found:', snapshot.size);
+      allReceivedMessages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      updateAllMessages();
+    }, (error) => {
+      console.error('❌ Error fetching received messages:', error);
+    });
+
+    const unsubscribe2 = onSnapshot(sentQuery, (snapshot) => {
+      console.log('📤 Sent messages found:', snapshot.size);
+      allSentMessages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      updateAllMessages();
+    }, (error) => {
+      console.error('❌ Error fetching sent messages:', error);
+    });
+
+    const updateAllMessages = () => {
+      const combined = [...allReceivedMessages, ...allSentMessages];
 
       // Sort by timestamp, newest first
-      messagesData.sort((a, b) => {
+      combined.sort((a, b) => {
         const timeA = a.timestamp?.toDate?.() || new Date(0);
         const timeB = b.timestamp?.toDate?.() || new Date(0);
         return timeB - timeA;
       });
 
-      console.log('💬 Fetched messages for tenant:', messagesData.length);
-      setMessages(messagesData);
-    }, (error) => {
-      console.error('❌ Error fetching messages:', error);
-    });
+      const unreadCount = allReceivedMessages.filter(m => !m.read).length;
+      console.log('💬 Total messages for tenant:', combined.length);
+      console.log('📊 Unread messages:', unreadCount);
+      setMessages(combined);
+    };
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
   }, [currentUser]);
 
   // Fetch documents from Firebase
@@ -1670,7 +1700,7 @@ const TenantDashboard = () => {
                     <MessageSquare className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   </div>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
-                    {messages.filter(m => !m.read && m.senderId !== currentUser?.uid).length}
+                    {messages.filter(m => !m.read && m.recipientId === currentUser?.uid).length}
                   </p>
                   <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Unread</p>
                 </div>
