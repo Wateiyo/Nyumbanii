@@ -370,14 +370,13 @@ const PropertyManagerDashboard = () => {
     return unsubscribe;
   }, [properties]);
 
-  // Fetch maintenance requests
+  // Fetch maintenance requests for the landlord
   useEffect(() => {
-    if (!properties.length) return;
+    if (!teamMember?.landlordId) return;
 
-    const propertyNames = properties.map(p => p.name);
     const q = query(
       collection(db, 'maintenanceRequests'),
-      where('property', 'in', propertyNames.slice(0, 10))
+      where('landlordId', '==', teamMember.landlordId)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -385,11 +384,12 @@ const PropertyManagerDashboard = () => {
         id: doc.id,
         ...doc.data()
       }));
+      console.log('🔧 Fetched maintenance requests for property manager:', requestsData.length);
       setMaintenanceRequests(requestsData);
     });
 
     return unsubscribe;
-  }, [properties]);
+  }, [teamMember]);
 
   // Fetch maintenance staff for the landlord
   useEffect(() => {

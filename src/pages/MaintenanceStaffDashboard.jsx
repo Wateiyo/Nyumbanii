@@ -823,8 +823,10 @@ const MaintenanceStaffDashboard = () => {
                               // Match by property name or property ID
                               const matchByName = r.property === property.name;
                               const matchById = r.propertyId === property.id;
-                              const isNotCompleted = r.status?.toLowerCase() !== 'completed';
-                              return (matchByName || matchById) && isNotCompleted;
+                              // Open requests are pending or without status (not in-progress or completed)
+                              const status = r.status?.toLowerCase();
+                              const isOpen = status === 'pending' || !status;
+                              return (matchByName || matchById) && isOpen;
                             }).length}
                           </span>
                         </div>
