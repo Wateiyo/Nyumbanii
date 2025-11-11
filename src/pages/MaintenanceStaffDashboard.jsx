@@ -12,7 +12,8 @@ import {
   addDoc,
   serverTimestamp,
   getDocs,
-  orderBy
+  orderBy,
+  deleteDoc
 } from 'firebase/firestore';
 import {
   Home,
@@ -34,7 +35,8 @@ import {
   ChevronLeft,
   User,
   Check,
-  CheckCheck
+  CheckCheck,
+  X
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
 
@@ -68,6 +70,9 @@ const MaintenanceStaffDashboard = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const conversationMessagesEndRef = useRef(null);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [longPressTimer, setLongPressTimer] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState(null);
 
   // Fetch team member data for the current user
   useEffect(() => {
@@ -134,8 +139,18 @@ const MaintenanceStaffDashboard = () => {
     });
 
     setLoading(false);
+
+    // Debug logging for properties
+    setTimeout(() => {
+      console.log('🏢 Assigned Properties:', properties.map(p => ({
+        id: p.id,
+        name: p.name,
+        location: p.location
+      })));
+    }, 1000);
+
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [teamMember]);
+  }, [teamMember, properties]);
 
   // Fetch maintenance requests assigned to this staff member or unassigned
   useEffect(() => {
@@ -162,6 +177,15 @@ const MaintenanceStaffDashboard = () => {
       );
 
       setMaintenanceRequests(filteredRequests);
+
+      // Debug logging
+      console.log('🔧 Maintenance Requests:', filteredRequests.map(r => ({
+        id: r.id,
+        property: r.property,
+        propertyId: r.propertyId,
+        status: r.status,
+        assignedTo: r.assignedTo
+      })));
     });
 
     return unsubscribe;
@@ -344,13 +368,24 @@ const MaintenanceStaffDashboard = () => {
       orderBy('timestamp', 'desc')
     );
 
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      const notificationsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setNotifications(notificationsData);
-    });
+    const unsubscribe = onSnapshot(notificationsQuery,
+      (snapshot) => {
+        const notificationsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        console.log('🔔 Maintenance Staff Notifications:', notificationsData.length, 'notifications');
+        setNotifications(notificationsData);
+      },
+      (error) => {
+        console.error('❌ Error fetching notifications:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          userId: currentUser.uid
+        });
+      }
+    );
 
     return () => unsubscribe();
   }, [currentUser]);
@@ -371,13 +406,35 @@ const MaintenanceStaffDashboard = () => {
       orderBy('timestamp', 'asc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       console.log('📬 Loaded', snapshot.size, 'messages for conversation');
       const msgs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       setConversationMessages(msgs);
+
+      // Auto-mark unread messages as read when conversation is opened
+      const unreadMessages = msgs.filter(msg =>
+        msg.recipientId === currentUser?.uid && !msg.read
+      );
+
+      if (unreadMessages.length > 0) {
+        console.log('📖 Marking', unreadMessages.length, 'messages as read');
+        const markAsReadPromises = unreadMessages.map(msg =>
+          updateDoc(doc(db, 'messages', msg.id), {
+            read: true,
+            readAt: serverTimestamp()
+          })
+        );
+
+        try {
+          await Promise.all(markAsReadPromises);
+          console.log('✅ Messages marked as read');
+        } catch (error) {
+          console.error('❌ Error marking messages as read:', error);
+        }
+      }
 
       // Scroll to bottom when messages change
       setTimeout(() => {
@@ -450,6 +507,49 @@ const MaintenanceStaffDashboard = () => {
     setIsMessageModalOpen(false);
     setSelectedTenant(null);
     setIsComposingNewMessage(false);
+  };
+
+  // Long press handlers for conversation deletion
+  const handleLongPressStart = (conversation) => {
+    const timer = setTimeout(() => {
+      setConversationToDelete(conversation);
+      setShowDeleteConfirm(true);
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (!conversationToDelete) return;
+
+    try {
+      // Delete all messages in this conversation
+      const messagesQuery = query(
+        collection(db, 'messages'),
+        where('conversationId', '==', conversationToDelete.conversationId)
+      );
+
+      const messagesSnapshot = await getDocs(messagesQuery);
+      const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      // Clear selected conversation if it was deleted
+      if (selectedConversation?.conversationId === conversationToDelete.conversationId) {
+        setSelectedConversation(null);
+      }
+
+      setShowDeleteConfirm(false);
+      setConversationToDelete(null);
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      alert('Failed to delete conversation. Please try again.');
+    }
   };
 
   const handleNotificationClick = async (notification) => {
@@ -952,15 +1052,35 @@ const MaintenanceStaffDashboard = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">Open Requests</span>
                           <span className="font-semibold text-[#003366]">
-                            {maintenanceRequests.filter(r => {
-                              // Match by property name or property ID
-                              const matchByName = r.property === property.name;
-                              const matchById = r.propertyId === property.id;
-                              // Open requests are pending or without status (not in-progress or completed)
-                              const status = r.status?.toLowerCase();
-                              const isOpen = status === 'pending' || !status;
-                              return (matchByName || matchById) && isOpen;
-                            }).length}
+                            {(() => {
+                              const openRequests = maintenanceRequests.filter(r => {
+                                // Match by property name or property ID
+                                const matchByName = r.property === property.name;
+                                const matchById = r.propertyId === property.id;
+                                // Open requests are pending or without status (not in-progress or completed)
+                                const status = r.status?.toLowerCase();
+                                const isOpen = status === 'pending' || !status;
+                                const matches = (matchByName || matchById) && isOpen;
+
+                                // Debug logging for this property
+                                if (property.name === properties[0]?.name) {
+                                  console.log(`🔍 Request check for ${property.name}:`, {
+                                    requestProperty: r.property,
+                                    requestPropertyId: r.propertyId,
+                                    propertyName: property.name,
+                                    propertyId: property.id,
+                                    matchByName,
+                                    matchById,
+                                    status,
+                                    isOpen,
+                                    matches
+                                  });
+                                }
+
+                                return matches;
+                              });
+                              return openRequests.length;
+                            })()}
                           </span>
                         </div>
                       </div>
@@ -1094,6 +1214,11 @@ const MaintenanceStaffDashboard = () => {
                             console.log('👆 Clicked conversation:', conversation);
                             setSelectedConversation(conversation);
                           }}
+                          onMouseDown={() => handleLongPressStart(conversation)}
+                          onMouseUp={handleLongPressEnd}
+                          onMouseLeave={handleLongPressEnd}
+                          onTouchStart={() => handleLongPressStart(conversation)}
+                          onTouchEnd={handleLongPressEnd}
                           className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition ${
                             selectedConversation?.conversationId === conversation.conversationId ? 'bg-blue-50' : ''
                           }`}
@@ -1350,6 +1475,36 @@ const MaintenanceStaffDashboard = () => {
             >
               <MessageSquare className="w-5 h-5" />
               Message Tenant
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Delete Conversation Confirmation Modal */}
+    {showDeleteConfirm && conversationToDelete && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl w-full max-w-md p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Delete Conversation?</h3>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to delete this conversation with <strong>{conversationToDelete.otherUserName}</strong>?
+            This will permanently delete all messages in this thread.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setConversationToDelete(null);
+              }}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteConversation}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+            >
+              Delete
             </button>
           </div>
         </div>
