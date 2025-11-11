@@ -1656,8 +1656,7 @@ const TenantDashboard = () => {
             { name: 'Maintenance', icon: Wrench, view: 'maintenance' },
             { name: 'Documents', icon: FileText, view: 'documents' },
             { name: 'Messages', icon: MessageSquare, view: 'messages' },
-            { name: 'Updates', icon: Megaphone, view: 'updates' },
-            { name: 'Memos', icon: Clipboard, view: 'memos' },
+            { name: 'Updates & Memos', icon: Megaphone, view: 'updates' },
             { name: 'Available Listings', icon: Search, view: 'listings' },
             { name: 'Settings', icon: Settings, view: 'settings' }
           ].map((item) => (
@@ -2541,16 +2540,40 @@ const TenantDashboard = () => {
             </div>
           )}
 
-          {/* Updates View */}
+          {/* Updates & Memos View */}
           {currentView === 'updates' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
+              {/* Kenya Power Alert Banner */}
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center animate-pulse">
+                      <Bell className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-yellow-900 dark:text-yellow-100">Kenya Power Alerts</h3>
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200">Auto-checks every 6 hours for power interruptions</p>
+                    </div>
+                  </div>
+                  <a
+                    href="https://kplc.co.ke/category/view/50/planned-power-interruptions"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium text-sm transition flex items-center gap-2"
+                  >
+                    ⚡ Check KPLC Website
+                  </a>
+                </div>
+              </div>
+
+              {/* Updates Section */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Megaphone className="w-6 h-6 text-[#003366] dark:text-blue-400" />
                     Updates & Announcements
                   </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Stay informed about important news and announcements</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Important updates including power interruptions</p>
                 </div>
 
                 <div className="p-4 sm:p-6">
@@ -2655,12 +2678,8 @@ const TenantDashboard = () => {
                   )}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Memos View */}
-          {currentView === 'memos' && (
-            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
+              {/* Memos Section */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
