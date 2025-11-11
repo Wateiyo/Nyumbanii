@@ -68,6 +68,9 @@ const PropertyManagerDashboard = () => {
   const [newMessageRecipients, setNewMessageRecipients] = useState([]);
   const [selectedNewMessageRecipient, setSelectedNewMessageRecipient] = useState(null);
   const [newMessageRecipientType, setNewMessageRecipientType] = useState('tenant');
+  const [longPressTimer, setLongPressTimer] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState(null);
 
   // Conversation-based messaging states
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -171,6 +174,49 @@ const PropertyManagerDashboard = () => {
     setIsMessageModalOpen(false);
     setSelectedTenant(null);
     setIsComposingNewMessage(false);
+  };
+
+  // Long press handlers
+  const handleLongPressStart = (conversation) => {
+    const timer = setTimeout(() => {
+      setConversationToDelete(conversation);
+      setShowDeleteConfirm(true);
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (!conversationToDelete) return;
+
+    try {
+      // Delete all messages in this conversation
+      const messagesQuery = query(
+        collection(db, 'messages'),
+        where('conversationId', '==', conversationToDelete.conversationId)
+      );
+
+      const messagesSnapshot = await getDocs(messagesQuery);
+      const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      // Clear selected conversation if it was deleted
+      if (selectedConversation?.conversationId === conversationToDelete.conversationId) {
+        setSelectedConversation(null);
+      }
+
+      setShowDeleteConfirm(false);
+      setConversationToDelete(null);
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      alert('Failed to delete conversation. Please try again.');
+    }
   };
 
   const handleDeleteMessage = async (message) => {
@@ -1479,6 +1525,11 @@ const PropertyManagerDashboard = () => {
                             console.log('👆 Clicked conversation:', conversation);
                             setSelectedConversation(conversation);
                           }}
+                          onMouseDown={() => handleLongPressStart(conversation)}
+                          onMouseUp={handleLongPressEnd}
+                          onMouseLeave={handleLongPressEnd}
+                          onTouchStart={() => handleLongPressStart(conversation)}
+                          onTouchEnd={handleLongPressEnd}
                           className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition ${
                             selectedConversation?.conversationId === conversation.conversationId ? 'bg-blue-50' : ''
                           }`}
@@ -1804,6 +1855,36 @@ const PropertyManagerDashboard = () => {
               </button>
               <p className="text-xs text-gray-500 mt-2">This will open the message composer where you can select a specific person</p>
             </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Delete Conversation Confirmation Modal */}
+    {showDeleteConfirm && conversationToDelete && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl w-full max-w-md p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Delete Conversation?</h3>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to delete this conversation with <strong>{conversationToDelete.otherUserName}</strong>?
+            This will permanently delete all messages in this thread.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setConversationToDelete(null);
+              }}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteConversation}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>
