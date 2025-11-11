@@ -6,6 +6,8 @@ const {onSchedule} = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { Resend } = require("resend");
+const axios = require("axios");
+const cheerio = require("cheerio");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -1045,5 +1047,236 @@ exports.helloWorld = onRequest(
   (request, response) => {
     logger.info("Hello logs!", {structuredData: true});
     response.send("Hello from Firebase Functions v2!");
+  }
+);
+
+// ==========================================
+// KENYA POWER INTERRUPTION SCRAPER
+// ==========================================
+
+/**
+ * Scrape Kenya Power website for planned power interruptions
+ * Runs every 6 hours to check for new interruptions
+ */
+exports.scrapeKenyaPowerInterruptions = onSchedule(
+  {
+    schedule: "every 6 hours",
+    region: "us-central1",
+    timeoutSeconds: 300,
+    memory: "512MiB"
+  },
+  async (event) => {
+    try {
+      logger.info("🔌 Starting Kenya Power interruption scrape...");
+
+      const db = admin.firestore();
+      const KENYA_POWER_URL = "https://kplc.co.ke/category/view/50/planned-power-interruptions";
+
+      // Fetch the Kenya Power page
+      const response = await axios.get(KENYA_POWER_URL, {
+        timeout: 30000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      const $ = cheerio.load(response.data);
+      const interruptions = [];
+
+      // Parse the interruption notices
+      // Adjust selectors based on actual Kenya Power website structure
+      $('.article-item, .post-item, .interruption-notice').each((index, element) => {
+        const $element = $(element);
+
+        const title = $element.find('h2, h3, .title, .post-title').text().trim();
+        const content = $element.find('p, .content, .description').text().trim();
+        const dateText = $element.find('.date, .post-date, time').text().trim();
+
+        if (title && content) {
+          // Extract location/area from title or content
+          const location = extractLocation(title + ' ' + content);
+
+          interruptions.push({
+            title: title,
+            content: content,
+            dateText: dateText,
+            location: location,
+            source: 'Kenya Power',
+            sourceUrl: KENYA_POWER_URL,
+            scrapedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      });
+
+      logger.info(`📊 Found ${interruptions.length} interruption notices`);
+
+      // Get all landlord settings to distribute updates
+      const settingsSnapshot = await db.collection('landlordSettings').get();
+      let updateCount = 0;
+      let notificationCount = 0;
+
+      for (const settingsDoc of settingsSnapshot.docs) {
+        const landlordId = settingsDoc.id;
+
+        // Get landlord's properties to determine relevant locations
+        const propertiesSnapshot = await db.collection('properties')
+          .where('landlordId', '==', landlordId)
+          .get();
+
+        const landlordLocations = propertiesSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return (data.location || '').toLowerCase();
+        });
+
+        // Filter interruptions relevant to this landlord's locations
+        for (const interruption of interruptions) {
+          const isRelevant = landlordLocations.some(location => {
+            const interruptionLoc = (interruption.location || '').toLowerCase();
+            return location.includes(interruptionLoc) ||
+                   interruptionLoc.includes(location) ||
+                   location.split(',')[0].trim() === interruptionLoc.split(',')[0].trim();
+          });
+
+          if (isRelevant || interruptions.length <= 3) {
+            // Check if this interruption already exists
+            const existingUpdate = await db.collection('updates')
+              .where('landlordId', '==', landlordId)
+              .where('title', '==', interruption.title)
+              .where('category', '==', 'power_interruption')
+              .limit(1)
+              .get();
+
+            if (existingUpdate.empty) {
+              // Create new update
+              await db.collection('updates').add({
+                landlordId: landlordId,
+                title: `⚡ ${interruption.title}`,
+                content: interruption.content,
+                category: 'power_interruption',
+                type: 'automated',
+                location: interruption.location,
+                source: interruption.source,
+                sourceUrl: interruption.sourceUrl,
+                dateText: interruption.dateText,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                scrapedAt: interruption.scrapedAt
+              });
+
+              updateCount++;
+
+              // Notify all tenants of this landlord
+              const tenantsSnapshot = await db.collection('tenants')
+                .where('landlordId', '==', landlordId)
+                .get();
+
+              for (const tenantDoc of tenantsSnapshot.docs) {
+                const tenant = tenantDoc.data();
+
+                // Check if tenant's property location matches
+                const tenantLocation = (tenant.property || '').toLowerCase();
+                const interruptionLoc = (interruption.location || '').toLowerCase();
+
+                if (tenantLocation.includes(interruptionLoc) ||
+                    interruptionLoc.includes(tenantLocation) ||
+                    !interruption.location) {
+
+                  await db.collection('notifications').add({
+                    userId: tenant.userId,
+                    type: 'power_interruption',
+                    title: '⚡ Power Interruption Alert',
+                    message: `${interruption.title}`,
+                    read: false,
+                    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                    updateId: interruption.title,
+                    location: interruption.location
+                  });
+
+                  notificationCount++;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      logger.info(`✅ Created ${updateCount} updates and ${notificationCount} notifications`);
+      return {
+        success: true,
+        interruptions: interruptions.length,
+        updates: updateCount,
+        notifications: notificationCount
+      };
+
+    } catch (error) {
+      logger.error("❌ Error scraping Kenya Power:", error);
+
+      // Create a manual fallback notification for admins
+      try {
+        const db = admin.firestore();
+        const settingsSnapshot = await db.collection('landlordSettings').limit(1).get();
+
+        if (!settingsSnapshot.empty) {
+          const landlordId = settingsSnapshot.docs[0].id;
+          await db.collection('updates').add({
+            landlordId: landlordId,
+            title: '⚠️ Kenya Power Scraper Alert',
+            content: `Unable to fetch power interruption updates automatically. Please check Kenya Power website manually: https://kplc.co.ke/category/view/50/planned-power-interruptions. Error: ${error.message}`,
+            category: 'system_alert',
+            type: 'automated',
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } catch (notifyError) {
+        logger.error("Failed to create error notification:", notifyError);
+      }
+
+      throw error;
+    }
+  }
+);
+
+/**
+ * Helper function to extract location from text
+ */
+function extractLocation(text) {
+  const locations = [
+    'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Kitale',
+    'Malindi', 'Garissa', 'Nyeri', 'Machakos', 'Meru', 'Kakamega', 'Kisii',
+    'Kiambu', 'Kajiado', 'Kilifi', 'Ruiru', 'Naivasha', 'Kitui', 'Kericho',
+    'Karen', 'Westlands', 'Kasarani', 'Embakasi', 'Dagoretti', 'Langata',
+    'Parklands', 'Industrial Area', 'CBD', 'Ngong', 'Rongai', 'Kikuyu'
+  ];
+
+  const textLower = text.toLowerCase();
+
+  for (const location of locations) {
+    if (textLower.includes(location.toLowerCase())) {
+      return location;
+    }
+  }
+
+  return 'Kenya'; // Default fallback
+}
+
+/**
+ * Manual trigger for Kenya Power scraping (for testing)
+ */
+exports.manualScrapeKenyaPower = onCall(
+  {
+    region: "us-central1",
+    timeoutSeconds: 300
+  },
+  async (request) => {
+    logger.info("🔌 Manual Kenya Power scrape triggered by:", request.auth?.uid);
+
+    // Call the scheduled function logic
+    try {
+      // We'll simulate the scheduled event
+      await exports.scrapeKenyaPowerInterruptions.run({});
+      return { success: true, message: "Scrape completed successfully" };
+    } catch (error) {
+      logger.error("Error in manual scrape:", error);
+      throw new Error(`Failed to scrape: ${error.message}`);
+    }
   }
 );
