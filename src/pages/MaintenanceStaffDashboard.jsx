@@ -62,6 +62,7 @@ const MaintenanceStaffDashboard = () => {
   const [newConversationMessage, setNewConversationMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const conversationMessagesEndRef = useRef(null);
+  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
 
   // Fetch team member data for the current user
   useEffect(() => {
@@ -881,12 +882,29 @@ const MaintenanceStaffDashboard = () => {
 
           {currentView === 'messages' && (
             <div className="h-full flex flex-col bg-gray-50">
+              {/* Encrypted Banner */}
+              <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-center gap-2 text-sm">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span className="font-medium">Your messages are end-to-end encrypted</span>
+              </div>
+
               <div className="flex-1 flex overflow-hidden">
                 {/* Conversations List */}
                 <div className={`${selectedConversation ? 'hidden lg:flex' : 'flex'} lg:w-1/3 w-full flex-col border-r border-gray-200 bg-white`}>
                   {/* Search and Filter Header */}
                   <div className="p-4 border-b border-gray-200">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-bold text-gray-900">Messages</h2>
+                      <button
+                        onClick={() => setShowNewMessageModal(true)}
+                        className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center gap-2 text-sm font-medium"
+                      >
+                        <Plus className="w-4 h-4" />
+                        New Message
+                      </button>
+                    </div>
 
                     {/* Search Bar */}
                     <div className="mb-3">
@@ -1138,6 +1156,73 @@ const MaintenanceStaffDashboard = () => {
         </div>
       </div>
     </div>
+
+    {/* New Message Modal */}
+    {showNewMessageModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl w-full max-w-md">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">New Message</h3>
+              <button
+                onClick={() => setShowNewMessageModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <p className="text-sm text-gray-600 mb-6">Select who you'd like to message</p>
+
+            {/* Message Landlord Option */}
+            {teamMember?.landlordId && (
+              <button
+                onClick={() => {
+                  setShowNewMessageModal(false);
+                  // Start a new conversation with landlord
+                  setSelectedConversation({
+                    conversationId: `${currentUser.uid}_${teamMember.landlordId}`,
+                    otherUserId: teamMember.landlordId,
+                    otherUserName: 'Landlord',
+                    otherUserRole: 'landlord'
+                  });
+                }}
+                className="w-full px-4 py-4 mb-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium flex items-center justify-center gap-2"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Message Landlord
+              </button>
+            )}
+
+            {/* Message Property Manager Option */}
+            <button
+              onClick={() => {
+                setShowNewMessageModal(false);
+                alert('Property Manager messaging will be available soon. Please use the conversations list to continue existing chats.');
+              }}
+              className="w-full px-4 py-4 mb-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium flex items-center justify-center gap-2"
+            >
+              <MessageSquare className="w-5 h-5" />
+              Message Property Manager
+            </button>
+
+            {/* Message Tenant Option */}
+            <button
+              onClick={() => {
+                setShowNewMessageModal(false);
+                alert('Tenant messaging will be available soon. Please use the conversations list to continue existing chats.');
+              }}
+              className="w-full px-4 py-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium flex items-center justify-center gap-2"
+            >
+              <MessageSquare className="w-5 h-5" />
+              Message Tenant
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Message Modal */}
     <MessageModal

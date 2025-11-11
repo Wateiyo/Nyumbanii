@@ -64,6 +64,10 @@ const PropertyManagerDashboard = () => {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [isComposingNewMessage, setIsComposingNewMessage] = useState(false);
+  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [newMessageRecipients, setNewMessageRecipients] = useState([]);
+  const [selectedNewMessageRecipient, setSelectedNewMessageRecipient] = useState(null);
+  const [newMessageRecipientType, setNewMessageRecipientType] = useState('tenant');
 
   // Conversation-based messaging states
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -160,6 +164,7 @@ const PropertyManagerDashboard = () => {
     setSelectedTenant(null); // Clear selected tenant to trigger recipient selection
     setIsComposingNewMessage(true);
     setIsMessageModalOpen(true);
+    setShowNewMessageModal(false); // Close the new message modal
   };
 
   const handleCloseMessageModal = () => {
@@ -1394,12 +1399,29 @@ const PropertyManagerDashboard = () => {
 
           {currentView === 'messages' && (
             <div className="h-full flex flex-col bg-gray-50">
+              {/* Encrypted Banner */}
+              <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-center gap-2 text-sm">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span className="font-medium">Your messages are end-to-end encrypted</span>
+              </div>
+
               <div className="flex-1 flex overflow-hidden">
                 {/* Conversations List */}
                 <div className={`${selectedConversation ? 'hidden lg:flex' : 'flex'} lg:w-1/3 w-full flex-col border-r border-gray-200 bg-white`}>
                   {/* Search and Filter Header */}
                   <div className="p-4 border-b border-gray-200">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-bold text-gray-900">Messages</h2>
+                      <button
+                        onClick={() => setShowNewMessageModal(true)}
+                        className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition flex items-center gap-2 text-sm font-medium"
+                      >
+                        <Plus className="w-4 h-4" />
+                        New Message
+                      </button>
+                    </div>
 
                     {/* Search Bar */}
                     <div className="mb-3">
@@ -1701,6 +1723,91 @@ const PropertyManagerDashboard = () => {
         </div>
       </div>
     </div>
+
+    {/* New Message Modal */}
+    {showNewMessageModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl w-full max-w-md">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">New Message</h3>
+              <button
+                onClick={() => {
+                  setShowNewMessageModal(false);
+                  setSelectedNewMessageRecipient(null);
+                  setNewMessageRecipients([]);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <p className="text-sm text-gray-600 mb-4">Select a recipient type and person to start a new conversation</p>
+
+            {/* Recipient Type Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Message To:</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setNewMessageRecipientType('tenant');
+                    setSelectedNewMessageRecipient(null);
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    newMessageRecipientType === 'tenant'
+                      ? 'bg-[#003366] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Tenant
+                </button>
+                <button
+                  onClick={() => {
+                    setNewMessageRecipientType('landlord');
+                    setSelectedNewMessageRecipient(null);
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    newMessageRecipientType === 'landlord'
+                      ? 'bg-[#003366] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Landlord
+                </button>
+                <button
+                  onClick={() => {
+                    setNewMessageRecipientType('maintenance');
+                    setSelectedNewMessageRecipient(null);
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    newMessageRecipientType === 'maintenance'
+                      ? 'bg-[#003366] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Maintenance
+                </button>
+              </div>
+            </div>
+
+            {/* Recipient Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Recipient:</label>
+              <button
+                onClick={() => handleComposeNewMessage()}
+                className="w-full px-4 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium"
+              >
+                Choose Recipient
+              </button>
+              <p className="text-xs text-gray-500 mt-2">This will open the message composer where you can select a specific person</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Message Modal */}
     <MessageModal
