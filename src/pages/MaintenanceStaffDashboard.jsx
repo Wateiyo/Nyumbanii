@@ -18,6 +18,7 @@ import {
   Home,
   Building,
   Wrench,
+  Bell,
   LogOut,
   Calendar,
   Menu,
@@ -52,6 +53,10 @@ const MaintenanceStaffDashboard = () => {
   const [isComposingNewMessage, setIsComposingNewMessage] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+
+  // Notification states
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Conversation-based messaging states
   const [conversations, setConversations] = useState([]);
@@ -329,6 +334,27 @@ const MaintenanceStaffDashboard = () => {
     };
   }, [currentUser]);
 
+  // Fetch notifications
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const notificationsQuery = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      orderBy('timestamp', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+      const notificationsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setNotifications(notificationsData);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
   // Fetch messages for selected conversation
   useEffect(() => {
     if (!selectedConversation?.conversationId) {
@@ -424,6 +450,65 @@ const MaintenanceStaffDashboard = () => {
     setIsMessageModalOpen(false);
     setSelectedTenant(null);
     setIsComposingNewMessage(false);
+  };
+
+  // Helper function to format relative time
+  const formatRelativeTime = (date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString();
+  };
+
+  const handleNotificationClick = async (notification) => {
+    // Mark as read
+    if (!notification.read) {
+      try {
+        await updateDoc(doc(db, 'notifications', notification.id), {
+          read: true,
+          readAt: serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    }
+
+    // Close notifications dropdown
+    setShowNotifications(false);
+
+    // Navigate based on notification type
+    if (notification.type === 'message' && notification.conversationId) {
+      // Navigate to messages view
+      setCurrentView('messages');
+
+      // Find and open the conversation
+      setTimeout(() => {
+        const conversation = conversations.find(c => c.conversationId === notification.conversationId);
+        if (conversation) {
+          setSelectedConversation(conversation);
+        } else {
+          // If conversation not found in list, create it from notification data
+          setSelectedConversation({
+            conversationId: notification.conversationId,
+            otherUserId: notification.senderId,
+            otherUserName: notification.senderName || 'User',
+            otherUserRole: notification.senderRole || 'landlord',
+            propertyName: '',
+            unit: ''
+          });
+        }
+      }, 100);
+    } else if (notification.type === 'maintenance' || notification.type === 'maintenance_assigned' || notification.type === 'maintenance_completed') {
+      setCurrentView('dashboard'); // Show maintenance requests
+    }
   };
 
   const handleSelfAssign = async (requestId, request) => {
@@ -579,8 +664,71 @@ const MaintenanceStaffDashboard = () => {
                 <p className="text-sm text-gray-600">Welcome back, {teamMember.name}!</p>
               </div>
             </div>
-            <div className="w-10 h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold">
-              {teamMember.name.split(' ').map(n => n[0]).join('')}
+
+            <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <Bell className="w-5 h-5 lg:w-6 lg:h-6 text-gray-600" />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <Bell className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.map((notification) => {
+                          const timestamp = notification.timestamp?.toDate?.();
+                          const timeAgo = timestamp ? formatRelativeTime(timestamp) : 'Just now';
+
+                          return (
+                            <div
+                              key={notification.id}
+                              onClick={() => handleNotificationClick(notification)}
+                              className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${
+                                !notification.read ? 'bg-blue-50' : 'bg-white'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  {notification.title && (
+                                    <p className="font-semibold text-sm text-gray-900 mb-1">{notification.title}</p>
+                                  )}
+                                  <p className="text-sm text-gray-700">{notification.message}</p>
+                                  {notification.senderName && (
+                                    <p className="text-xs text-gray-500 mt-1">From: {notification.senderName}</p>
+                                  )}
+                                  <p className="text-xs text-gray-500 mt-1">{timeAgo}</p>
+                                </div>
+                                {!notification.read && (
+                                  <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-10 h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold">
+                {teamMember.name.split(' ').map(n => n[0]).join('')}
+              </div>
             </div>
           </div>
         </header>
