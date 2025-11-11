@@ -218,6 +218,9 @@ const TenantDashboard = () => {
   const [propertyManager, setPropertyManager] = useState(null);
   const [maintenanceStaff, setMaintenanceStaff] = useState(null);
 
+  // Unread messages counter
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
   // ============ FIREBASE REALTIME DATA ============
 
   // Fetch tenant data to get their landlordId
@@ -619,6 +622,32 @@ const TenantDashboard = () => {
     };
   }, [currentUser]);
 
+  // Real-time unread messages counter
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+
+    console.log('📊 Setting up unread messages counter for:', currentUser.uid);
+
+    const unreadQuery = query(
+      collection(db, 'messages'),
+      where('recipientId', '==', currentUser.uid),
+      where('read', '==', false)
+    );
+
+    const unsubscribe = onSnapshot(unreadQuery, (snapshot) => {
+      const count = snapshot.size;
+      console.log('💬 Unread messages count updated:', count);
+      setUnreadMessagesCount(count);
+    }, (error) => {
+      console.error('❌ Error fetching unread messages count:', error);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
   // Fetch messages for selected conversation
   useEffect(() => {
     if (!selectedConversation?.conversationId) {
@@ -643,6 +672,23 @@ const TenantDashboard = () => {
       }));
       setConversationMessages(messages);
 
+      // Mark unread messages from this conversation as read
+      const unreadMessages = messages.filter(msg =>
+        msg.recipientId === currentUser?.uid && !msg.read
+      );
+
+      if (unreadMessages.length > 0) {
+        console.log(`📖 Marking ${unreadMessages.length} messages as read`);
+        unreadMessages.forEach(async (msg) => {
+          try {
+            const messageRef = doc(db, 'messages', msg.id);
+            await updateDoc(messageRef, { read: true });
+          } catch (error) {
+            console.error('Error marking message as read:', error);
+          }
+        });
+      }
+
       // Scroll to bottom when messages change
       setTimeout(() => {
         conversationMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -657,7 +703,7 @@ const TenantDashboard = () => {
     });
 
     return () => unsubscribe();
-  }, [selectedConversation]);
+  }, [selectedConversation, currentUser]);
 
   // Send message in conversation
   const handleSendConversationMessage = async () => {
@@ -1677,18 +1723,31 @@ const TenantDashboard = () => {
 
   const markNotificationAsRead = async (id) => {
     try {
+      if (!id || typeof id !== 'string') {
+        console.error('Invalid notification ID:', id);
+        return;
+      }
+
       const notificationRef = doc(db, 'notifications', id);
       await updateDoc(notificationRef, {
         read: true
       });
+      console.log('✅ Marked notification as read:', id);
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      console.error('Notification ID:', id);
     }
   };
 
   const handleNotificationClick = async (notification) => {
+    console.log('🔔 Notification clicked:', notification);
+
     // Mark as read
-    await markNotificationAsRead(notification.id);
+    if (notification?.id) {
+      await markNotificationAsRead(notification.id);
+    } else {
+      console.warn('⚠️ Notification missing ID:', notification);
+    }
 
     // Close notifications dropdown
     setShowNotifications(false);
@@ -1953,16 +2012,21 @@ const TenantDashboard = () => {
                   <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">1 in progress</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setCurrentView('messages')}
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Messages</h4>
                     <MessageSquare className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   </div>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
-                    {messages.filter(m => !m.read && m.recipientId === currentUser?.uid).length}
+                    {unreadMessagesCount}
                   </p>
-                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Unread</p>
-                </div>
+                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
+                    {unreadMessagesCount === 1 ? 'Unread message' : 'Unread messages'}
+                  </p>
+                </button>
               </div>
 
               {/* Quick Actions */}
