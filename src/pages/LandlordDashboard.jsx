@@ -122,7 +122,7 @@ const LandlordDashboard = () => {
   const [unreadMessages, setUnreadMessages] = useState({});
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
-  const [conversationFilter, setConversationFilter] = useState('all'); // all, tenant, property-manager, maintenance
+  const [conversationFilter, setConversationFilter] = useState('all'); // all, tenant, property_manager, maintenance
   const [conversationSearchQuery, setConversationSearchQuery] = useState('');
   const [conversationMessages, setConversationMessages] = useState([]);
   const [newConversationMessage, setNewConversationMessage] = useState('');
@@ -142,6 +142,7 @@ const LandlordDashboard = () => {
   // Invitation modal state
   const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [pendingInvitation, setPendingInvitation] = useState(null);
+  const [showSuccessAfterInvitation, setShowSuccessAfterInvitation] = useState(false);
 
   // User role for permissions (default to landlord, will be updated from user data)
   const [userRole, setUserRole] = useState('landlord');
@@ -1058,6 +1059,9 @@ const handleEditProperty = async () => {
         sendInvitation: true
       });
       setShowTenantModal(false);
+
+      // Set flag to show success message after invitation modal closes
+      setShowSuccessAfterInvitation(true);
 
       // Show invitation modal
       setShowInvitationModal(true);
@@ -4423,7 +4427,7 @@ const handleViewTenantDetails = (tenant) => {
             {[
               { value: 'all', label: 'All' },
               { value: 'tenant', label: 'Tenants' },
-              { value: 'property-manager', label: 'Managers' },
+              { value: 'property_manager', label: 'Managers' },
               { value: 'maintenance', label: 'Maintenance' }
             ].map(filter => (
               <button
@@ -4488,11 +4492,13 @@ const handleViewTenantDetails = (tenant) => {
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         conversation.otherUserRole === 'tenant' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                        conversation.otherUserRole === 'property-manager' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                        'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+                        conversation.otherUserRole === 'property_manager' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                        conversation.otherUserRole === 'maintenance' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                       }`}>
-                        {conversation.otherUserRole === 'property-manager' ? 'Manager' :
-                         conversation.otherUserRole === 'maintenance' ? 'Maintenance' : 'Tenant'}
+                        {conversation.otherUserRole === 'property_manager' ? 'Property Manager' :
+                         conversation.otherUserRole === 'maintenance' ? 'Maintenance' :
+                         conversation.otherUserRole === 'tenant' ? 'Tenant' : conversation.otherUserRole}
                       </span>
                       {conversation.propertyName && (
                         <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -7671,6 +7677,12 @@ const handleViewTenantDetails = (tenant) => {
   onClose={() => {
     setShowInvitationModal(false);
     setPendingInvitation(null);
+
+    // Show success message after modal closes if flag is set
+    if (showSuccessAfterInvitation) {
+      alert('Tenant added successfully!');
+      setShowSuccessAfterInvitation(false);
+    }
   }}
   invitationData={pendingInvitation}
   onSendEmail={() => {
