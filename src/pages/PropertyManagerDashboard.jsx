@@ -760,13 +760,24 @@ const PropertyManagerDashboard = () => {
       orderBy('timestamp', 'desc')
     );
 
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      const notificationsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setNotifications(notificationsData);
-    });
+    const unsubscribe = onSnapshot(notificationsQuery,
+      (snapshot) => {
+        const notificationsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        console.log('🔔 Property Manager Notifications:', notificationsData.length, 'notifications');
+        setNotifications(notificationsData);
+      },
+      (error) => {
+        console.error('❌ Error fetching notifications:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          userId: currentUser.uid
+        });
+      }
+    );
 
     return () => unsubscribe();
   }, [currentUser]);
@@ -787,13 +798,35 @@ const PropertyManagerDashboard = () => {
       orderBy('timestamp', 'asc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       console.log('📬 Loaded', snapshot.size, 'messages for conversation');
       const msgs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       setConversationMessages(msgs);
+
+      // Auto-mark unread messages as read when conversation is opened
+      const unreadMessages = msgs.filter(msg =>
+        msg.recipientId === currentUser?.uid && !msg.read
+      );
+
+      if (unreadMessages.length > 0) {
+        console.log('📖 Marking', unreadMessages.length, 'messages as read');
+        const markAsReadPromises = unreadMessages.map(msg =>
+          updateDoc(doc(db, 'messages', msg.id), {
+            read: true,
+            readAt: serverTimestamp()
+          })
+        );
+
+        try {
+          await Promise.all(markAsReadPromises);
+          console.log('✅ Messages marked as read');
+        } catch (error) {
+          console.error('❌ Error marking messages as read:', error);
+        }
+      }
 
       // Scroll to bottom when messages change
       setTimeout(() => {
