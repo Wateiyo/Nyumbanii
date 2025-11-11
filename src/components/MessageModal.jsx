@@ -58,7 +58,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
           const tenantsQuery = query(collection(db, 'tenants'));
           const snapshot = await getDocs(tenantsQuery);
           recipientsData = snapshot.docs.map(doc => ({
-            id: doc.id,
+            id: doc.data().userId || doc.id, // Use userId field if available, fallback to doc.id
+            tenantDocId: doc.id, // Keep the tenant document ID for reference
             ...doc.data(),
             type: 'tenant',
             displayName: doc.data().name,
@@ -68,7 +69,7 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
           const usersQuery = query(collection(db, 'users'), where('role', '==', 'landlord'));
           const snapshot = await getDocs(usersQuery);
           recipientsData = snapshot.docs.map(doc => ({
-            id: doc.id,
+            id: doc.data().uid || doc.id, // Use uid field if available, fallback to doc.id
             ...doc.data(),
             type: 'landlord',
             displayName: doc.data().displayName || doc.data().email,
@@ -78,7 +79,8 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
           const teamQuery = query(collection(db, 'teamMembers'), where('role', '==', 'maintenance'));
           const snapshot = await getDocs(teamQuery);
           recipientsData = snapshot.docs.map(doc => ({
-            id: doc.id,
+            id: doc.data().userId || doc.id, // Use userId field if available, fallback to doc.id
+            teamMemberDocId: doc.id, // Keep the team member document ID for reference
             ...doc.data(),
             type: 'maintenance',
             displayName: doc.data().name,
