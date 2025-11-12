@@ -73,6 +73,7 @@ const MaintenanceStaffDashboard = () => {
   const [longPressTimer, setLongPressTimer] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
+  const [isLongPress, setIsLongPress] = useState(false);
 
   // Fetch team member data for the current user
   useEffect(() => {
@@ -511,7 +512,9 @@ const MaintenanceStaffDashboard = () => {
 
   // Long press handlers for conversation deletion
   const handleLongPressStart = (conversation) => {
+    setIsLongPress(false);
     const timer = setTimeout(() => {
+      setIsLongPress(true);
       setConversationToDelete(conversation);
       setShowDeleteConfirm(true);
     }, 500); // 500ms long press
@@ -523,6 +526,8 @@ const MaintenanceStaffDashboard = () => {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
+    // Reset long press flag after a short delay to prevent click
+    setTimeout(() => setIsLongPress(false), 100);
   };
 
   const confirmDeleteConversation = async () => {
@@ -1211,14 +1216,21 @@ const MaintenanceStaffDashboard = () => {
                         <div
                           key={conversation.conversationId}
                           onClick={() => {
-                            console.log('👆 Clicked conversation:', conversation);
-                            setSelectedConversation(conversation);
+                            if (!isLongPress) {
+                              console.log('👆 Clicked conversation:', conversation);
+                              setSelectedConversation(conversation);
+                            }
                           }}
                           onMouseDown={() => handleLongPressStart(conversation)}
                           onMouseUp={handleLongPressEnd}
                           onMouseLeave={handleLongPressEnd}
                           onTouchStart={() => handleLongPressStart(conversation)}
                           onTouchEnd={handleLongPressEnd}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setConversationToDelete(conversation);
+                            setShowDeleteConfirm(true);
+                          }}
                           className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition ${
                             selectedConversation?.conversationId === conversation.conversationId ? 'bg-blue-50' : ''
                           }`}
