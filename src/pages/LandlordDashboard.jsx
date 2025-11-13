@@ -150,6 +150,11 @@ const LandlordDashboard = () => {
   const [pendingInvitation, setPendingInvitation] = useState(null);
   const [showSuccessAfterInvitation, setShowSuccessAfterInvitation] = useState(false);
 
+  // Estimate approval modal state
+  const [showEstimateApprovalModal, setShowEstimateApprovalModal] = useState(false);
+  const [selectedRequestForApproval, setSelectedRequestForApproval] = useState(null);
+  const [approvalNotes, setApprovalNotes] = useState('');
+
   // User role for permissions (default to landlord, will be updated from user data)
   const [userRole, setUserRole] = useState('landlord');
 
@@ -1848,6 +1853,89 @@ const handleEditProperty = async () => {
     }
   };
 
+  // ESTIMATE APPROVAL HANDLERS
+  const handleOpenEstimateApproval = (request) => {
+    setSelectedRequestForApproval(request);
+    setApprovalNotes('');
+    setShowEstimateApprovalModal(true);
+  };
+
+  const handleCloseEstimateApproval = () => {
+    setShowEstimateApprovalModal(false);
+    setSelectedRequestForApproval(null);
+    setApprovalNotes('');
+  };
+
+  const handleApproveEstimate = async () => {
+    if (!selectedRequestForApproval) return;
+
+    try {
+      const requestRef = doc(db, 'maintenanceRequests', selectedRequestForApproval.id);
+
+      await updateDoc(requestRef, {
+        status: 'approved',
+        approvedCost: selectedRequestForApproval.estimatedCost,
+        approvalNotes: approvalNotes,
+        approvedAt: serverTimestamp(),
+        approvedBy: currentUser.uid
+      });
+
+      // Create notification for maintenance staff
+      await addDoc(collection(db, 'notifications'), {
+        type: 'estimate_approved',
+        userId: selectedRequestForApproval.assignedTo,
+        title: 'Estimate Approved',
+        message: `Your estimate of KSH ${selectedRequestForApproval.estimatedCost.toLocaleString()} for "${selectedRequestForApproval.issue}" has been approved. You can now proceed with the work.`,
+        read: false,
+        createdAt: serverTimestamp(),
+        maintenanceRequestId: selectedRequestForApproval.id
+      });
+
+      alert('Estimate approved successfully! Maintenance staff has been notified.');
+      handleCloseEstimateApproval();
+    } catch (error) {
+      console.error('Error approving estimate:', error);
+      alert('Error approving estimate. Please try again.');
+    }
+  };
+
+  const handleRejectEstimate = async () => {
+    if (!selectedRequestForApproval) return;
+
+    if (!approvalNotes.trim()) {
+      alert('Please provide a reason for rejecting the estimate.');
+      return;
+    }
+
+    try {
+      const requestRef = doc(db, 'maintenanceRequests', selectedRequestForApproval.id);
+
+      await updateDoc(requestRef, {
+        status: 'estimate_rejected',
+        rejectionNotes: approvalNotes,
+        rejectedAt: serverTimestamp(),
+        rejectedBy: currentUser.uid
+      });
+
+      // Create notification for maintenance staff
+      await addDoc(collection(db, 'notifications'), {
+        type: 'estimate_rejected',
+        userId: selectedRequestForApproval.assignedTo,
+        title: 'Estimate Rejected',
+        message: `Your estimate for "${selectedRequestForApproval.issue}" has been rejected. Reason: ${approvalNotes}`,
+        read: false,
+        createdAt: serverTimestamp(),
+        maintenanceRequestId: selectedRequestForApproval.id
+      });
+
+      alert('Estimate rejected. Maintenance staff has been notified.');
+      handleCloseEstimateApproval();
+    } catch (error) {
+      console.error('Error rejecting estimate:', error);
+      alert('Error rejecting estimate. Please try again.');
+    }
+  };
+
   // ADD LISTING with images
   const handleAddListing = async () => {
     if (newListing.property && newListing.unit && newListing.bedrooms && newListing.rent) {
@@ -3327,7 +3415,56 @@ const handleViewTenantDetails = (tenant) => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    {/* Show estimate info if available */}
+                    {request.estimatedCost && request.status === 'estimated' && (
+                      <div className="w-full mb-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300">
+                            <span className="text-2xl">💰</span>
+                            <div>
+                              <div className="font-semibold">Estimate Submitted</div>
+                              <div className="text-sm">KSH {request.estimatedCost.toLocaleString()}</div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleOpenEstimateApproval(request)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                          >
+                            Review Estimate
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show approved cost */}
+                    {request.approvedCost && request.status === 'approved' && (
+                      <div className="w-full mb-2 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-green-800 dark:text-green-300">
+                          <span className="text-2xl">✅</span>
+                          <div>
+                            <div className="font-semibold">Estimate Approved</div>
+                            <div className="text-sm">Approved Cost: KSH {request.approvedCost.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show rejected status */}
+                    {request.status === 'estimate_rejected' && (
+                      <div className="w-full mb-2 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-red-800 dark:text-red-300">
+                          <span className="text-2xl">❌</span>
+                          <div>
+                            <div className="font-semibold">Estimate Rejected</div>
+                            {request.rejectionNotes && (
+                              <div className="text-sm mt-1">Reason: {request.rejectionNotes}</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {request.status === 'pending' && (
                       <button
                         onClick={() => handleUpdateMaintenanceStatus(request.id, 'in-progress')}
@@ -8082,6 +8219,155 @@ const handleViewTenantDetails = (tenant) => {
           className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
         >
           Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Estimate Approval Modal */}
+{showEstimateApprovalModal && selectedRequestForApproval && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-3xl p-6 my-8">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Review Cost Estimate</h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            {selectedRequestForApproval.issue} - {selectedRequestForApproval.property}, Unit {selectedRequestForApproval.unit}
+          </p>
+        </div>
+        <button
+          onClick={handleCloseEstimateApproval}
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Estimate Details */}
+      <div className="space-y-6 mb-6">
+        {/* Total Cost */}
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">💰</span>
+              <div>
+                <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Estimated Cost</div>
+                <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">
+                  KSH {selectedRequestForApproval.estimatedCost?.toLocaleString() || '0'}
+                </div>
+              </div>
+            </div>
+            {selectedRequestForApproval.estimatedDuration && (
+              <div className="text-right">
+                <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Estimated Duration</div>
+                <div className="text-lg font-semibold text-blue-900 dark:text-blue-200">
+                  {selectedRequestForApproval.estimatedDuration}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Cost Breakdown */}
+        {selectedRequestForApproval.costBreakdown && selectedRequestForApproval.costBreakdown.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <span>📊</span> Cost Breakdown
+            </h4>
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+              <table className="w-full">
+                <thead className="bg-gray-100 dark:bg-gray-800">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Item</th>
+                    <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Quantity</th>
+                    <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Unit Cost</th>
+                    <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {selectedRequestForApproval.costBreakdown.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="px-4 py-3 text-gray-900 dark:text-gray-200">{item.item || '-'}</td>
+                      <td className="px-4 py-3 text-center text-gray-900 dark:text-gray-200">{item.quantity || 0}</td>
+                      <td className="px-4 py-3 text-right text-gray-900 dark:text-gray-200">
+                        KSH {parseFloat(item.unitCost || 0).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-200">
+                        KSH {(item.total || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-gray-100 dark:bg-gray-800">
+                  <tr>
+                    <td colSpan="3" className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">
+                      Total:
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-blue-600 dark:text-blue-400">
+                      KSH {selectedRequestForApproval.estimatedCost?.toLocaleString() || '0'}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Estimate Notes */}
+        {selectedRequestForApproval.estimateNotes && (
+          <div>
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+              <span>📝</span> Technician's Notes
+            </h4>
+            <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                {selectedRequestForApproval.estimateNotes}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Approval Notes */}
+        <div>
+          <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+            Your Notes (Optional)
+          </label>
+          <textarea
+            value={approvalNotes}
+            onChange={(e) => setApprovalNotes(e.target.value)}
+            placeholder="Add any notes or comments about this estimate..."
+            className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+            rows="3"
+          />
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Note: Required if rejecting the estimate
+          </p>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button
+          onClick={handleCloseEstimateApproval}
+          className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleRejectEstimate}
+          className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2"
+        >
+          <span>❌</span> Reject Estimate
+        </button>
+        <button
+          onClick={handleApproveEstimate}
+          className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+        >
+          <span>✅</span> Approve & Proceed
         </button>
       </div>
     </div>
