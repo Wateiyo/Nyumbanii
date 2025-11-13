@@ -2344,29 +2344,33 @@ const handleViewTenantDetails = (tenant) => {
 
   // Stats calculations
   const stats = [
-    { 
-      label: 'Total Properties', 
-      value: properties.length, 
-      icon: Home, 
-      color: 'bg-blue-100 text-blue-900' 
+    {
+      label: 'Total Properties',
+      value: properties.length,
+      icon: Home,
+      color: 'bg-blue-100 text-blue-900',
+      view: 'properties'
     },
     {
       label: 'Active Tenants',
       value: tenants.filter(t => t.status === 'active').length,
       icon: Users,
-      color: 'bg-green-100 text-green-900'
+      color: 'bg-green-100 text-green-900',
+      view: 'tenants'
     },
-    { 
-      label: 'Monthly Revenue', 
-      value: `KES ${Math.round(properties.reduce((sum, p) => sum + (p.revenue || 0), 0) / 1000)}K`, 
-      icon: Banknote, 
-      color: 'bg-purple-100 text-purple-900' 
+    {
+      label: 'Monthly Revenue',
+      value: `KES ${Math.round(properties.reduce((sum, p) => sum + (p.revenue || 0), 0) / 1000)}K`,
+      icon: Banknote,
+      color: 'bg-purple-100 text-purple-900',
+      view: 'payments'
     },
-    { 
-    label: 'Pending Viewings', 
-    value: viewings.filter(v => v.status === 'pending').length, 
-    icon: CalendarCheck, 
-    color: 'bg-orange-100 text-orange-900'  
+    {
+    label: 'Pending Viewings',
+    value: viewings.filter(v => v.status === 'pending').length,
+    icon: CalendarCheck,
+    color: 'bg-orange-100 text-orange-900',
+    view: 'viewings'
     }
   ];
 
@@ -2488,7 +2492,7 @@ const handleViewTenantDetails = (tenant) => {
 
 {/* Notifications Dropdown Panel */}
 {showNotifications && (
-  <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-[500px] overflow-hidden flex flex-col">
+  <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-[500px] overflow-hidden flex flex-col">
     {/* Header */}
     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-700">
       <div>
@@ -2668,7 +2672,11 @@ const handleViewTenantDetails = (tenant) => {
     {/* Stats Cards - Shows 2 cols on mobile, 4 on larger screens */}
 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
   {stats.map((stat, index) => (
-    <div key={index} className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700">
+    <div
+      key={index}
+      onClick={() => setCurrentView(stat.view)}
+      className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-105 transform"
+    >
       {/* Icon at the top */}
       <div className={`w-12 h-12 lg:w-14 lg:h-14 ${stat.color} rounded-lg flex items-center justify-center mb-3`}>
         <stat.icon className="w-6 h-6 lg:w-7 lg:h-7" />
@@ -2777,24 +2785,36 @@ const handleViewTenantDetails = (tenant) => {
         <h3 className="font-semibold text-gray-900 dark:text-white mb-3 lg:mb-4 text-sm lg:text-base">Quick Actions</h3>
         <div className="grid grid-cols-2 gap-2 lg:gap-3">
           {canManageProperties(userRole, teamPermissions) && (
-            <button onClick={() => setShowPropertyModal(true)} className="p-3 lg:p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition text-center">
-              <Building className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400 mx-auto mb-1 lg:mb-2" />
-              <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white dark:text-white block">Add Property</span>
+            <button onClick={() => setShowPropertyModal(true)} className="p-2 lg:p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition text-center">
+              <Building className="w-4 h-4 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400 mx-auto mb-1 lg:mb-2" />
+              <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white block">
+                <span className="lg:hidden">+ Property</span>
+                <span className="hidden lg:inline">Add Property</span>
+              </span>
             </button>
           )}
           {canAddTenant(userRole, teamPermissions) && (
-            <button onClick={() => setShowTenantModal(true)} className="p-3 lg:p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition text-center">
-              <Users className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400 mx-auto mb-1 lg:mb-2" />
-              <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white dark:text-white block">Add Tenant</span>
+            <button onClick={() => setShowTenantModal(true)} className="p-2 lg:p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition text-center">
+              <Users className="w-4 h-4 lg:w-6 lg:h-6 text-green-600 dark:text-green-400 mx-auto mb-1 lg:mb-2" />
+              <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white block">
+                <span className="lg:hidden">+ Tenant</span>
+                <span className="hidden lg:inline">Add Tenant</span>
+              </span>
             </button>
           )}
-          <button onClick={() => setShowListingModal(true)} className="p-3 lg:p-4 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition text-center">
-            <Eye className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 dark:text-purple-400 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white dark:text-white block">Create Listing</span>
+          <button onClick={() => setShowListingModal(true)} className="p-2 lg:p-4 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition text-center">
+            <Eye className="w-4 h-4 lg:w-6 lg:h-6 text-purple-600 dark:text-purple-400 mx-auto mb-1 lg:mb-2" />
+            <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white block">
+              <span className="lg:hidden">+ Listing</span>
+              <span className="hidden lg:inline">Create Listing</span>
+            </span>
           </button>
-          <button onClick={() => setShowMemoModal(true)} className="p-3 lg:p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition text-center">
-            <Mail className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600 dark:text-orange-400 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white dark:text-white dark:text-white block">Send Memo</span>
+          <button onClick={() => setShowMemoModal(true)} className="p-2 lg:p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition text-center">
+            <Mail className="w-4 h-4 lg:w-6 lg:h-6 text-orange-600 dark:text-orange-400 mx-auto mb-1 lg:mb-2" />
+            <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white block">
+              <span className="lg:hidden">Memo</span>
+              <span className="hidden lg:inline">Send Memo</span>
+            </span>
           </button>
         </div>
       </div>
@@ -3280,10 +3300,11 @@ const handleViewTenantDetails = (tenant) => {
           </div>
           <button
             onClick={() => setShowMaintenanceModal(true)}
-            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+            className="px-3 lg:px-6 py-2 lg:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2 text-sm lg:text-base"
           >
-            <Plus className="w-5 h-5" />
-            New Request
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+            <span className="lg:hidden">Request</span>
+            <span className="hidden lg:inline">New Request</span>
           </button>
         </div>
 
@@ -3976,10 +3997,11 @@ const handleViewTenantDetails = (tenant) => {
           </div>
           <button
             onClick={() => setShowPaymentModal(true)}
-            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+            className="px-3 lg:px-6 py-2 lg:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2 text-sm lg:text-base"
           >
-            <Plus className="w-5 h-5" />
-            Record Payment
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+            <span className="lg:hidden">Payment</span>
+            <span className="hidden lg:inline">Record Payment</span>
           </button>
         </div>
 
@@ -4628,10 +4650,11 @@ const handleViewTenantDetails = (tenant) => {
           {canManageTeam(userRole) && (
             <button
               onClick={() => setShowTeamModal(true)}
-              className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+              className="px-3 lg:px-6 py-2 lg:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2 text-sm lg:text-base"
             >
-              <Users className="w-5 h-5" />
-              Add Team Member
+              <Users className="w-4 h-4 lg:w-5 lg:h-5" />
+              <span className="lg:hidden">Add Member</span>
+              <span className="hidden lg:inline">Add Team Member</span>
             </button>
           )}
         </div>
@@ -5119,16 +5142,16 @@ const handleViewTenantDetails = (tenant) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       <div className="space-y-6">
         {/* Blue Banner */}
-        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Account Settings</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Manage your profile, security, and preferences</p>
           </div>
           <button
             onClick={() => setShowPasswordModal(true)}
-            className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+            className="px-4 lg:px-6 py-2 lg:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center justify-center gap-2 text-sm lg:text-base w-full lg:w-auto"
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4 h-4 lg:w-5 lg:h-5" />
             Change Password
           </button>
         </div>
