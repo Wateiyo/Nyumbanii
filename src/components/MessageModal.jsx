@@ -57,35 +57,63 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
         if (recipientType === 'tenant') {
           const tenantsQuery = query(collection(db, 'tenants'));
           const snapshot = await getDocs(tenantsQuery);
-          recipientsData = snapshot.docs.map(doc => ({
-            id: doc.data().userId || doc.id, // Use userId field if available, fallback to doc.id
-            tenantDocId: doc.id, // Keep the tenant document ID for reference
-            ...doc.data(),
-            type: 'tenant',
-            displayName: doc.data().name,
-            role: 'tenant'
-          }));
+          recipientsData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            // Try multiple ways to get the user ID
+            const userId = data.userId || data.uid || data.id || doc.id;
+            return {
+              id: userId,
+              tenantDocId: doc.id,
+              ...data,
+              type: 'tenant',
+              displayName: data.name || data.displayName || 'Tenant',
+              role: 'tenant'
+            };
+          }).filter(r => r.id); // Filter out any without valid ID
         } else if (recipientType === 'landlord') {
           const usersQuery = query(collection(db, 'users'), where('role', '==', 'landlord'));
           const snapshot = await getDocs(usersQuery);
-          recipientsData = snapshot.docs.map(doc => ({
-            id: doc.data().uid || doc.id, // Use uid field if available, fallback to doc.id
-            ...doc.data(),
-            type: 'landlord',
-            displayName: doc.data().displayName || doc.data().email,
-            role: 'landlord'
-          }));
+          recipientsData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const userId = data.uid || data.userId || doc.id;
+            return {
+              id: userId,
+              ...data,
+              type: 'landlord',
+              displayName: data.displayName || data.name || data.email || 'Landlord',
+              role: 'landlord'
+            };
+          }).filter(r => r.id);
+        } else if (recipientType === 'property_manager') {
+          const teamQuery = query(collection(db, 'teamMembers'), where('role', '==', 'property_manager'));
+          const snapshot = await getDocs(teamQuery);
+          recipientsData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const userId = data.userId || data.uid || data.id || doc.id;
+            return {
+              id: userId,
+              teamMemberDocId: doc.id,
+              ...data,
+              type: 'property_manager',
+              displayName: data.name || data.displayName || 'Property Manager',
+              role: 'property_manager'
+            };
+          }).filter(r => r.id);
         } else if (recipientType === 'maintenance') {
           const teamQuery = query(collection(db, 'teamMembers'), where('role', '==', 'maintenance'));
           const snapshot = await getDocs(teamQuery);
-          recipientsData = snapshot.docs.map(doc => ({
-            id: doc.data().userId || doc.id, // Use userId field if available, fallback to doc.id
-            teamMemberDocId: doc.id, // Keep the team member document ID for reference
-            ...doc.data(),
-            type: 'maintenance',
-            displayName: doc.data().name,
-            role: 'maintenance'
-          }));
+          recipientsData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const userId = data.userId || data.uid || data.id || doc.id;
+            return {
+              id: userId,
+              teamMemberDocId: doc.id,
+              ...data,
+              type: 'maintenance',
+              displayName: data.name || data.displayName || 'Maintenance',
+              role: 'maintenance'
+            };
+          }).filter(r => r.id);
         }
 
         setRecipientList(recipientsData);
@@ -314,16 +342,30 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
               >
                 Landlord
               </button>
-              <button
-                onClick={() => setRecipientType('maintenance')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                  recipientType === 'maintenance'
-                    ? 'bg-[#003366] dark:bg-[#004080] text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                Maintenance
-              </button>
+              {senderRole === 'maintenance' && (
+                <button
+                  onClick={() => setRecipientType('property_manager')}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    recipientType === 'property_manager'
+                      ? 'bg-[#003366] dark:bg-[#004080] text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  PM
+                </button>
+              )}
+              {senderRole === 'property_manager' && (
+                <button
+                  onClick={() => setRecipientType('maintenance')}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    recipientType === 'maintenance'
+                      ? 'bg-[#003366] dark:bg-[#004080] text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Maintenance
+                </button>
+              )}
             </div>
           )}
 
