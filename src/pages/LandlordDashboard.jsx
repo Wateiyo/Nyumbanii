@@ -155,6 +155,14 @@ const LandlordDashboard = () => {
   const [selectedRequestForApproval, setSelectedRequestForApproval] = useState(null);
   const [approvalNotes, setApprovalNotes] = useState('');
 
+  // Quote comparison modal state
+  const [showQuoteComparisonModal, setShowQuoteComparisonModal] = useState(false);
+  const [selectedRequestForQuotes, setSelectedRequestForQuotes] = useState(null);
+  const [quotes, setQuotes] = useState([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [selectedQuoteForApproval, setSelectedQuoteForApproval] = useState(null);
+  const [quoteApprovalNotes, setQuoteApprovalNotes] = useState('');
+
   // User role for permissions (default to landlord, will be updated from user data)
   const [userRole, setUserRole] = useState('landlord');
 
@@ -1936,6 +1944,137 @@ const handleEditProperty = async () => {
     }
   };
 
+  // Quote comparison handlers
+  const handleOpenQuoteComparison = async (request) => {
+    setSelectedRequestForQuotes(request);
+    setShowQuoteComparisonModal(true);
+    setLoadingQuotes(true);
+
+    try {
+      // Fetch quotes from subcollection
+      const quotesRef = collection(db, 'maintenanceRequests', request.id, 'quotes');
+      const quotesQuery = query(quotesRef, orderBy('submittedAt', 'desc'));
+
+      // Set up real-time listener for quotes
+      const unsubscribe = onSnapshot(quotesQuery, (snapshot) => {
+        const quotesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setQuotes(quotesData);
+        setLoadingQuotes(false);
+      });
+
+      // Store unsubscribe function to clean up later
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error fetching quotes:', error);
+      setLoadingQuotes(false);
+    }
+  };
+
+  const handleCloseQuoteComparison = () => {
+    setShowQuoteComparisonModal(false);
+    setSelectedRequestForQuotes(null);
+    setQuotes([]);
+    setSelectedQuoteForApproval(null);
+    setQuoteApprovalNotes('');
+  };
+
+  const handleApproveQuote = async (quote) => {
+    if (!selectedRequestForQuotes) return;
+
+    try {
+      // Update quote status to approved
+      const quoteRef = doc(db, 'maintenanceRequests', selectedRequestForQuotes.id, 'quotes', quote.id);
+      await updateDoc(quoteRef, {
+        status: 'approved',
+        approvedBy: currentUser.uid,
+        approvedAt: serverTimestamp(),
+        approvalNotes: quoteApprovalNotes
+      });
+
+      // Update maintenance request with selected quote
+      const requestRef = doc(db, 'maintenanceRequests', selectedRequestForQuotes.id);
+      await updateDoc(requestRef, {
+        status: 'approved',
+        selectedQuoteId: quote.id,
+        approvedCost: quote.amount,
+        approvedVendor: quote.vendorName,
+        approvedBy: currentUser.uid,
+        approvedAt: serverTimestamp(),
+        approvalNotes: quoteApprovalNotes
+      });
+
+      // Reject other quotes automatically
+      const otherQuotes = quotes.filter(q => q.id !== quote.id && q.status === 'pending');
+      for (const otherQuote of otherQuotes) {
+        const otherQuoteRef = doc(db, 'maintenanceRequests', selectedRequestForQuotes.id, 'quotes', otherQuote.id);
+        await updateDoc(otherQuoteRef, {
+          status: 'rejected',
+          rejectedBy: currentUser.uid,
+          rejectedAt: serverTimestamp(),
+          rejectionReason: 'Another quote was selected'
+        });
+      }
+
+      // Create notification for maintenance staff
+      await addDoc(collection(db, 'notifications'), {
+        type: 'quote_approved',
+        userId: quote.submittedBy,
+        title: 'Quote Approved',
+        message: `Your quote from ${quote.vendorName} for "${selectedRequestForQuotes.issue}" has been approved. Amount: KSH ${quote.amount.toLocaleString()}. You can now proceed with the work.`,
+        read: false,
+        createdAt: serverTimestamp(),
+        maintenanceRequestId: selectedRequestForQuotes.id
+      });
+
+      alert(`Quote from ${quote.vendorName} approved successfully!`);
+      handleCloseQuoteComparison();
+    } catch (error) {
+      console.error('Error approving quote:', error);
+      alert('Error approving quote. Please try again.');
+    }
+  };
+
+  const handleRejectQuote = async (quote) => {
+    if (!selectedRequestForQuotes) return;
+
+    if (!quoteApprovalNotes) {
+      alert('Please provide a reason for rejecting this quote.');
+      return;
+    }
+
+    try {
+      // Update quote status to rejected
+      const quoteRef = doc(db, 'maintenanceRequests', selectedRequestForQuotes.id, 'quotes', quote.id);
+      await updateDoc(quoteRef, {
+        status: 'rejected',
+        rejectedBy: currentUser.uid,
+        rejectedAt: serverTimestamp(),
+        rejectionReason: quoteApprovalNotes
+      });
+
+      // Create notification for maintenance staff
+      await addDoc(collection(db, 'notifications'), {
+        type: 'quote_rejected',
+        userId: quote.submittedBy,
+        title: 'Quote Rejected',
+        message: `The quote from ${quote.vendorName} for "${selectedRequestForQuotes.issue}" has been rejected. Reason: ${quoteApprovalNotes}`,
+        read: false,
+        createdAt: serverTimestamp(),
+        maintenanceRequestId: selectedRequestForQuotes.id
+      });
+
+      alert(`Quote from ${quote.vendorName} rejected.`);
+      setSelectedQuoteForApproval(null);
+      setQuoteApprovalNotes('');
+    } catch (error) {
+      console.error('Error rejecting quote:', error);
+      alert('Error rejecting quote. Please try again.');
+    }
+  };
+
   // ADD LISTING with images
   const handleAddListing = async () => {
     if (newListing.property && newListing.unit && newListing.bedrooms && newListing.rent) {
@@ -3495,6 +3634,27 @@ const handleViewTenantDetails = (tenant) => {
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
                           >
                             Review Estimate
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show quotes submitted - View Quotes button */}
+                    {request.quotesSubmitted > 0 && request.status === 'quotes_submitted' && (
+                      <div className="w-full mb-2 p-3 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-purple-800 dark:text-purple-300">
+                            <span className="text-2xl">📋</span>
+                            <div>
+                              <div className="font-semibold">Quotes Submitted</div>
+                              <div className="text-sm">{request.quotesSubmitted} vendor {request.quotesSubmitted === 1 ? 'quote' : 'quotes'} received</div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleOpenQuoteComparison(request)}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
+                          >
+                            View & Compare Quotes
                           </button>
                         </div>
                       </div>
@@ -8461,6 +8621,243 @@ const handleViewTenantDetails = (tenant) => {
           className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
         >
           <span>✅</span> Approve & Proceed
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Quote Comparison Modal */}
+{showQuoteComparisonModal && selectedRequestForQuotes && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      {/* Modal Header */}
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Compare Quotes</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {selectedRequestForQuotes.property} - Unit {selectedRequestForQuotes.unit}
+            </p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
+              Issue: {selectedRequestForQuotes.issue}
+            </p>
+          </div>
+          <button
+            onClick={handleCloseQuoteComparison}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+
+      {/* Modal Content */}
+      <div className="p-6">
+        {loadingQuotes ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          </div>
+        ) : quotes.length === 0 ? (
+          <div className="text-center py-12">
+            <span className="text-6xl">📋</span>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">No quotes submitted yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {quotes.map((quote) => (
+              <div
+                key={quote.id}
+                className={`border-2 rounded-xl p-5 transition-all ${
+                  quote.status === 'approved'
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : quote.status === 'rejected'
+                    ? 'border-red-300 bg-gray-50 dark:bg-gray-900/30 opacity-60'
+                    : selectedQuoteForApproval?.id === quote.id
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
+                }`}
+              >
+                {/* Quote Status Badge */}
+                {quote.status !== 'pending' && (
+                  <div className="mb-3">
+                    {quote.status === 'approved' && (
+                      <span className="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
+                        ✅ Approved
+                      </span>
+                    )}
+                    {quote.status === 'rejected' && (
+                      <span className="px-3 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
+                        ❌ Rejected
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Vendor Name */}
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                  {quote.vendorName}
+                </h3>
+
+                {/* Amount */}
+                <div className="mb-4">
+                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                    KSH {quote.amount.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Quote #{quote.quoteNumber}
+                  </div>
+                </div>
+
+                {/* Vendor Contact */}
+                <div className="space-y-2 mb-4 text-sm">
+                  <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <Phone className="w-4 h-4" />
+                    <span>{quote.vendorContact}</span>
+                  </div>
+                  {quote.vendorEmail && (
+                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                      <Mail className="w-4 h-4" />
+                      <span className="truncate">{quote.vendorEmail}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                {quote.description && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {quote.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Itemized Costs */}
+                {quote.itemizedCosts && quote.itemizedCosts.length > 0 && (
+                  <div className="mb-4 p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">
+                      Cost Breakdown:
+                    </div>
+                    <div className="space-y-1">
+                      {quote.itemizedCosts.map((item, index) => (
+                        <div key={index} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                          <span>{item.item}</span>
+                          <span className="font-medium">KSH {parseFloat(item.cost || 0).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Valid Until */}
+                {quote.validUntil && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Valid until: {new Date(quote.validUntil).toLocaleDateString()}
+                  </div>
+                )}
+
+                {/* Submitted By & Date */}
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div>Submitted by: {quote.submittedByName || 'Staff'}</div>
+                  <div className="mt-1">
+                    {quote.submittedAt && new Date(quote.submittedAt.toDate()).toLocaleDateString()}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                {quote.status === 'pending' && (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedQuoteForApproval(quote);
+                        setQuoteApprovalNotes('');
+                      }}
+                      className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
+                    >
+                      {selectedQuoteForApproval?.id === quote.id ? 'Selected' : 'Select Quote'}
+                    </button>
+                    {selectedQuoteForApproval?.id === quote.id && (
+                      <button
+                        onClick={() => handleApproveQuote(quote)}
+                        className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Approve & Proceed
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Rejection Reason if Rejected */}
+                {quote.status === 'rejected' && quote.rejectionReason && (
+                  <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-700 dark:text-red-300">
+                    <span className="font-semibold">Rejection reason:</span> {quote.rejectionReason}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Rejection Section */}
+        {selectedQuoteForApproval && (
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+            <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+              Approval Notes (Optional)
+            </label>
+            <textarea
+              value={quoteApprovalNotes}
+              onChange={(e) => setQuoteApprovalNotes(e.target.value)}
+              placeholder="Add any notes about this quote selection..."
+              className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+              rows="3"
+            />
+          </div>
+        )}
+
+        {/* Reject Quotes Section */}
+        {quotes.some(q => q.status === 'pending') && (
+          <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+            <h4 className="font-semibold text-red-900 dark:text-red-200 mb-2">Reject Quotes</h4>
+            <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+              If none of these quotes are acceptable, you can reject individual quotes. Provide a reason for each rejection.
+            </p>
+            <div className="space-y-2">
+              {quotes
+                .filter(q => q.status === 'pending')
+                .map((quote) => (
+                  <div key={quote.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {quote.vendorName} - KSH {quote.amount.toLocaleString()}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const reason = prompt(`Enter rejection reason for ${quote.vendorName}:`);
+                        if (reason) {
+                          setQuoteApprovalNotes(reason);
+                          handleRejectQuote(quote);
+                        }
+                      }}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-medium"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+        <button
+          onClick={handleCloseQuoteComparison}
+          className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+        >
+          Close
         </button>
       </div>
     </div>
