@@ -2152,6 +2152,15 @@ const confirmDeleteConversation = async () => {
     const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
     await Promise.all(deletePromises);
 
+    // Delete the conversation document itself
+    const conversationsQuery = query(
+      collection(db, 'conversations'),
+      where('conversationId', '==', conversationToDelete.conversationId)
+    );
+    const conversationsSnapshot = await getDocs(conversationsQuery);
+    const conversationDeletePromises = conversationsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(conversationDeletePromises);
+
     // Clear selected conversation if it was deleted
     if (selectedConversation?.conversationId === conversationToDelete.conversationId) {
       setSelectedConversation(null);
