@@ -1555,6 +1555,47 @@ const PropertyManagerDashboard = () => {
                           )}
                         </div>
 
+                        {/* Cost Summary Section */}
+                        {(request.estimatedCost || request.actualCost) && (
+                          <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-lg">💰</span>
+                              <h4 className="font-semibold text-gray-900 text-sm">Cost Information</h4>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              {request.estimatedCost && (
+                                <div>
+                                  <span className="text-gray-600">Estimated:</span>
+                                  <div className="font-semibold text-gray-900">
+                                    KSH {request.estimatedCost.toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+                              {request.actualCost && (
+                                <div>
+                                  <span className="text-gray-600">Actual:</span>
+                                  <div className="font-semibold text-green-600">
+                                    KSH {request.actualCost.toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+                              {request.estimatedCost && request.actualCost && (
+                                <div className="col-span-2">
+                                  <span className="text-gray-600">Variance:</span>
+                                  <div className={`font-semibold ${
+                                    request.actualCost > request.estimatedCost
+                                      ? 'text-red-600'
+                                      : 'text-green-600'
+                                  }`}>
+                                    KSH {Math.abs(request.actualCost - request.estimatedCost).toLocaleString()}
+                                    {request.actualCost > request.estimatedCost ? ' over' : ' under'}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex gap-4 text-sm text-gray-600 mb-3">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
