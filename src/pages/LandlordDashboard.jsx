@@ -440,6 +440,10 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
   const [automatedWorkflows, setAutomatedWorkflows] = useState({
     autoApproveMaintenance: false,
     maintenanceApprovalLimit: 5000,
+    quoteRequiredThreshold: 10000, // Require formal quotes above this amount
+    monthlyMaintenanceBudget: 50000, // Monthly maintenance budget
+    budgetAlertsEnabled: true, // Alert when approaching budget limit
+    budgetAlertThreshold: 0.8, // Alert at 80% of budget
     autoRentReminders: true,
     rentReminderDays: 3,
     autoOverdueNotices: true,
@@ -5406,6 +5410,81 @@ const handleViewTenantDetails = (tenant) => {
                   />
                 </div>
               )}
+            </div>
+
+            {/* NEW: Maintenance Budget Settings */}
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Maintenance Budget Settings</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Quote Required Threshold (KSH)
+                  </label>
+                  <input
+                    type="number"
+                    value={automatedWorkflows.quoteRequiredThreshold}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, quoteRequiredThreshold: parseInt(e.target.value)})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                    placeholder="10000"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Require formal quotes for maintenance requests above this amount
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Monthly Maintenance Budget (KSH)
+                  </label>
+                  <input
+                    type="number"
+                    value={automatedWorkflows.monthlyMaintenanceBudget}
+                    onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, monthlyMaintenanceBudget: parseInt(e.target.value)})}
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                    placeholder="50000"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Total budget allocated for maintenance per month
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">Budget Alerts</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Get notified when approaching budget limit</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={automatedWorkflows.budgetAlertsEnabled}
+                      onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, budgetAlertsEnabled: e.target.checked})}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                  </label>
+                </div>
+
+                {automatedWorkflows.budgetAlertsEnabled && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Alert Threshold (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="50"
+                      max="95"
+                      step="5"
+                      value={automatedWorkflows.budgetAlertThreshold * 100}
+                      onChange={(e) => setAutomatedWorkflows({...automatedWorkflows, budgetAlertThreshold: parseInt(e.target.value) / 100})}
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:bg-gray-700 dark:text-white"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Alert when spending reaches {automatedWorkflows.budgetAlertThreshold * 100}% of monthly budget
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
