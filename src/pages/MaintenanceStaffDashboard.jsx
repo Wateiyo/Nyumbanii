@@ -783,13 +783,13 @@ const MaintenanceStaffDashboard = () => {
   };
 
   const stats = [
-    { label: 'Assigned Properties', value: properties.length, icon: Building, color: 'bg-blue-100 text-blue-900' },
+    { label: 'Assigned Properties', value: properties.length, icon: Building, color: 'bg-blue-100 text-blue-900', view: 'properties' },
     { label: 'Open Requests', value: maintenanceRequests.filter(r => {
       const status = r.status?.toLowerCase();
       return status === 'pending' || !status; // Include pending and requests without status
-    }).length, icon: AlertCircle, color: 'bg-red-100 text-red-900' },
-    { label: 'In Progress', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'in-progress').length, icon: Clock, color: 'bg-yellow-100 text-yellow-900' },
-    { label: 'Completed', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'completed').length, icon: CheckCircle, color: 'bg-green-100 text-green-900' }
+    }).length, icon: AlertCircle, color: 'bg-red-100 text-red-900', view: 'maintenance' },
+    { label: 'In Progress', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'in-progress').length, icon: Clock, color: 'bg-yellow-100 text-yellow-900', view: 'maintenance' },
+    { label: 'Completed', value: maintenanceRequests.filter(r => r.status?.toLowerCase() === 'completed').length, icon: CheckCircle, color: 'bg-green-100 text-green-900', view: 'maintenance' }
   ];
 
   const filteredRequests = maintenanceRequests.filter(request => {
@@ -940,7 +940,11 @@ const MaintenanceStaffDashboard = () => {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
                 {stats.map((stat, index) => (
-                  <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                  <div
+                    key={index}
+                    onClick={() => setCurrentView(stat.view)}
+                    className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer hover:scale-105 transform"
+                  >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-gray-600 text-xs sm:text-sm mb-1">{stat.label}</p>
