@@ -2022,7 +2022,10 @@ const TenantDashboard = () => {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setCurrentView('payments')}
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full hover:scale-105 transform"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Next Payment Due</h4>
                     <Calendar className="w-5 h-5 text-[#003366] dark:text-blue-400" />
@@ -2033,9 +2036,12 @@ const TenantDashboard = () => {
                   <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
                     KES {tenantData?.rent ? tenantData.rent.toLocaleString() : '0'}
                   </p>
-                </div>
+                </button>
 
-                <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setCurrentView('documents')}
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full hover:scale-105 transform"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Lease Expires</h4>
                     <FileText className="w-5 h-5 text-[#003366] dark:text-blue-400" />
@@ -2052,20 +2058,23 @@ const TenantDashboard = () => {
                       return `${diffMonths} months left`;
                     })() : 'N/A'}
                   </p>
-                </div>
+                </button>
 
-                <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setCurrentView('maintenance')}
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full hover:scale-105 transform"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Maintenance</h4>
                     <Wrench className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   </div>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">2 Open</p>
                   <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">1 in progress</p>
-                </div>
+                </button>
 
                 <button
                   onClick={() => setCurrentView('messages')}
-                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full"
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full hover:scale-105 transform"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Messages</h4>
