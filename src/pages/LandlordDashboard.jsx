@@ -737,6 +737,34 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
 
     console.log('💬 Loading conversation:', selectedConversation.conversationId);
 
+    // Mark all message notifications for this conversation as read
+    const markConversationNotificationsRead = async () => {
+      try {
+        const notificationsQuery = query(
+          collection(db, 'notifications'),
+          where('userId', '==', currentUser.uid),
+          where('conversationId', '==', selectedConversation.conversationId),
+          where('type', '==', 'message'),
+          where('read', '==', false)
+        );
+
+        const notificationsSnapshot = await getDocs(notificationsQuery);
+        const updatePromises = notificationsSnapshot.docs.map(doc =>
+          updateDoc(doc.ref, {
+            read: true,
+            readAt: serverTimestamp()
+          })
+        );
+
+        await Promise.all(updatePromises);
+        console.log('✅ Marked', notificationsSnapshot.size, 'message notifications as read');
+      } catch (error) {
+        console.error('Error marking conversation notifications as read:', error);
+      }
+    };
+
+    markConversationNotificationsRead();
+
     const q = query(
       collection(db, 'messages'),
       where('conversationId', '==', selectedConversation.conversationId),
@@ -765,7 +793,7 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     });
 
     return () => unsubscribe();
-  }, [selectedConversation]);
+  }, [selectedConversation, currentUser]);
 
   // Send message in conversation
   const handleSendConversationMessage = async () => {
