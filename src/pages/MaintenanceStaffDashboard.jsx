@@ -95,6 +95,21 @@ const MaintenanceStaffDashboard = () => {
     actualCostBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
   });
 
+  // Quote submission states
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [selectedRequestForQuote, setSelectedRequestForQuote] = useState(null);
+  const [quoteData, setQuoteData] = useState({
+    vendorName: '',
+    vendorContact: '',
+    vendorEmail: '',
+    amount: '',
+    description: '',
+    itemizedCosts: [{ item: '', cost: '' }],
+    validUntil: '',
+    quoteNumber: ''
+  });
+  const [quotes, setQuotes] = useState({}); // Store quotes by requestId
+
   // Fetch team member data for the current user
   useEffect(() => {
     if (!currentUser?.uid) {
@@ -886,6 +901,110 @@ const MaintenanceStaffDashboard = () => {
     }
   };
 
+  // Quote submission handlers
+  const handleOpenQuoteModal = (request) => {
+    setSelectedRequestForQuote(request);
+    setQuoteData({
+      vendorName: '',
+      vendorContact: '',
+      vendorEmail: '',
+      amount: '',
+      description: '',
+      itemizedCosts: [{ item: '', cost: '' }],
+      validUntil: '',
+      quoteNumber: `Q-${Date.now()}`
+    });
+    setShowQuoteModal(true);
+  };
+
+  const handleCloseQuoteModal = () => {
+    setShowQuoteModal(false);
+    setSelectedRequestForQuote(null);
+    setQuoteData({
+      vendorName: '',
+      vendorContact: '',
+      vendorEmail: '',
+      amount: '',
+      description: '',
+      itemizedCosts: [{ item: '', cost: '' }],
+      validUntil: '',
+      quoteNumber: ''
+    });
+  };
+
+  const handleAddItemizedCost = () => {
+    setQuoteData({
+      ...quoteData,
+      itemizedCosts: [...quoteData.itemizedCosts, { item: '', cost: '' }]
+    });
+  };
+
+  const handleRemoveItemizedCost = (index) => {
+    const newCosts = quoteData.itemizedCosts.filter((_, i) => i !== index);
+    setQuoteData({ ...quoteData, itemizedCosts: newCosts });
+  };
+
+  const handleItemizedCostChange = (index, field, value) => {
+    const newCosts = [...quoteData.itemizedCosts];
+    newCosts[index][field] = value;
+    setQuoteData({ ...quoteData, itemizedCosts: newCosts });
+
+    // Auto-calculate total amount
+    const total = newCosts.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+    setQuoteData(prev => ({ ...prev, amount: total.toString() }));
+  };
+
+  const handleSubmitQuote = async () => {
+    if (!selectedRequestForQuote) return;
+
+    // Validation
+    if (!quoteData.vendorName || !quoteData.vendorContact || !quoteData.amount) {
+      alert('Please fill in vendor name, contact, and amount.');
+      return;
+    }
+
+    try {
+      // Add quote to subcollection
+      const quotesRef = collection(db, 'maintenanceRequests', selectedRequestForQuote.id, 'quotes');
+      await addDoc(quotesRef, {
+        ...quoteData,
+        amount: parseFloat(quoteData.amount),
+        itemizedCosts: quoteData.itemizedCosts.filter(item => item.item && item.cost),
+        submittedBy: currentUser.uid,
+        submittedByName: teamMember.name,
+        submittedAt: serverTimestamp(),
+        status: 'pending',
+        maintenanceRequestId: selectedRequestForQuote.id
+      });
+
+      // Update maintenance request to track quotes
+      const requestRef = doc(db, 'maintenanceRequests', selectedRequestForQuote.id);
+      const currentQuotesCount = selectedRequestForQuote.quotesSubmitted || 0;
+      await updateDoc(requestRef, {
+        requiresQuote: true,
+        quotesSubmitted: currentQuotesCount + 1,
+        status: 'quotes_submitted'
+      });
+
+      // Create notification for landlord
+      await addDoc(collection(db, 'notifications'), {
+        type: 'quote_submitted',
+        userId: selectedRequestForQuote.landlordId,
+        title: 'New Quote Submitted',
+        message: `${quoteData.vendorName} quote submitted for "${selectedRequestForQuote.issue}" at ${selectedRequestForQuote.property}, Unit ${selectedRequestForQuote.unit}. Amount: KSH ${parseFloat(quoteData.amount).toLocaleString()}`,
+        read: false,
+        createdAt: serverTimestamp(),
+        maintenanceRequestId: selectedRequestForQuote.id
+      });
+
+      alert('Quote submitted successfully!');
+      handleCloseQuoteModal();
+    } catch (error) {
+      console.error('Error submitting quote:', error);
+      alert('Error submitting quote. Please try again.');
+    }
+  };
+
   const stats = [
     { label: 'Assigned Properties', value: properties.length, icon: Building, color: 'bg-blue-100 text-blue-900', view: 'properties' },
     { label: 'Open Requests', value: maintenanceRequests.filter(r => {
@@ -1226,6 +1345,20 @@ const MaintenanceStaffDashboard = () => {
                               className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm whitespace-nowrap flex items-center justify-center gap-2"
                             >
                               <span>💰</span> Add Estimate
+                            </button>
+                          )}
+                          {/* Submit Quote Button - Show for estimated requests or quote_required status */}
+                          {request.assignedTo === teamMember.id && (request.estimatedCost || request.status?.toLowerCase() === 'quote_required' || request.status?.toLowerCase() === 'quotes_submitted') && request.status?.toLowerCase() !== 'completed' && request.status?.toLowerCase() !== 'approved' && (
+                            <button
+                              onClick={() => handleOpenQuoteModal(request)}
+                              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-sm whitespace-nowrap flex items-center justify-center gap-2"
+                            >
+                              <span>📋</span> Submit Quote
+                              {request.quotesSubmitted > 0 && (
+                                <span className="ml-1 px-2 py-0.5 bg-purple-700 rounded-full text-xs">
+                                  {request.quotesSubmitted}
+                                </span>
+                              )}
                             </button>
                           )}
                           {/* Show cost information */}
@@ -2128,6 +2261,196 @@ const MaintenanceStaffDashboard = () => {
             >
               <CheckCircle className="w-5 h-5" />
               Submit Completion
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Submit Quote Modal */}
+    {showQuoteModal && selectedRequestForQuote && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Modal Header */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Submit Quote</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {selectedRequestForQuote.property} - Unit {selectedRequestForQuote.unit}
+                </p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
+                  Issue: {selectedRequestForQuote.issue}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseQuoteModal}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Content */}
+          <div className="p-6 space-y-6">
+            {/* Quote Number (Auto-generated) */}
+            <div>
+              <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                Quote Number
+              </label>
+              <input
+                type="text"
+                value={quoteData.quoteNumber}
+                disabled
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400"
+              />
+            </div>
+
+            {/* Vendor Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                  Vendor Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={quoteData.vendorName}
+                  onChange={(e) => setQuoteData({ ...quoteData, vendorName: e.target.value })}
+                  placeholder="ABC Plumbing Services"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                  Vendor Contact <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={quoteData.vendorContact}
+                  onChange={(e) => setQuoteData({ ...quoteData, vendorContact: e.target.value })}
+                  placeholder="0712345678"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                Vendor Email (Optional)
+              </label>
+              <input
+                type="email"
+                value={quoteData.vendorEmail}
+                onChange={(e) => setQuoteData({ ...quoteData, vendorEmail: e.target.value })}
+                placeholder="vendor@example.com"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              />
+            </div>
+
+            {/* Quote Description */}
+            <div>
+              <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                Description
+              </label>
+              <textarea
+                value={quoteData.description}
+                onChange={(e) => setQuoteData({ ...quoteData, description: e.target.value })}
+                placeholder="Brief description of the work to be done..."
+                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                rows="3"
+              />
+            </div>
+
+            {/* Itemized Costs */}
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <label className="block font-semibold text-gray-900 dark:text-white">
+                  Itemized Costs
+                </label>
+                <button
+                  onClick={handleAddItemizedCost}
+                  className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition text-sm flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Item
+                </button>
+              </div>
+              <div className="space-y-2">
+                {quoteData.itemizedCosts.map((cost, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={cost.item}
+                      onChange={(e) => handleItemizedCostChange(index, 'item', e.target.value)}
+                      placeholder="Item description"
+                      className="flex-1 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    />
+                    <input
+                      type="number"
+                      value={cost.cost}
+                      onChange={(e) => handleItemizedCostChange(index, 'cost', e.target.value)}
+                      placeholder="Cost (KSH)"
+                      className="w-32 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    />
+                    {quoteData.itemizedCosts.length > 1 && (
+                      <button
+                        onClick={() => handleRemoveItemizedCost(index)}
+                        className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Total Amount */}
+            <div>
+              <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                Total Amount (KSH) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={quoteData.amount}
+                onChange={(e) => setQuoteData({ ...quoteData, amount: e.target.value })}
+                placeholder="25000"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-lg font-semibold"
+              />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Auto-calculated from itemized costs, or enter manually
+              </p>
+            </div>
+
+            {/* Valid Until */}
+            <div>
+              <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                Quote Valid Until (Optional)
+              </label>
+              <input
+                type="date"
+                value={quoteData.validUntil}
+                onChange={(e) => setQuoteData({ ...quoteData, validUntil: e.target.value })}
+                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={handleCloseQuoteModal}
+              className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmitQuote}
+              className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium flex items-center justify-center gap-2"
+            >
+              <Send className="w-5 h-5" />
+              Submit Quote
             </button>
           </div>
         </div>
