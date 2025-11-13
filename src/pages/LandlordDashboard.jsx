@@ -8426,6 +8426,7 @@ const handleViewTenantDetails = (tenant) => {
       setShowMessageModal(false);
       setSelectedTenantForMessage(null);
     }}
+    senderRole="landlord"
   />
 )}
 
