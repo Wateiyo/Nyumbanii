@@ -3414,6 +3414,47 @@ const handleViewTenantDetails = (tenant) => {
                               </div>
                             )}
                           </div>
+
+                          {/* Cost Summary Section */}
+                          {(request.estimatedCost || request.actualCost) && (
+                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg">💰</span>
+                                <h4 className="font-semibold text-gray-900 dark:text-white text-sm">Cost Information</h4>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                {request.estimatedCost && (
+                                  <div>
+                                    <span className="text-gray-600 dark:text-gray-400">Estimated:</span>
+                                    <div className="font-semibold text-gray-900 dark:text-white">
+                                      KSH {request.estimatedCost.toLocaleString()}
+                                    </div>
+                                  </div>
+                                )}
+                                {request.actualCost && (
+                                  <div>
+                                    <span className="text-gray-600 dark:text-gray-400">Actual:</span>
+                                    <div className="font-semibold text-green-600 dark:text-green-400">
+                                      KSH {request.actualCost.toLocaleString()}
+                                    </div>
+                                  </div>
+                                )}
+                                {request.estimatedCost && request.actualCost && (
+                                  <div className="col-span-2">
+                                    <span className="text-gray-600 dark:text-gray-400">Variance:</span>
+                                    <div className={`font-semibold ${
+                                      request.actualCost > request.estimatedCost
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : 'text-green-600 dark:text-green-400'
+                                    }`}>
+                                      KSH {Math.abs(request.actualCost - request.estimatedCost).toLocaleString()}
+                                      {request.actualCost > request.estimatedCost ? ' over' : ' under'}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -3483,6 +3524,32 @@ const handleViewTenantDetails = (tenant) => {
                             )}
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Show completed work summary */}
+                    {request.status === 'completed' && request.actualCost && (
+                      <div className="w-full mb-2 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-3xl">✅</span>
+                          <div>
+                            <div className="font-bold text-green-900 dark:text-green-200">Work Completed</div>
+                            <div className="text-sm text-green-700 dark:text-green-300">
+                              Final Cost: KSH {request.actualCost.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                        {request.completionNotes && (
+                          <div className="mt-2 p-2 bg-white dark:bg-gray-800 rounded text-sm">
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">Notes: </span>
+                            <span className="text-gray-600 dark:text-gray-400">{request.completionNotes}</span>
+                          </div>
+                        )}
+                        {request.actualDuration && (
+                          <div className="mt-2 text-sm text-green-700 dark:text-green-300">
+                            <span className="font-semibold">Duration: </span>{request.actualDuration}
+                          </div>
+                        )}
                       </div>
                     )}
 
