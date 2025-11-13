@@ -2838,10 +2838,11 @@ const handleViewTenantDetails = (tenant) => {
           {canManageProperties(userRole, teamPermissions) && (
             <button
               onClick={() => setShowPropertyModal(true)}
-              className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+              className="px-3 lg:px-6 py-2 lg:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2 text-sm lg:text-base"
             >
-              <Plus className="w-5 h-5" />
-              Add Property
+              <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+              <span className="lg:hidden">+ Property</span>
+              <span className="hidden lg:inline">Add Property</span>
             </button>
           )}
         </div>
@@ -3791,10 +3792,11 @@ const handleViewTenantDetails = (tenant) => {
                 {canAddTenant(userRole, teamPermissions) && (
                   <button
                     onClick={() => setShowTenantModal(true)}
-                    className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                    className="px-3 lg:px-6 py-2 lg:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2 text-sm lg:text-base"
                   >
-                    <Plus className="w-5 h-5" />
-                    Add Tenant
+                    <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                    <span className="lg:hidden">+ Tenant</span>
+                    <span className="hidden lg:inline">Add Tenant</span>
                   </button>
                 )}
               </div>
@@ -4853,20 +4855,20 @@ const handleViewTenantDetails = (tenant) => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2 lg:flex-col lg:items-end">
+                    <div className="flex flex-col sm:flex-row gap-2 lg:flex-col lg:items-end w-full lg:w-auto">
                       <button
                         onClick={() => {
                           setSelectedTeamMember(member);
                           setShowAssignTeamModal(true);
                         }}
-                        className="flex-1 lg:flex-none bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition text-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                        className="w-full sm:flex-1 lg:w-auto bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition text-sm flex items-center justify-center gap-2"
                       >
                         <Building className="w-4 h-4" />
-                        Assign Properties
+                        <span className="lg:inline">Assign Properties</span>
                       </button>
                       <button
                         onClick={() => handleRemoveTeamMember(member.id)}
-                        className="flex-1 lg:flex-none bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                        className="w-full sm:flex-1 lg:w-auto bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center justify-center gap-2"
                       >
                         <Trash2 className="w-4 h-4" />
                         Remove
