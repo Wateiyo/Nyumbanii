@@ -1228,15 +1228,41 @@ const MaintenanceStaffDashboard = () => {
                               <span>💰</span> Add Estimate
                             </button>
                           )}
-                          {/* Show estimate if provided */}
-                          {request.estimatedCost && (
-                            <div className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-sm">
-                              <div className="font-semibold text-green-800">Estimate: KSH {request.estimatedCost.toLocaleString()}</div>
-                              {request.status === 'estimated' && (
-                                <div className="text-xs text-green-600 mt-1">⏳ Awaiting approval</div>
+                          {/* Show cost information */}
+                          {(request.estimatedCost || request.actualCost) && (
+                            <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span>💰</span>
+                                <span className="font-semibold text-gray-900">Cost Information</span>
+                              </div>
+                              {request.estimatedCost && (
+                                <div className="mb-1">
+                                  <span className="text-gray-600">Estimate: </span>
+                                  <span className="font-semibold text-gray-900">KSH {request.estimatedCost.toLocaleString()}</span>
+                                  {request.status === 'estimated' && (
+                                    <span className="ml-2 text-xs text-orange-600">⏳ Awaiting approval</span>
+                                  )}
+                                  {request.status === 'approved' && (
+                                    <span className="ml-2 text-xs text-green-600">✅ Approved</span>
+                                  )}
+                                </div>
                               )}
-                              {request.status === 'approved' && (
-                                <div className="text-xs text-green-600 mt-1">✅ Approved</div>
+                              {request.actualCost && (
+                                <div className="mb-1">
+                                  <span className="text-gray-600">Actual: </span>
+                                  <span className="font-semibold text-green-600">KSH {request.actualCost.toLocaleString()}</span>
+                                </div>
+                              )}
+                              {request.estimatedCost && request.actualCost && (
+                                <div className="mt-2 pt-2 border-t border-gray-300">
+                                  <span className="text-gray-600">Variance: </span>
+                                  <span className={`font-semibold ${
+                                    request.actualCost > request.estimatedCost ? 'text-red-600' : 'text-green-600'
+                                  }`}>
+                                    KSH {Math.abs(request.actualCost - request.estimatedCost).toLocaleString()}
+                                    {request.actualCost > request.estimatedCost ? ' over' : ' under'}
+                                  </span>
+                                </div>
                               )}
                             </div>
                           )}
