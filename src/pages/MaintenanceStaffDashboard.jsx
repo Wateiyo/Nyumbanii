@@ -75,6 +75,16 @@ const MaintenanceStaffDashboard = () => {
   const [conversationToDelete, setConversationToDelete] = useState(null);
   const [isLongPress, setIsLongPress] = useState(false);
 
+  // Cost estimation states
+  const [showEstimateModal, setShowEstimateModal] = useState(false);
+  const [selectedRequestForEstimate, setSelectedRequestForEstimate] = useState(null);
+  const [estimateData, setEstimateData] = useState({
+    estimatedCost: '',
+    estimateNotes: '',
+    estimatedDuration: '',
+    costBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+  });
+
   // Fetch team member data for the current user
   useEffect(() => {
     if (!currentUser?.uid) {
@@ -678,6 +688,100 @@ const MaintenanceStaffDashboard = () => {
     }
   };
 
+  // Cost estimation handlers
+  const handleOpenEstimateModal = (request) => {
+    setSelectedRequestForEstimate(request);
+    setShowEstimateModal(true);
+    // Reset estimate data
+    setEstimateData({
+      estimatedCost: '',
+      estimateNotes: '',
+      estimatedDuration: '',
+      costBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+  };
+
+  const handleCloseEstimateModal = () => {
+    setShowEstimateModal(false);
+    setSelectedRequestForEstimate(null);
+  };
+
+  const handleAddBreakdownItem = () => {
+    setEstimateData({
+      ...estimateData,
+      costBreakdown: [...estimateData.costBreakdown, { item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+  };
+
+  const handleRemoveBreakdownItem = (index) => {
+    const newBreakdown = estimateData.costBreakdown.filter((_, i) => i !== index);
+    setEstimateData({ ...estimateData, costBreakdown: newBreakdown });
+  };
+
+  const handleBreakdownChange = (index, field, value) => {
+    const newBreakdown = [...estimateData.costBreakdown];
+    newBreakdown[index][field] = value;
+
+    // Calculate total for this item
+    if (field === 'quantity' || field === 'unitCost') {
+      const quantity = parseFloat(newBreakdown[index].quantity) || 0;
+      const unitCost = parseFloat(newBreakdown[index].unitCost) || 0;
+      newBreakdown[index].total = quantity * unitCost;
+    }
+
+    setEstimateData({ ...estimateData, costBreakdown: newBreakdown });
+
+    // Update total estimated cost
+    const totalCost = newBreakdown.reduce((sum, item) => sum + (item.total || 0), 0);
+    setEstimateData(prev => ({ ...prev, estimatedCost: totalCost.toString() }));
+  };
+
+  const handleSubmitEstimate = async () => {
+    if (!selectedRequestForEstimate) return;
+
+    const totalCost = estimateData.costBreakdown.reduce((sum, item) => sum + (item.total || 0), 0);
+
+    if (totalCost === 0) {
+      alert('Please add at least one cost item');
+      return;
+    }
+
+    try {
+      const estimateUpdate = {
+        estimatedCost: totalCost,
+        estimateNotes: estimateData.estimateNotes,
+        estimatedDuration: estimateData.estimatedDuration,
+        costBreakdown: estimateData.costBreakdown.filter(item => item.item && item.total > 0),
+        estimatedBy: teamMember?.name || currentUser.email,
+        estimatedById: currentUser.uid,
+        estimatedAt: serverTimestamp(),
+        status: 'estimated', // Update status to show estimate is provided
+        requiresApproval: true // All estimates require landlord approval
+      };
+
+      await updateDoc(doc(db, 'maintenanceRequests', selectedRequestForEstimate.id), estimateUpdate);
+
+      // Send notification to landlord
+      if (teamMember?.landlordId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: teamMember.landlordId,
+          type: 'maintenance',
+          title: 'Cost Estimate Provided',
+          message: `${teamMember.name} provided an estimate of KSH ${totalCost.toLocaleString()} for: ${selectedRequestForEstimate.issue}`,
+          maintenanceRequestId: selectedRequestForEstimate.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      alert('Cost estimate submitted successfully!');
+      handleCloseEstimateModal();
+    } catch (error) {
+      console.error('Error submitting estimate:', error);
+      alert('Error submitting estimate. Please try again.');
+    }
+  };
+
   const stats = [
     { label: 'Assigned Properties', value: properties.length, icon: Building, color: 'bg-blue-100 text-blue-900' },
     { label: 'Open Requests', value: maintenanceRequests.filter(r => {
@@ -1006,6 +1110,27 @@ const MaintenanceStaffDashboard = () => {
                             >
                               Assign to Me
                             </button>
+                          )}
+                          {/* Add Estimate Button - Show for assigned requests that don't have an estimate yet */}
+                          {request.assignedTo === teamMember.id && !request.estimatedCost && request.status?.toLowerCase() !== 'completed' && (
+                            <button
+                              onClick={() => handleOpenEstimateModal(request)}
+                              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm whitespace-nowrap flex items-center justify-center gap-2"
+                            >
+                              <span>💰</span> Add Estimate
+                            </button>
+                          )}
+                          {/* Show estimate if provided */}
+                          {request.estimatedCost && (
+                            <div className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-sm">
+                              <div className="font-semibold text-green-800">Estimate: KSH {request.estimatedCost.toLocaleString()}</div>
+                              {request.status === 'estimated' && (
+                                <div className="text-xs text-green-600 mt-1">⏳ Awaiting approval</div>
+                              )}
+                              {request.status === 'approved' && (
+                                <div className="text-xs text-green-600 mt-1">✅ Approved</div>
+                              )}
+                            </div>
                           )}
                           {request.assignedTo === teamMember.id && request.status?.toLowerCase() === 'pending' && (
                             <button
@@ -1526,6 +1651,154 @@ const MaintenanceStaffDashboard = () => {
               className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
             >
               Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Cost Estimate Modal */}
+    {showEstimateModal && selectedRequestForEstimate && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Add Cost Estimate</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {selectedRequestForEstimate.issue} - {selectedRequestForEstimate.property}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseEstimateModal}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Cost Breakdown Section */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white">
+                  Cost Breakdown
+                </label>
+                <button
+                  onClick={handleAddBreakdownItem}
+                  className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" /> Add Item
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {estimateData.costBreakdown.map((item, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="col-span-5">
+                      <input
+                        type="text"
+                        placeholder="Item description"
+                        value={item.item}
+                        onChange={(e) => handleBreakdownChange(index, 'item', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white text-sm"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="number"
+                        placeholder="Qty"
+                        value={item.quantity}
+                        onChange={(e) => handleBreakdownChange(index, 'quantity', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white text-sm"
+                        min="1"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="number"
+                        placeholder="Unit Cost"
+                        value={item.unitCost}
+                        onChange={(e) => handleBreakdownChange(index, 'unitCost', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white text-sm"
+                        min="0"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="text"
+                        value={`KSH ${item.total.toLocaleString()}`}
+                        readOnly
+                        className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div className="col-span-1 flex items-center justify-center">
+                      {estimateData.costBreakdown.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveBreakdownItem(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total Cost Display */}
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Estimated Cost:</span>
+                  <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    KSH {estimateData.costBreakdown.reduce((sum, item) => sum + (item.total || 0), 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Estimated Duration */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                Estimated Duration
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., 2 hours, 1 day, 3-4 hours"
+                value={estimateData.estimatedDuration}
+                onChange={(e) => setEstimateData({ ...estimateData, estimatedDuration: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                Notes & Details
+              </label>
+              <textarea
+                placeholder="Provide details about the work required, materials needed, etc."
+                value={estimateData.estimateNotes}
+                onChange={(e) => setEstimateData({ ...estimateData, estimateNotes: e.target.value })}
+                rows={4}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+              />
+            </div>
+          </div>
+
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+            <button
+              onClick={handleCloseEstimateModal}
+              className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmitEstimate}
+              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+            >
+              Submit Estimate
             </button>
           </div>
         </div>
