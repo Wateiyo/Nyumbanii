@@ -3378,6 +3378,23 @@ const handleViewTenantDetails = (tenant) => {
                 </div>
               </div>
 
+              {/* Privacy Notice */}
+              <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 dark:border-green-600 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-green-900 dark:text-green-300 mb-1">Your Privacy is Protected</h4>
+                    <p className="text-sm text-green-800 dark:text-green-400 leading-relaxed">
+                      All tax information is stored securely and privately in your account. We will <strong>never</strong> share, sell, or forward your financial data to anyone, including KRA or any third parties. This tool is designed solely for your personal record-keeping and tax calculation assistance.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Current Month Tax Summary Card */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
