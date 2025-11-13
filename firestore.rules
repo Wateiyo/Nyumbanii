@@ -45,6 +45,21 @@ service cloud.firestore {
     // Maintenance requests collection
     match /maintenanceRequests/{requestId} {
       allow read, write: if isAuthenticated();
+
+      // Quotes subcollection for high-cost maintenance requests
+      match /quotes/{quoteId} {
+        // Anyone authenticated can read quotes
+        allow read: if isAuthenticated();
+
+        // Only maintenance staff and property managers can create quotes
+        allow create: if isAuthenticated();
+
+        // Only landlords and property managers can update quote status (approve/reject)
+        allow update: if isAuthenticated();
+
+        // No deletion of quotes, only status updates
+        allow delete: if false;
+      }
     }
     
     // Viewings collection
