@@ -85,6 +85,16 @@ const MaintenanceStaffDashboard = () => {
     costBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
   });
 
+  // Complete work states
+  const [showCompleteWorkModal, setShowCompleteWorkModal] = useState(false);
+  const [selectedRequestForCompletion, setSelectedRequestForCompletion] = useState(null);
+  const [completionData, setCompletionData] = useState({
+    actualCost: '',
+    completionNotes: '',
+    actualDuration: '',
+    actualCostBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+  });
+
   // Fetch team member data for the current user
   useEffect(() => {
     if (!currentUser?.uid) {
@@ -782,6 +792,100 @@ const MaintenanceStaffDashboard = () => {
     }
   };
 
+  // COMPLETE WORK HANDLERS
+  const handleOpenCompleteWorkModal = (request) => {
+    setSelectedRequestForCompletion(request);
+
+    // Pre-fill with estimated data if available
+    setCompletionData({
+      actualCost: request.estimatedCost?.toString() || '',
+      completionNotes: '',
+      actualDuration: request.estimatedDuration || '',
+      actualCostBreakdown: request.costBreakdown || [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+
+    setShowCompleteWorkModal(true);
+  };
+
+  const handleCloseCompleteWorkModal = () => {
+    setShowCompleteWorkModal(false);
+    setSelectedRequestForCompletion(null);
+    setCompletionData({
+      actualCost: '',
+      completionNotes: '',
+      actualDuration: '',
+      actualCostBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+  };
+
+  const handleAddCompletionBreakdownItem = () => {
+    setCompletionData({
+      ...completionData,
+      actualCostBreakdown: [...completionData.actualCostBreakdown, { item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+  };
+
+  const handleRemoveCompletionBreakdownItem = (index) => {
+    const newBreakdown = completionData.actualCostBreakdown.filter((_, i) => i !== index);
+    setCompletionData({ ...completionData, actualCostBreakdown: newBreakdown });
+  };
+
+  const handleCompletionBreakdownChange = (index, field, value) => {
+    const newBreakdown = [...completionData.actualCostBreakdown];
+    newBreakdown[index][field] = value;
+
+    if (field === 'quantity' || field === 'unitCost') {
+      const quantity = parseFloat(newBreakdown[index].quantity) || 0;
+      const unitCost = parseFloat(newBreakdown[index].unitCost) || 0;
+      newBreakdown[index].total = quantity * unitCost;
+    }
+
+    setCompletionData({ ...completionData, actualCostBreakdown: newBreakdown });
+
+    const totalCost = newBreakdown.reduce((sum, item) => sum + (item.total || 0), 0);
+    setCompletionData(prev => ({ ...prev, actualCost: totalCost.toString() }));
+  };
+
+  const handleSubmitCompletion = async () => {
+    if (!selectedRequestForCompletion) return;
+
+    if (!completionData.actualCost) {
+      alert('Please enter the actual cost.');
+      return;
+    }
+
+    try {
+      const requestRef = doc(db, 'maintenanceRequests', selectedRequestForCompletion.id);
+
+      await updateDoc(requestRef, {
+        status: 'completed',
+        actualCost: parseFloat(completionData.actualCost),
+        completionNotes: completionData.completionNotes,
+        actualDuration: completionData.actualDuration,
+        actualCostBreakdown: completionData.actualCostBreakdown,
+        completedAt: serverTimestamp(),
+        completedBy: currentUser.uid
+      });
+
+      // Create notification for landlord
+      await addDoc(collection(db, 'notifications'), {
+        type: 'maintenance_completed',
+        userId: selectedRequestForCompletion.landlordId,
+        title: 'Maintenance Work Completed',
+        message: `Work completed for "${selectedRequestForCompletion.issue}" at ${selectedRequestForCompletion.property}, Unit ${selectedRequestForCompletion.unit}. Final cost: KSH ${parseFloat(completionData.actualCost).toLocaleString()}`,
+        read: false,
+        createdAt: serverTimestamp(),
+        maintenanceRequestId: selectedRequestForCompletion.id
+      });
+
+      alert('Work marked as completed successfully!');
+      handleCloseCompleteWorkModal();
+    } catch (error) {
+      console.error('Error completing work:', error);
+      alert('Error completing work. Please try again.');
+    }
+  };
+
   const stats = [
     { label: 'Assigned Properties', value: properties.length, icon: Building, color: 'bg-blue-100 text-blue-900', view: 'properties' },
     { label: 'Open Requests', value: maintenanceRequests.filter(r => {
@@ -1146,10 +1250,20 @@ const MaintenanceStaffDashboard = () => {
                           )}
                           {request.assignedTo === teamMember.id && request.status?.toLowerCase() === 'in-progress' && (
                             <button
-                              onClick={() => handleUpdateStatus(request.id, 'completed', request)}
-                              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                              onClick={() => handleOpenCompleteWorkModal(request)}
+                              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-2"
                             >
-                              Mark Complete
+                              <CheckCircle className="w-4 h-4" />
+                              Complete Work
+                            </button>
+                          )}
+                          {request.assignedTo === teamMember.id && request.status?.toLowerCase() === 'approved' && (
+                            <button
+                              onClick={() => handleOpenCompleteWorkModal(request)}
+                              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-2"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Complete Work
                             </button>
                           )}
                           {request.status?.toLowerCase() === 'completed' && (
@@ -1803,6 +1917,191 @@ const MaintenanceStaffDashboard = () => {
               className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
             >
               Submit Estimate
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Complete Work Modal */}
+    {showCompleteWorkModal && selectedRequestForCompletion && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-3xl p-6 my-8">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Complete Work</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                {selectedRequestForCompletion.issue} - {selectedRequestForCompletion.property}, Unit {selectedRequestForCompletion.unit}
+              </p>
+            </div>
+            <button
+              onClick={handleCloseCompleteWorkModal}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Show Original Estimate if Available */}
+          {selectedRequestForCompletion.estimatedCost && (
+            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
+                <span>📋</span> Original Estimate
+              </h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-blue-600 dark:text-blue-400">Estimated Cost:</span>
+                  <span className="font-semibold ml-2 text-blue-900 dark:text-blue-200">
+                    KSH {selectedRequestForCompletion.estimatedCost.toLocaleString()}
+                  </span>
+                </div>
+                {selectedRequestForCompletion.estimatedDuration && (
+                  <div>
+                    <span className="text-blue-600 dark:text-blue-400">Estimated Duration:</span>
+                    <span className="font-semibold ml-2 text-blue-900 dark:text-blue-200">
+                      {selectedRequestForCompletion.estimatedDuration}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Actual Cost Breakdown */}
+          <div className="space-y-6 mb-6">
+            <div>
+              <label className="block font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <span>💰</span> Actual Cost Breakdown
+              </label>
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                <table className="w-full">
+                  <thead className="bg-gray-100 dark:bg-gray-800">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Item</th>
+                      <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Qty</th>
+                      <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Unit Cost</th>
+                      <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Total</th>
+                      <th className="w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {completionData.actualCostBreakdown.map((item, index) => (
+                      <tr key={index}>
+                        <td className="px-4 py-3">
+                          <input
+                            type="text"
+                            value={item.item}
+                            onChange={(e) => handleCompletionBreakdownChange(index, 'item', e.target.value)}
+                            placeholder="Item name"
+                            className="w-full px-2 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-sm focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleCompletionBreakdownChange(index, 'quantity', e.target.value)}
+                            min="1"
+                            className="w-20 px-2 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-sm text-center focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            type="number"
+                            value={item.unitCost}
+                            onChange={(e) => handleCompletionBreakdownChange(index, 'unitCost', e.target.value)}
+                            placeholder="0"
+                            className="w-28 px-2 py-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-sm text-right focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-200">
+                          KSH {(item.total || 0).toLocaleString()}
+                        </td>
+                        <td className="px-2 py-3">
+                          {completionData.actualCostBreakdown.length > 1 && (
+                            <button
+                              onClick={() => handleRemoveCompletionBreakdownItem(index)}
+                              className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-gray-100 dark:bg-gray-800">
+                    <tr>
+                      <td colSpan="3" className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">
+                        Total Actual Cost:
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-green-600 dark:text-green-400 text-lg">
+                        KSH {(parseFloat(completionData.actualCost) || 0).toLocaleString()}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <button
+                onClick={handleAddCompletionBreakdownItem}
+                className="mt-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition text-sm font-medium flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Item
+              </button>
+            </div>
+
+            {/* Actual Duration */}
+            <div>
+              <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                Actual Duration
+              </label>
+              <input
+                type="text"
+                value={completionData.actualDuration}
+                onChange={(e) => setCompletionData({ ...completionData, actualDuration: e.target.value })}
+                placeholder="e.g., 3 hours, 2 days"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              />
+            </div>
+
+            {/* Completion Notes */}
+            <div>
+              <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                Completion Notes
+              </label>
+              <textarea
+                value={completionData.completionNotes}
+                onChange={(e) => setCompletionData({ ...completionData, completionNotes: e.target.value })}
+                placeholder="Describe the work completed, any issues encountered, and recommendations..."
+                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                rows="4"
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={handleCloseCompleteWorkModal}
+              className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmitCompletion}
+              className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+            >
+              <CheckCircle className="w-5 h-5" />
+              Submit Completion
             </button>
           </div>
         </div>
