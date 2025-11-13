@@ -963,10 +963,10 @@ const PropertyManagerDashboard = () => {
   };
 
   const stats = [
-    { label: 'My Properties', value: properties.length, icon: Home, color: 'bg-blue-100 text-blue-900' },
-    { label: 'Active Tenants', value: tenants.filter(t => t.status === 'active').length, icon: Users, color: 'bg-green-100 text-green-900' },
-    { label: 'Pending Viewings', value: viewingBookings.filter(v => v.status === 'pending').length, icon: CalendarCheck, color: 'bg-orange-100 text-orange-900' },
-    { label: 'Open Maintenance', value: maintenanceRequests.filter(m => m.status !== 'completed').length, icon: Wrench, color: 'bg-red-100 text-red-900' }
+    { label: 'My Properties', value: properties.length, icon: Home, color: 'bg-blue-100 text-blue-900', view: 'properties' },
+    { label: 'Active Tenants', value: tenants.filter(t => t.status === 'active').length, icon: Users, color: 'bg-green-100 text-green-900', view: 'tenants' },
+    { label: 'Pending Viewings', value: viewingBookings.filter(v => v.status === 'pending').length, icon: CalendarCheck, color: 'bg-orange-100 text-orange-900', view: 'viewings' },
+    { label: 'Open Maintenance', value: maintenanceRequests.filter(m => m.status !== 'completed').length, icon: Wrench, color: 'bg-red-100 text-red-900', view: 'maintenance' }
   ];
 
   const filteredViewings = viewingBookings.filter(viewing => {
@@ -1117,7 +1117,11 @@ const PropertyManagerDashboard = () => {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
                 {stats.map((stat, index) => (
-                  <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
+                  <div
+                    key={index}
+                    onClick={() => setCurrentView(stat.view)}
+                    className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer hover:scale-105 transform"
+                  >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-gray-600 text-xs sm:text-sm mb-1">{stat.label}</p>
