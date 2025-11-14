@@ -5412,9 +5412,9 @@ const handleViewTenantDetails = (tenant) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       <div className="space-y-6">
         {/* Header Banner */}
-        <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border border-orange-200 dark:border-orange-800 rounded-xl p-6">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
           <div className="flex items-center gap-3">
-            <Crown className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+            <Crown className="h-8 w-8 text-[#003366] dark:text-blue-400" />
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                 Subscription & Billing
