@@ -9,23 +9,26 @@ export const SUBSCRIPTION_TIERS = {
     id: 'free',
     name: 'Free Trial',
     price: 0,
+    annualPrice: 0,
     currency: 'KES',
     interval: 'monthly',
     features: [
-      '1 Property',
-      'Up to 5 Tenants',
+      '14 Days Free Trial',
+      'Up to 2 Properties',
+      'Up to 10 Tenants',
       'Basic Payment Tracking',
-      'Limited Support',
-      '7 Days Trial'
+      'Email Support'
     ],
-    propertyLimit: 1,
-    tenantLimit: 5,
-    durationDays: 7
+    propertyLimit: 2,
+    tenantLimit: 10,
+    durationDays: 14,
+    popular: false
   },
-  BASIC: {
-    id: 'basic',
-    name: 'Basic',
-    price: 299900, // KES 2,999 in kobo (Paystack uses smallest currency unit)
+  STARTER: {
+    id: 'starter',
+    name: 'Starter',
+    price: 99900, // KES 999/month in kobo
+    annualPrice: 959040, // KES 9,590.40/year (20% discount) in kobo
     currency: 'KES',
     interval: 'monthly',
     features: [
@@ -37,12 +40,14 @@ export const SUBSCRIPTION_TIERS = {
       'Email Support'
     ],
     propertyLimit: 5,
-    tenantLimit: -1 // -1 means unlimited
+    tenantLimit: -1, // -1 means unlimited
+    popular: false
   },
   PROFESSIONAL: {
     id: 'professional',
     name: 'Professional',
-    price: 499900, // KES 4,999 in kobo
+    price: 199900, // KES 1,999/month in kobo
+    annualPrice: 1919040, // KES 19,190.40/year (20% discount) in kobo
     currency: 'KES',
     interval: 'monthly',
     features: [
@@ -59,24 +64,48 @@ export const SUBSCRIPTION_TIERS = {
     tenantLimit: -1,
     popular: true
   },
+  BUSINESS: {
+    id: 'business',
+    name: 'Business',
+    price: 399900, // KES 3,999/month in kobo
+    annualPrice: 3839040, // KES 38,390.40/year (20% discount) in kobo
+    currency: 'KES',
+    interval: 'monthly',
+    features: [
+      'Up to 50 Properties',
+      'Unlimited Tenants',
+      'All Professional Features',
+      'Custom Branding',
+      'API Access',
+      'Advanced Team Permissions',
+      'Priority Support',
+      'Custom Reports'
+    ],
+    propertyLimit: 50,
+    tenantLimit: -1,
+    popular: false
+  },
   ENTERPRISE: {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 999900, // KES 9,999 in kobo
+    price: 999900, // KES 9,999/month in kobo
+    annualPrice: 9599040, // KES 95,990.40/year (20% discount) in kobo
     currency: 'KES',
     interval: 'monthly',
     features: [
       'Unlimited Properties',
       'Unlimited Tenants',
-      'All Professional Features',
-      'Custom Branding',
-      'API Access',
+      'All Business Features',
+      'White Label Solution',
+      'Full API Access',
       'Dedicated Account Manager',
       '24/7 Priority Support',
-      'Custom Integrations'
+      'Custom Integrations',
+      'SLA Guarantee'
     ],
     propertyLimit: -1,
-    tenantLimit: -1
+    tenantLimit: -1,
+    popular: false
   }
 };
 
