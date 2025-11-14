@@ -847,7 +847,9 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
         read: false,
         timestamp: serverTimestamp(),
         senderId: currentUser.uid,
-        senderName: userProfile?.displayName || 'Landlord'
+        senderName: userProfile?.displayName || 'Landlord',
+        senderRole: 'landlord',
+        conversationId: selectedConversation.conversationId
       });
     } catch (error) {
       console.error('Error sending message:', error);

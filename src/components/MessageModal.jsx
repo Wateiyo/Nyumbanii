@@ -255,6 +255,7 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
         timestamp: serverTimestamp(),
         senderId: currentUser.uid,
         senderName: userProfile?.displayName || userProfile?.name || senderTitle,
+        senderRole: senderRole,
         conversationId: conversationId
       });
 

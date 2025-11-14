@@ -522,7 +522,9 @@ const MaintenanceStaffDashboard = () => {
         read: false,
         timestamp: serverTimestamp(),
         senderId: currentUser.uid,
-        senderName: teamMember?.name || userProfile?.displayName || 'Maintenance Staff'
+        senderName: teamMember?.name || userProfile?.displayName || 'Maintenance Staff',
+        senderRole: 'maintenance',
+        conversationId: selectedConversation.conversationId
       });
     } catch (error) {
       console.error('Error sending message:', error);
