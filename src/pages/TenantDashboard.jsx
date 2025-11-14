@@ -40,7 +40,9 @@ import {
   CheckCheck,
   User,
   Megaphone,
-  Clipboard
+  Clipboard,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 // Initialize Firebase services
@@ -65,6 +67,8 @@ const TenantDashboard = () => {
   const [showDocumentUploadModal, setShowDocumentUploadModal] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
+  const profilePhotoInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedListing, setSelectedListing] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -1734,6 +1738,53 @@ const TenantDashboard = () => {
   };
 
   // Account Deletion Handler
+  // PROFILE PHOTO UPLOAD
+  const handleProfilePhotoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+
+    setUploadingProfilePhoto(true);
+
+    try {
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, `profilePhotos/${currentUser.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const photoURL = await getDownloadURL(storageRef);
+
+      // Update user profile in Firestore
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        photoURL: photoURL,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update Firebase Auth profile
+      await currentUser.updateProfile({
+        photoURL: photoURL
+      });
+
+      alert('Profile photo updated successfully!');
+      window.location.reload(); // Refresh to show new photo
+    } catch (error) {
+      console.error('Error uploading profile photo:', error);
+      alert('Failed to upload profile photo. Please try again.');
+    } finally {
+      setUploadingProfilePhoto(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     const confirmation = window.prompt(
       'Are you sure you want to permanently delete your account? This action cannot be undone.\n\nType "DELETE" to confirm:'
@@ -1891,7 +1942,26 @@ const TenantDashboard = () => {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4 border-t border-white/10">
+        <div className="absolute bottom-0 w-full p-4 border-t border-white/10 space-y-2">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => setPreferences({...preferences, darkMode: !preferences.darkMode})}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition"
+          >
+            {preferences.darkMode ? (
+              <>
+                <Sun className="w-5 h-5" />
+                <span>Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-5 h-5" />
+                <span>Dark Mode</span>
+              </>
+            )}
+          </button>
+
+          {/* Logout Button */}
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition">
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
@@ -2829,7 +2899,7 @@ const TenantDashboard = () => {
                     </div>
                   </div>
                   <a
-                    href="https://www.kplc.co.ke/customer-support#powerschedule"
+                    href="https://kplc.co.ke/category/view/50/planned-power-interruptions"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium text-sm transition flex items-center gap-2"
