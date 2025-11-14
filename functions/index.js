@@ -26,6 +26,9 @@ setGlobalOptions({
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_W3AongKC_F2RkznoNFPjDxafD4D3qLXCD";
 const resend = new Resend(RESEND_API_KEY);
 
+// Initialize Paystack Secret Key
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
+
 // Log initialization
 logger.info("✅ Resend initialized with API key");
 
@@ -1350,6 +1353,249 @@ exports.manualScrapeKenyaPower = onCall(
     } catch (error) {
       logger.error("Error in manual scrape:", error);
       throw new Error(`Failed to scrape: ${error.message}`);
+    }
+  }
+);
+
+// ==========================================
+// PAYSTACK WEBHOOK HANDLER
+// ==========================================
+
+/**
+ * Paystack Webhook Handler
+ * Processes payment notifications from Paystack
+ */
+exports.paystackWebhook = onRequest(
+  {
+    region: "us-central1",
+    cors: true
+  },
+  async (req, res) => {
+    try {
+      // Verify the webhook is from Paystack
+      const hash = require("crypto")
+        .createHmac("sha512", PAYSTACK_SECRET_KEY)
+        .update(JSON.stringify(req.body))
+        .digest("hex");
+
+      if (hash !== req.headers["x-paystack-signature"]) {
+        logger.warn("⚠️ Invalid Paystack webhook signature");
+        return res.status(401).send("Invalid signature");
+      }
+
+      const event = req.body;
+      logger.info("📧 Paystack webhook received:", event.event);
+
+      // Handle charge.success event
+      if (event.event === "charge.success") {
+        const { data } = event;
+        const { reference, customer, metadata, amount, channel, paid_at } = data;
+
+        logger.info("💰 Processing successful payment:", reference);
+
+        // Extract metadata
+        const userId = metadata?.custom_fields?.find(
+          (field) => field.variable_name === "user_id"
+        )?.value || metadata?.userId;
+
+        const plan = metadata?.custom_fields?.find(
+          (field) => field.variable_name === "subscription_plan"
+        )?.value || metadata?.plan;
+
+        if (!userId) {
+          logger.error("❌ No user ID found in payment metadata");
+          return res.status(400).send("No user ID in metadata");
+        }
+
+        // Calculate subscription end date (1 month from now)
+        const startDate = admin.firestore.Timestamp.now();
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+
+        // Update landlord settings with subscription
+        const settingsRef = admin.firestore().collection("landlordSettings").doc(userId);
+        const settingsDoc = await settingsRef.get();
+
+        const subscriptionData = {
+          subscriptionStatus: "active",
+          subscriptionTier: plan || "basic",
+          subscriptionStartDate: startDate,
+          subscriptionEndDate: admin.firestore.Timestamp.fromDate(endDate),
+          paystackReference: reference,
+          paystackCustomerId: customer?.customer_code,
+          amount: amount,
+          currency: "KES",
+          interval: "monthly",
+          autoRenew: false,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (settingsDoc.exists()) {
+          await settingsRef.update(subscriptionData);
+        } else {
+          await settingsRef.set({
+            userId: userId,
+            ...subscriptionData,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
+        // Save payment history
+        await admin.firestore().collection("paymentHistory").doc(reference).set({
+          landlordId: userId,
+          paystackReference: reference,
+          paystackCustomerId: customer?.customer_code,
+          amount: amount,
+          currency: "KES",
+          status: "success",
+          plan: plan || "basic",
+          paymentMethod: channel || "card",
+          paidAt: paid_at,
+          transactionDate: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Get user details
+        const userDoc = await admin.firestore().collection("users").doc(userId).get();
+        const userData = userDoc.data();
+
+        // Send confirmation email
+        if (userData?.email) {
+          try {
+            await resend.emails.send({
+              from: "Nyumbanii <onboarding@resend.dev>",
+              to: userData.email,
+              subject: "Payment Successful - Subscription Activated",
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #ea580c;">Payment Successful!</h2>
+                  <p>Dear ${userData.displayName || "Valued Customer"},</p>
+                  <p>Thank you for your payment. Your subscription has been activated successfully.</p>
+
+                  <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Payment Details</h3>
+                    <p><strong>Plan:</strong> ${plan?.toUpperCase() || "BASIC"}</p>
+                    <p><strong>Amount:</strong> KES ${(amount / 100).toLocaleString()}</p>
+                    <p><strong>Reference:</strong> ${reference}</p>
+                    <p><strong>Valid Until:</strong> ${endDate.toLocaleDateString()}</p>
+                  </div>
+
+                  <p>You now have full access to all features of your ${plan || "basic"} plan.</p>
+
+                  <p>If you have any questions, please don't hesitate to contact our support team.</p>
+
+                  <p>Best regards,<br>The Nyumbanii Team</p>
+                </div>
+              `
+            });
+            logger.info("✅ Confirmation email sent to:", userData.email);
+          } catch (emailError) {
+            logger.error("❌ Error sending confirmation email:", emailError);
+          }
+        }
+
+        logger.info("✅ Subscription activated for user:", userId);
+      }
+
+      res.status(200).send("Webhook processed");
+    } catch (error) {
+      logger.error("❌ Error processing Paystack webhook:", error);
+      res.status(500).send("Internal server error");
+    }
+  }
+);
+
+/**
+ * Verify Paystack Payment (Callable Function)
+ * Allows frontend to verify payment status
+ */
+exports.verifyPaystackPayment = onCall(
+  {
+    region: "us-central1"
+  },
+  async (request) => {
+    try {
+      const { reference } = request.data;
+
+      if (!reference) {
+        throw new Error("Payment reference is required");
+      }
+
+      logger.info("🔍 Verifying payment:", reference);
+
+      // Verify with Paystack API
+      const response = await axios.get(
+        `https://api.paystack.co/transaction/verify/${reference}`,
+        {
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
+          }
+        }
+      );
+
+      const { data } = response.data;
+
+      logger.info("✅ Payment verification result:", data.status);
+
+      return {
+        success: true,
+        status: data.status,
+        amount: data.amount,
+        reference: data.reference,
+        paidAt: data.paid_at
+      };
+    } catch (error) {
+      logger.error("❌ Error verifying payment:", error);
+      throw new Error(`Payment verification failed: ${error.message}`);
+    }
+  }
+);
+
+/**
+ * Check Subscription Status (Callable Function)
+ * Allows frontend to check if user's subscription is active
+ */
+exports.checkSubscriptionStatus = onCall(
+  {
+    region: "us-central1"
+  },
+  async (request) => {
+    try {
+      const userId = request.auth?.uid;
+
+      if (!userId) {
+        throw new Error("User must be authenticated");
+      }
+
+      logger.info("🔍 Checking subscription for user:", userId);
+
+      const settingsRef = admin.firestore().collection("landlordSettings").doc(userId);
+      const settingsDoc = await settingsRef.get();
+
+      if (!settingsDoc.exists()) {
+        return {
+          hasSubscription: false,
+          status: "inactive",
+          tier: "free"
+        };
+      }
+
+      const settings = settingsDoc.data();
+      const now = new Date();
+      const endDate = settings.subscriptionEndDate?.toDate();
+
+      const isActive = settings.subscriptionStatus === "active" && endDate > now;
+
+      return {
+        hasSubscription: true,
+        status: isActive ? "active" : "expired",
+        tier: settings.subscriptionTier || "free",
+        endDate: endDate?.toISOString(),
+        daysRemaining: isActive ? Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)) : 0
+      };
+    } catch (error) {
+      logger.error("❌ Error checking subscription:", error);
+      throw new Error(`Failed to check subscription: ${error.message}`);
     }
   }
 );

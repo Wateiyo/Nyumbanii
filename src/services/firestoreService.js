@@ -424,3 +424,65 @@ export const deleteFile = async (fileURL) => {
     throw error;
   }
 };
+
+// ============= SUBSCRIPTIONS =============
+
+export const getLandlordSubscription = async (landlordId) => {
+  try {
+    const settingsRef = doc(db, 'landlordSettings', landlordId);
+    const settingsDoc = await getDoc(settingsRef);
+
+    if (settingsDoc.exists()) {
+      return { id: settingsDoc.id, ...settingsDoc.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting subscription:', error);
+    throw error;
+  }
+};
+
+export const updateSubscription = async (landlordId, subscriptionData) => {
+  try {
+    const settingsRef = doc(db, 'landlordSettings', landlordId);
+    await updateDoc(settingsRef, {
+      ...subscriptionData,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating subscription:', error);
+    throw error;
+  }
+};
+
+export const getPaymentHistory = async (landlordId) => {
+  try {
+    const q = query(
+      collection(db, 'paymentHistory'),
+      where('landlordId', '==', landlordId),
+      orderBy('transactionDate', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting payment history:', error);
+    throw error;
+  }
+};
+
+export const createPaymentRecord = async (paymentData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'paymentHistory'), {
+      ...paymentData,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating payment record:', error);
+    throw error;
+  }
+};

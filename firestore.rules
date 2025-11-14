@@ -122,5 +122,13 @@ service cloud.firestore {
     match /maintenance/{maintenanceId} {
       allow read, write: if isAuthenticated();
     }
+
+    // Payment History collection - for subscription payments
+    match /paymentHistory/{historyId} {
+      // Users can only read their own payment history
+      allow read: if isAuthenticated() && resource.data.landlordId == request.auth.uid;
+      // Only server (via Cloud Functions) can write payment history
+      allow write: if false;
+    }
   }
 }

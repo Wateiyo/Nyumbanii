@@ -1,11 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getLandlordSubscription } from '../services/firestoreService';
+import { isSubscriptionActive } from '../services/paystackService';
+import SubscriptionModal from './SubscriptionModal';
 
-const ProtectedRoute = ({ children, requiredRole }) => {
+const ProtectedRoute = ({ children, requiredRole, requiresSubscription = false }) => {
   const { currentUser, userRole, loading } = useAuth();
+  const [subscription, setSubscription] = useState(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (currentUser && userRole === 'landlord' && requiresSubscription) {
+        try {
+          const subscriptionData = await getLandlordSubscription(currentUser.uid);
+          setSubscription(subscriptionData);
+
+          // Check if subscription is inactive or expired
+          if (!subscriptionData || !isSubscriptionActive(subscriptionData)) {
+            // Show subscription modal for landlords without active subscription
+            setShowSubscriptionModal(true);
+          }
+        } catch (error) {
+          console.error('Error checking subscription:', error);
+        }
+      }
+      setSubscriptionLoading(false);
+    };
+
+    if (!loading) {
+      checkSubscription();
+    }
+  }, [currentUser, userRole, loading, requiresSubscription]);
+
+  if (loading || (requiresSubscription && userRole === 'landlord' && subscriptionLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -32,6 +62,19 @@ const ProtectedRoute = ({ children, requiredRole }) => {
       return <Navigate to="/maintenance/dashboard" replace />;
     }
     return <Navigate to="/" replace />;
+  }
+
+  // For landlords requiring subscription, show modal if not active
+  if (requiresSubscription && userRole === 'landlord' && showSubscriptionModal) {
+    return (
+      <>
+        {children}
+        <SubscriptionModal
+          isOpen={showSubscriptionModal}
+          onClose={() => setShowSubscriptionModal(false)}
+        />
+      </>
+    );
   }
 
   return children;
