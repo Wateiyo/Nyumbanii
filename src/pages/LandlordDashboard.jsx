@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import InvitationModal from '../components/InvitationModal';
 import MessageModal from '../components/MessageModal';
 import MaintenanceAnalytics from '../components/MaintenanceAnalytics';
+import SubscriptionSettings from '../components/SubscriptionSettings';
 import {
   useProperties,
   useTenants,
@@ -86,7 +87,8 @@ import {
   MessageSquare,
   Check,
   CheckCheck,
-  Share2
+  Share2,
+  Crown
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -2562,7 +2564,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'messages', 'team', 'memos', 'settings'].map((view) => {
+          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'messages', 'team', 'memos', 'subscription', 'settings'].map((view) => {
             const icons = {
               dashboard: Home,
               properties: Building,
@@ -2576,6 +2578,7 @@ const handleViewTenantDetails = (tenant) => {
               messages: MessageSquare,
               team: Users,
               memos: Mail,
+              subscription: Crown,
               settings: Settings
             };
             const Icon = icons[view];
@@ -2583,7 +2586,8 @@ const handleViewTenantDetails = (tenant) => {
               listings: 'Browse Listings',
               memos: 'Updates & Memos',
               team: 'Team Management',
-              'tax-reports': 'Tax Reports'
+              'tax-reports': 'Tax Reports',
+              subscription: 'Subscription'
             };
             return (
               <button
@@ -5396,6 +5400,34 @@ const handleViewTenantDetails = (tenant) => {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Subscription View */}
+{currentView === 'subscription' && (
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    {/* Main Content */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="space-y-6">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border border-orange-200 dark:border-orange-800 rounded-xl p-6">
+          <div className="flex items-center gap-3">
+            <Crown className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                Subscription & Billing
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Manage your subscription plan and payment history
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Subscription Settings Component */}
+        <SubscriptionSettings />
       </div>
     </div>
   </div>
