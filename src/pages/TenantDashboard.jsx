@@ -1924,48 +1924,84 @@ const TenantDashboard = () => {
                 </button>
 
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-72 lg:w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-50">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                      <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white">Notifications</h3>
-                    </div>
-                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {notifications.length === 0 ? (
-                        <div className="p-8 text-center">
-                          <Bell className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
-                          <p className="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
-                        </div>
-                      ) : (
-                        notifications.map((notification) => {
-                          const timestamp = notification.timestamp?.toDate?.();
-                          const timeAgo = timestamp ? getTimeAgo(timestamp) : '';
+                  <>
+                    {/* Mobile backdrop */}
+                    <div
+                      className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+                      onClick={() => setShowNotifications(false)}
+                    />
 
-                          return (
-                            <div
-                              key={notification.id}
-                              onClick={() => handleNotificationClick(notification)}
-                              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'}`}
+                    {/* Notification panel */}
+                    <div className="fixed lg:absolute top-16 lg:top-auto right-0 lg:right-0 left-0 lg:left-auto lg:mt-2 w-full lg:w-80 bg-white dark:bg-gray-800 lg:rounded-lg shadow-lg border-t lg:border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-4rem)] lg:max-h-96 overflow-y-auto z-50">
+                      <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Notifications</h3>
+                          <div className="flex items-center gap-2">
+                            {notifications.filter(n => !n.read).length > 0 && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  // Mark all notifications as read
+                                  const unreadNotifications = notifications.filter(n => !n.read);
+                                  for (const notification of unreadNotifications) {
+                                    await markNotificationAsRead(notification.id);
+                                  }
+                                }}
+                                className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                              >
+                                Mark all read
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setShowNotifications(false)}
+                              className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
-                                  {notification.title && (
-                                    <p className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{notification.title}</p>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <Bell className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
+                          </div>
+                        ) : (
+                          notifications.map((notification) => {
+                            const timestamp = notification.timestamp?.toDate?.();
+                            const timeAgo = timestamp ? getTimeAgo(timestamp) : '';
+
+                            return (
+                              <div
+                                key={notification.id}
+                                onClick={() => handleNotificationClick(notification)}
+                                className={`p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'}`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    {notification.title && (
+                                      <p className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white mb-1 truncate">{notification.title}</p>
+                                    )}
+                                    <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{notification.message}</p>
+                                    {notification.senderName && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">From: {notification.senderName}</p>
+                                    )}
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{timeAgo}</p>
+                                  </div>
+                                  {!notification.read && (
+                                    <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1"></span>
                                   )}
-                                  <p className="text-sm text-gray-700 dark:text-gray-300">{notification.message}</p>
-                                  {notification.senderName && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">From: {notification.senderName}</p>
-                                  )}
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{timeAgo}</p>
                                 </div>
-                                {!notification.read && (
-                                  <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1"></span>
-                                )}
                               </div>
-                            </div>
-                          );
-                        })
-                      )}
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
 
