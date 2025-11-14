@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Check, Crown } from 'lucide-react';
 import { SUBSCRIPTION_TIERS, formatPrice } from '../services/paystackService';
 
 const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => {
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'annual'
   const tiers = Object.values(SUBSCRIPTION_TIERS).filter(tier => tier.id !== 'free');
 
   return (
@@ -15,47 +16,78 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
           <p className="text-lg text-gray-600">
             Select the perfect plan for your property management needs
           </p>
+
+          {/* Billing Cycle Toggle */}
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-[#003366]' : 'text-gray-500'}`}>
+              Monthly
+            </span>
+            <button
+              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
+              className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-[#003366] focus:ring-offset-2"
+              style={{ backgroundColor: billingCycle === 'annual' ? '#003366' : '#e5e7eb' }}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  billingCycle === 'annual' ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm font-medium ${billingCycle === 'annual' ? 'text-[#003366]' : 'text-gray-500'}`}>
+              Annual
+              <span className="ml-1 text-xs text-green-600 font-semibold">(Save 20%)</span>
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {tiers.map((tier) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {tiers.map((tier) => {
+            const displayPrice = billingCycle === 'annual' ? tier.annualPrice : tier.price;
+            const displayInterval = billingCycle === 'annual' ? '/year' : '/month';
+
+            return (
             <div
               key={tier.id}
               className={`relative bg-white rounded-2xl shadow-lg overflow-hidden transition-all hover:shadow-xl ${
-                tier.popular ? 'ring-2 ring-orange-500 scale-105' : ''
-              } ${currentPlan === tier.id ? 'ring-2 ring-green-500' : ''}`}
+                tier.popular ? 'ring-2 ring-[#003366] scale-105' : ''
+              } ${currentPlan === tier.id ? 'ring-2 ring-green-600' : ''}`}
             >
               {tier.popular && (
-                <div className="absolute top-0 right-0 bg-orange-500 text-white px-4 py-1 rounded-bl-lg font-semibold text-sm flex items-center gap-1">
+                <div className="absolute top-0 right-0 bg-[#003366] text-white px-4 py-1 rounded-bl-lg font-semibold text-sm flex items-center gap-1">
                   <Crown className="h-4 w-4" />
                   Most Popular
                 </div>
               )}
 
               {currentPlan === tier.id && (
-                <div className="absolute top-0 left-0 bg-green-500 text-white px-4 py-1 rounded-br-lg font-semibold text-sm">
+                <div className="absolute top-0 left-0 bg-green-600 text-white px-4 py-1 rounded-br-lg font-semibold text-sm">
                   Current Plan
                 </div>
               )}
 
-              <div className="p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
                   {tier.name}
                 </h3>
 
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">
-                    {formatPrice(tier.price)}
+                  <span className="text-3xl font-bold text-[#003366]">
+                    {formatPrice(displayPrice)}
                   </span>
-                  <span className="text-gray-600 ml-2">/month</span>
+                  <span className="text-gray-600 ml-2 text-sm">{displayInterval}</span>
+                  {billingCycle === 'annual' && (
+                    <div className="text-xs text-green-600 font-medium mt-1">
+                      Save {formatPrice(tier.price * 12 - tier.annualPrice)}/year
+                    </div>
+                  )}
                 </div>
 
                 <button
-                  onClick={() => onSelectPlan(tier)}
+                  onClick={() => onSelectPlan({ ...tier, interval: billingCycle, price: displayPrice })}
                   disabled={loading || currentPlan === tier.id}
                   className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors mb-6 ${
                     tier.popular
-                      ? 'bg-orange-600 text-white hover:bg-orange-700'
+                      ? 'bg-[#003366] text-white hover:bg-[#002244]'
                       : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                   } ${
                     currentPlan === tier.id
@@ -91,7 +123,8 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="mt-12 text-center">
