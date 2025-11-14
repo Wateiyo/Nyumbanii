@@ -3991,7 +3991,7 @@ const handleViewTenantDetails = (tenant) => {
                     className="px-3 lg:px-6 py-2 lg:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2 text-sm lg:text-base"
                   >
                     <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
-                    <span className="lg:hidden">+ Tenant</span>
+                    <span className="lg:hidden">Tenant</span>
                     <span className="hidden lg:inline">Add Tenant</span>
                   </button>
                 )}
