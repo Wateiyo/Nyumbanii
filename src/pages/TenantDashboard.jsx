@@ -2098,7 +2098,7 @@ const TenantDashboard = () => {
               {/* No Tenant Data Warning */}
               {!tenantData && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col items-center text-center gap-4 lg:flex-row lg:items-start lg:text-left">
                     <Bell className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-1" />
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-2">Tenant Profile Not Found</h3>
