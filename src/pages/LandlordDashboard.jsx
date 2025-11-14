@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import InvitationModal from '../components/InvitationModal';
 import MessageModal from '../components/MessageModal';
+import MaintenanceAnalytics from '../components/MaintenanceAnalytics';
 import {
   useProperties,
   useTenants,
@@ -112,6 +113,7 @@ const LandlordDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [viewingFilter, setViewingFilter] = useState('all');
+  const [maintenanceViewMode, setMaintenanceViewMode] = useState('requests'); // 'requests' or 'analytics'
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showAssignTeamModal, setShowAssignTeamModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -2928,7 +2930,7 @@ const handleViewTenantDetails = (tenant) => {
             <button onClick={() => setShowPropertyModal(true)} className="p-2 lg:p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition text-center">
               <Building className="w-4 h-4 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400 mx-auto mb-1 lg:mb-2" />
               <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white block">
-                <span className="lg:hidden">+ Property</span>
+                <span className="lg:hidden"> Property</span>
                 <span className="hidden lg:inline">Add Property</span>
               </span>
             </button>
@@ -2937,7 +2939,7 @@ const handleViewTenantDetails = (tenant) => {
             <button onClick={() => setShowTenantModal(true)} className="p-2 lg:p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition text-center">
               <Users className="w-4 h-4 lg:w-6 lg:h-6 text-green-600 dark:text-green-400 mx-auto mb-1 lg:mb-2" />
               <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white block">
-                <span className="lg:hidden">+ Tenant</span>
+                <span className="lg:hidden"> Tenant</span>
                 <span className="hidden lg:inline">Add Tenant</span>
               </span>
             </button>
@@ -2945,7 +2947,7 @@ const handleViewTenantDetails = (tenant) => {
           <button onClick={() => setShowListingModal(true)} className="p-2 lg:p-4 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition text-center">
             <Eye className="w-4 h-4 lg:w-6 lg:h-6 text-purple-600 dark:text-purple-400 mx-auto mb-1 lg:mb-2" />
             <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-white block">
-              <span className="lg:hidden">+ Listing</span>
+              <span className="lg:hidden"> Listing</span>
               <span className="hidden lg:inline">Create Listing</span>
             </span>
           </button>
@@ -2981,7 +2983,7 @@ const handleViewTenantDetails = (tenant) => {
               className="px-3 lg:px-6 py-2 lg:py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2 text-sm lg:text-base"
             >
               <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
-              <span className="lg:hidden">+ Property</span>
+              <span className="lg:hidden"> Property</span>
               <span className="hidden lg:inline">Add Property</span>
             </button>
           )}
@@ -3436,8 +3438,8 @@ const handleViewTenantDetails = (tenant) => {
         {/* Blue Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between mb-6 mt-6">
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Maintenance Requests</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Track and manage property maintenance issues</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Maintenance Management</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Track requests and analyze maintenance costs</p>
           </div>
           <button
             onClick={() => setShowMaintenanceModal(true)}
@@ -3449,7 +3451,33 @@ const handleViewTenantDetails = (tenant) => {
           </button>
         </div>
 
-        {/* Filters */}
+        {/* View Mode Toggle */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setMaintenanceViewMode('requests')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition ${
+              maintenanceViewMode === 'requests'
+                ? 'bg-[#003366] text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            📋 Requests
+          </button>
+          <button
+            onClick={() => setMaintenanceViewMode('analytics')}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition ${
+              maintenanceViewMode === 'analytics'
+                ? 'bg-[#003366] text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            📊 Analytics
+          </button>
+        </div>
+
+        {maintenanceViewMode === 'requests' ? (
+          <>
+            {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6">
           <select 
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -3745,6 +3773,13 @@ const handleViewTenantDetails = (tenant) => {
               </div>
             ))}
           </div>
+        )}
+          </>
+        ) : (
+          <MaintenanceAnalytics
+            landlordId={currentUser.uid}
+            properties={properties}
+          />
         )}
       </div>
     </div>
@@ -8483,43 +8518,43 @@ const handleViewTenantDetails = (tenant) => {
 {/* Estimate Approval Modal */}
 {showEstimateApprovalModal && selectedRequestForApproval && (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-3xl p-6 my-8">
+    <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-3xl p-4 sm:p-6 my-8 max-h-[95vh] overflow-y-auto">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-        <div>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Review Cost Estimate</h3>
-          <p className="text-gray-600 dark:text-gray-400">
+      <div className="flex items-start justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex-1 pr-2">
+          <h3 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">Review Cost Estimate</h3>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 break-words">
             {selectedRequestForApproval.issue} - {selectedRequestForApproval.property}, Unit {selectedRequestForApproval.unit}
           </p>
         </div>
         <button
           onClick={handleCloseEstimateApproval}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition flex-shrink-0"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
       {/* Estimate Details */}
-      <div className="space-y-6 mb-6">
+      <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
         {/* Total Cost */}
-        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">💰</span>
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-2xl sm:text-3xl">💰</span>
               <div>
-                <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Estimated Cost</div>
-                <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">
+                <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium">Total Estimated Cost</div>
+                <div className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-200">
                   KSH {selectedRequestForApproval.estimatedCost?.toLocaleString() || '0'}
                 </div>
               </div>
             </div>
             {selectedRequestForApproval.estimatedDuration && (
-              <div className="text-right">
-                <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Estimated Duration</div>
-                <div className="text-lg font-semibold text-blue-900 dark:text-blue-200">
+              <div className="text-left sm:text-right pl-9 sm:pl-0">
+                <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium">Estimated Duration</div>
+                <div className="text-base sm:text-lg font-semibold text-blue-900 dark:text-blue-200">
                   {selectedRequestForApproval.estimatedDuration}
                 </div>
               </div>
@@ -8530,28 +8565,28 @@ const handleViewTenantDetails = (tenant) => {
         {/* Cost Breakdown */}
         {selectedRequestForApproval.costBreakdown && selectedRequestForApproval.costBreakdown.length > 0 && (
           <div>
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
               <span>📊</span> Cost Breakdown
             </h4>
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-              <table className="w-full">
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-700">
+              <table className="w-full min-w-[500px]">
                 <thead className="bg-gray-100 dark:bg-gray-800">
                   <tr>
-                    <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Item</th>
-                    <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Quantity</th>
-                    <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Unit Cost</th>
-                    <th className="text-right px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Total</th>
+                    <th className="text-left px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Item</th>
+                    <th className="text-center px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Qty</th>
+                    <th className="text-right px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Unit Cost</th>
+                    <th className="text-right px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {selectedRequestForApproval.costBreakdown.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="px-4 py-3 text-gray-900 dark:text-gray-200">{item.item || '-'}</td>
-                      <td className="px-4 py-3 text-center text-gray-900 dark:text-gray-200">{item.quantity || 0}</td>
-                      <td className="px-4 py-3 text-right text-gray-900 dark:text-gray-200">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-gray-200">{item.item || '-'}</td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm text-gray-900 dark:text-gray-200">{item.quantity || 0}</td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm text-gray-900 dark:text-gray-200">
                         KSH {parseFloat(item.unitCost || 0).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-200">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-xs sm:text-sm text-gray-900 dark:text-gray-200">
                         KSH {(item.total || 0).toLocaleString()}
                       </td>
                     </tr>
@@ -8559,10 +8594,10 @@ const handleViewTenantDetails = (tenant) => {
                 </tbody>
                 <tfoot className="bg-gray-100 dark:bg-gray-800">
                   <tr>
-                    <td colSpan="3" className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">
+                    <td colSpan="3" className="px-2 sm:px-4 py-2 sm:py-3 text-right font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
                       Total:
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-blue-600 dark:text-blue-400">
+                    <td className="px-2 sm:px-4 py-2 sm:py-3 text-right font-bold text-xs sm:text-sm text-blue-600 dark:text-blue-400">
                       KSH {selectedRequestForApproval.estimatedCost?.toLocaleString() || '0'}
                     </td>
                   </tr>
@@ -8605,24 +8640,24 @@ const handleViewTenantDetails = (tenant) => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={handleCloseEstimateApproval}
-          className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+          className="w-full sm:flex-1 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium text-sm sm:text-base"
         >
           Cancel
         </button>
         <button
           onClick={handleRejectEstimate}
-          className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2"
+          className="w-full sm:flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
         >
-          <span>❌</span> Reject Estimate
+          <span>❌</span> <span className="hidden sm:inline">Reject Estimate</span><span className="sm:hidden">Reject</span>
         </button>
         <button
           onClick={handleApproveEstimate}
-          className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+          className="w-full sm:flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
         >
-          <span>✅</span> Approve & Proceed
+          <span>✅</span> <span className="hidden sm:inline">Approve & Proceed</span><span className="sm:hidden">Approve</span>
         </button>
       </div>
     </div>
