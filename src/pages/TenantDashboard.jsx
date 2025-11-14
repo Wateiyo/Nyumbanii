@@ -790,7 +790,9 @@ const TenantDashboard = () => {
         read: false,
         timestamp: serverTimestamp(),
         senderId: currentUser.uid,
-        senderName: tenantData?.name || currentUser.displayName || 'Tenant'
+        senderName: tenantData?.name || currentUser.displayName || 'Tenant',
+        senderRole: 'tenant',
+        conversationId: selectedConversation.conversationId
       });
     } catch (error) {
       console.error('Error sending message:', error);

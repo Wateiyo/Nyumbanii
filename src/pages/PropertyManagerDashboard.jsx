@@ -881,7 +881,9 @@ const PropertyManagerDashboard = () => {
         read: false,
         timestamp: serverTimestamp(),
         senderId: currentUser.uid,
-        senderName: teamMember?.name || userProfile?.displayName || 'Property Manager'
+        senderName: teamMember?.name || userProfile?.displayName || 'Property Manager',
+        senderRole: 'property_manager',
+        conversationId: selectedConversation.conversationId
       });
     } catch (error) {
       console.error('Error sending message:', error);
