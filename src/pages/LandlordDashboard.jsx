@@ -88,7 +88,9 @@ import {
   Check,
   CheckCheck,
   Share2,
-  Crown
+  Crown,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 const LandlordDashboard = () => {
@@ -146,6 +148,10 @@ const LandlordDashboard = () => {
     prn: '',
     amount: ''
   });
+
+  // Profile photo upload state
+  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
+  const profilePhotoInputRef = useRef(null);
 
   // Updates state (for Kenya Power alerts)
   const [updates, setUpdates] = useState([]);
@@ -964,10 +970,67 @@ useEffect(() => {
   }
 }, [currentUser, navigate]);
 
+  // PROFILE PHOTO UPLOAD
+  const handleProfilePhotoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+
+    setUploadingProfilePhoto(true);
+
+    try {
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, `profilePhotos/${currentUser.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const photoURL = await getDownloadURL(storageRef);
+
+      // Update user profile in Firestore
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        photoURL: photoURL,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update Firebase Auth profile
+      await currentUser.updateProfile({
+        photoURL: photoURL
+      });
+
+      alert('Profile photo updated successfully!');
+      window.location.reload(); // Refresh to show new photo
+    } catch (error) {
+      console.error('Error uploading profile photo:', error);
+      alert('Failed to upload profile photo. Please try again.');
+    } finally {
+      setUploadingProfilePhoto(false);
+    }
+  };
+
   // ADD PROPERTY with images
   const handleAddProperty = async () => {
     if (newProperty.name && newProperty.location && newProperty.units) {
       try {
+        // Check property limit before adding
+        if (subscription && subscription.propertyLimit !== -1) {
+          if (properties.length >= subscription.propertyLimit) {
+            alert(`You've reached your plan's limit of ${subscription.propertyLimit} properties. Please upgrade your subscription to add more properties.`);
+            setShowPropertyModal(false);
+            setShowSubscriptionModal(true);
+            return;
+          }
+        }
+
         await addDoc(collection(db, 'properties'), {
           name: newProperty.name,
           location: newProperty.location,
@@ -978,7 +1041,7 @@ useEffect(() => {
           landlordId: currentUser.uid,
           createdAt: serverTimestamp()
         });
-        
+
         setNewProperty({ name: '', location: '', units: '', occupied: '', revenue: '', images: [] });
         setShowPropertyModal(false);
         alert('Property added successfully!');
@@ -2602,8 +2665,27 @@ const handleViewTenantDetails = (tenant) => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-[#002244]">
-          <button 
+        <div className="p-4 border-t border-[#002244] space-y-2">
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => setPreferences({...preferences, darkMode: !preferences.darkMode})}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#002244] transition"
+          >
+            {preferences.darkMode ? (
+              <>
+                <Sun className="w-5 h-5" />
+                <span className="text-sm">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-5 h-5" />
+                <span className="text-sm">Dark Mode</span>
+              </>
+            )}
+          </button>
+
+          {/* Logout Button */}
+          <button
                 onClick={() => {
                 auth.signOut();
                 navigate('/login');
@@ -5471,24 +5553,47 @@ const handleViewTenantDetails = (tenant) => {
             {/* Profile Photo */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6">
               <div className="relative">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#003366] rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
-                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'T'}
-                </div>
-                {editingProfile && (
-                  <button className="absolute bottom-0 right-0 w-6 h-6 sm:w-7 sm:h-7 bg-[#003366] rounded-full flex items-center justify-center text-white hover:bg-[#002244] transition">
-                    <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
+                {userProfile?.photoURL || currentUser?.photoURL ? (
+                  <img
+                    src={userProfile?.photoURL || currentUser?.photoURL}
+                    alt="Profile"
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-[#003366]"
+                  />
+                ) : (
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#003366] rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
+                    {userProfile?.name?.charAt(0)?.toUpperCase() || currentUser?.displayName?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
                 )}
+                <input
+                  ref={profilePhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePhotoUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => profilePhotoInputRef.current?.click()}
+                  disabled={uploadingProfilePhoto}
+                  className="absolute bottom-0 right-0 w-6 h-6 sm:w-7 sm:h-7 bg-[#003366] rounded-full flex items-center justify-center text-white hover:bg-[#002244] transition disabled:opacity-50"
+                >
+                  {uploadingProfilePhoto ? (
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  )}
+                </button>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{userProfile?.name || 'Test User'}</h3>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{userProfile?.email || 'test@test.com'}</p>
-                {editingProfile && (
-                  <button className="text-[#003366] text-sm mt-1 hover:underline font-medium flex items-center gap-1">
-                    <Camera className="w-4 h-4" />
-                    Change Photo
-                  </button>
-                )}
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{userProfile?.name || currentUser?.displayName || 'User'}</h3>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{userProfile?.email || currentUser?.email || 'user@example.com'}</p>
+                <button
+                  onClick={() => profilePhotoInputRef.current?.click()}
+                  disabled={uploadingProfilePhoto}
+                  className="text-[#003366] text-sm mt-1 hover:underline font-medium flex items-center gap-1 disabled:opacity-50"
+                >
+                  <Camera className="w-4 h-4" />
+                  {uploadingProfilePhoto ? 'Uploading...' : 'Change Photo'}
+                </button>
               </div>
             </div>
 

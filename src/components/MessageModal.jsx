@@ -7,7 +7,9 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  getDocs
+  getDocs,
+  updateDoc,
+  doc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { X, Send, Check, CheckCheck, User, ChevronDown, Search } from 'lucide-react';
@@ -160,7 +162,7 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
       orderBy('timestamp', 'asc')
     );
 
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
       console.log('📨 Messages snapshot received:', {
         conversationId,
         numMessages: snapshot.docs.length,
@@ -177,6 +179,20 @@ const MessageModal = ({ tenant, currentUser, userProfile, isOpen, onClose, sende
       }));
       setMessages(messagesData);
       console.log('✅ Messages state updated:', messagesData.length, 'messages');
+
+      // Mark unread messages as read when viewing the conversation
+      const unreadMessages = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        return data.recipientId === currentUser.uid && data.read === false;
+      });
+
+      if (unreadMessages.length > 0) {
+        console.log(`📖 Marking ${unreadMessages.length} messages as read`);
+        const updatePromises = unreadMessages.map(messageDoc =>
+          updateDoc(doc(db, 'messages', messageDoc.id), { read: true })
+        );
+        await Promise.all(updatePromises);
+      }
     });
 
     return () => unsubscribe();
