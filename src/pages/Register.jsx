@@ -33,12 +33,26 @@ const Register = () => {
     navigate('/');
   };
 
-  // Validate invitation token on component mount
+  // Validate invitation token or check for pre-payment on component mount
   useEffect(() => {
     const inviteToken = searchParams.get('invite');
     const inviteType = searchParams.get('type');
+    const paymentRef = searchParams.get('ref');
+    const selectedPlan = searchParams.get('plan');
+    const prePaymentEmail = searchParams.get('email');
+
     if (inviteToken) {
       validateInvitation(inviteToken, inviteType);
+    } else if (paymentRef && selectedPlan) {
+      // User has completed payment on landing page
+      // Pre-fill email if provided
+      if (prePaymentEmail) {
+        setFormData(prev => ({
+          ...prev,
+          email: decodeURIComponent(prePaymentEmail)
+        }));
+      }
+      setSelectedRole('landlord');
     }
   }, [searchParams]);
 
@@ -188,6 +202,63 @@ const Register = () => {
         formData.phone,
         selectedRole
       );
+
+      // If this is a registration with pre-payment, activate the paid subscription
+      const paymentRef = searchParams.get('ref');
+      const selectedPlanId = searchParams.get('plan');
+
+      if (paymentRef && selectedPlanId && selectedRole === 'landlord') {
+        try {
+          // Retrieve payment info from sessionStorage
+          const billingCycle = sessionStorage.getItem('billingCycle') || 'monthly';
+          const paymentEmail = sessionStorage.getItem('paymentEmail');
+
+          // Verify the email matches
+          if (paymentEmail && paymentEmail !== formData.email) {
+            console.warn('Email mismatch between payment and registration');
+          }
+
+          // Import the necessary functions
+          const { doc, setDoc } = await import('firebase/firestore');
+          const { db } = await import('../firebase');
+          const { SUBSCRIPTION_TIERS } = await import('../services/paystackService');
+
+          // Get tier details
+          const tier = Object.values(SUBSCRIPTION_TIERS).find(t => t.id === selectedPlanId);
+
+          if (tier) {
+            const now = new Date();
+            const endDate = new Date();
+            const durationDays = billingCycle === 'annual' ? 365 : 30;
+            endDate.setDate(endDate.getDate() + durationDays);
+
+            // Update landlordSettings with paid subscription (overwrite the trial)
+            await setDoc(doc(db, 'landlordSettings', result.user.uid), {
+              userId: result.user.uid,
+              subscriptionStatus: 'active',
+              subscriptionTier: selectedPlanId,
+              subscriptionStartDate: now,
+              subscriptionEndDate: endDate,
+              propertyLimit: tier.propertyLimit,
+              tenantLimit: tier.tenantLimit || -1,
+              isTrial: false,
+              billingCycle: billingCycle,
+              paymentReference: paymentRef,
+              createdAt: now.toISOString(),
+              updatedAt: now.toISOString()
+            });
+
+            // Clear sessionStorage
+            sessionStorage.removeItem('paymentReference');
+            sessionStorage.removeItem('paymentEmail');
+            sessionStorage.removeItem('selectedPlan');
+            sessionStorage.removeItem('billingCycle');
+          }
+        } catch (paymentErr) {
+          console.error('Error activating paid subscription:', paymentErr);
+          // Continue anyway - user can upgrade later
+        }
+      }
 
       // If this is a registration with an invitation, update the records
       if (invitationData) {

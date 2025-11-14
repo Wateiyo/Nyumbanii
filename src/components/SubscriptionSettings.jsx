@@ -65,7 +65,7 @@ const SubscriptionSettings = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366]"></div>
       </div>
     );
   }
@@ -74,7 +74,7 @@ const SubscriptionSettings = () => {
     <div className="space-y-6">
       {/* Current Subscription Card */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+        <div className="bg-[#003366] px-6 py-4">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
             <Crown className="h-6 w-6" />
             Current Subscription
@@ -139,7 +139,7 @@ const SubscriptionSettings = () => {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="w-full md:w-auto px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors"
+              className="w-full md:w-auto px-6 py-3 bg-[#003366] text-white rounded-lg font-semibold hover:bg-[#002244] transition-colors"
             >
               {subscription && isSubscriptionActive(subscription)
                 ? 'Upgrade Plan'

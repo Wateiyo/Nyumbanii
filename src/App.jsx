@@ -26,10 +26,38 @@ function App() {
           <Route path="/listings" element={<PropertyListings />} />
           
           {/* Protected Dashboard Routes */}
-          <Route path="/landlord/dashboard" element={<LandlordDashboard />} />
-          <Route path="/tenant/dashboard" element={<TenantDashboard />} />
-          <Route path="/property-manager/dashboard" element={<PropertyManagerDashboard />} />
-          <Route path="/maintenance/dashboard" element={<MaintenanceStaffDashboard />} />
+          <Route
+            path="/landlord/dashboard"
+            element={
+              <ProtectedRoute requiredRole="landlord" requiresSubscription={true}>
+                <LandlordDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tenant/dashboard"
+            element={
+              <ProtectedRoute requiredRole="tenant">
+                <TenantDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/property-manager/dashboard"
+            element={
+              <ProtectedRoute requiredRole="property_manager">
+                <PropertyManagerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/maintenance/dashboard"
+            element={
+              <ProtectedRoute requiredRole="maintenance">
+                <MaintenanceStaffDashboard />
+              </ProtectedRoute>
+            }
+          />
           
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

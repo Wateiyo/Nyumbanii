@@ -56,6 +56,25 @@ export const AuthProvider = ({ children }) => {
 
       await setDoc(doc(db, 'users', user.uid), userData);
 
+      // If user is a landlord, give them 14-day free trial
+      if (role === 'landlord') {
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 14);
+
+        await setDoc(doc(db, 'landlordSettings', user.uid), {
+          userId: user.uid,
+          subscriptionStatus: 'active',
+          subscriptionTier: 'free',
+          subscriptionStartDate: new Date(),
+          subscriptionEndDate: trialEndDate,
+          propertyLimit: 2,
+          tenantLimit: 10,
+          isTrial: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+
       setUserRole(role);
       setUserProfile(userData);
       return { user, role };
@@ -124,6 +143,26 @@ export const AuthProvider = ({ children }) => {
         };
 
         await setDoc(doc(db, 'users', user.uid), userData);
+
+        // If user is a landlord, give them 14-day free trial
+        if (role === 'landlord') {
+          const trialEndDate = new Date();
+          trialEndDate.setDate(trialEndDate.getDate() + 14);
+
+          await setDoc(doc(db, 'landlordSettings', user.uid), {
+            userId: user.uid,
+            subscriptionStatus: 'active',
+            subscriptionTier: 'free',
+            subscriptionStartDate: new Date(),
+            subscriptionEndDate: trialEndDate,
+            propertyLimit: 2,
+            tenantLimit: 10,
+            isTrial: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        }
+
         setUserRole(role);
         setUserProfile(userData);
         return { user, role, isNewUser: true };
