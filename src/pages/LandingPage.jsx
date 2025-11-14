@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Home, 
-  Shield, 
-  Clock, 
+import {
+  Home,
+  Shield,
+  Clock,
   TrendingUp,
   Users,
   CheckCircle,
@@ -15,6 +15,7 @@ import {
   Landmark,
   Building
 } from 'lucide-react';
+import LandingPagePricing from '../components/LandingPagePricing';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -305,110 +306,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section id="pricing" className="py-20 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h2>
-            <p className="text-xl text-gray-600 mb-8">No contracts. No surprise fees.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <div className="group bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-900 hover:to-blue-900 rounded-2xl p-8 transition-all duration-300 hover:-translate-y-4 hover:shadow-2xl cursor-pointer">
-              <div className="mb-6">
-                <p className="text-4xl font-bold text-blue-900 group-hover:text-white transition-colors mb-2">
-                  KES 2000<span className="text-lg text-gray-600 group-hover:text-blue-200">/month</span>
-                </p>
-                <h3 className="text-3xl font-bold text-blue-900 group-hover:text-white transition-colors mb-3">Intro</h3>
-                <p className="text-blue-800 group-hover:text-blue-200 transition-colors">Best for less than 5 Properties</p>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">All limited links</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">Own analytics platform</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">Chat support</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">Calendar Access</span>
-                </li>
-              </ul>
-              <button className="w-full bg-blue-200 group-hover:bg-white text-blue-900 py-3 rounded-xl font-semibold transition-all">Choose plan</button>
-            </div>
-
-            <div className="group bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-900 hover:to-blue-900 rounded-2xl p-8 transition-all duration-300 hover:-translate-y-4 hover:shadow-2xl cursor-pointer">
-              <div className="mb-6">
-                <p className="text-4xl font-bold text-blue-900 group-hover:text-white transition-colors mb-2">
-                  KES 5000<span className="text-lg text-gray-600 group-hover:text-blue-200">/month</span>
-                </p>
-                <h3 className="text-3xl font-bold text-blue-900 group-hover:text-white transition-colors mb-3">Base</h3>
-                <p className="text-blue-800 group-hover:text-blue-200 transition-colors">5-10 Properties</p>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">All limited links</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">Own analytics platform</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">Chat support</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">Optimize hashtags</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-900 group-hover:text-white transition-colors flex-shrink-0" />
-                  <span className="text-blue-900 group-hover:text-white transition-colors">Unlimited users</span>
-                </li>
-              </ul>
-              <button className="w-full bg-blue-200 group-hover:bg-white text-blue-900 py-3 rounded-xl font-semibold transition-all">Choose plan</button>
-            </div>
-
-            <div className="group bg-blue-900 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 rounded-2xl p-8 text-white hover:text-blue-900 relative transition-all duration-300 hover:-translate-y-4 hover:shadow-2xl cursor-pointer">
-              <div className="absolute -top-3 right-6 bg-blue-700 group-hover:bg-blue-900 px-4 py-1 rounded-full text-xs font-semibold text-white transition-colors">MOST POPULAR</div>
-              <div className="mb-6">
-                <p className="text-4xl font-bold group-hover:text-blue-900 transition-colors mb-2">KES 10,000<span className="text-lg opacity-80 group-hover:text-gray-600 group-hover:opacity-100">/month</span></p>
-                <h3 className="text-3xl font-bold group-hover:text-blue-900 transition-colors mb-3">Pro</h3>
-                <p className="opacity-90 group-hover:text-blue-800 group-hover:opacity-100 transition-colors">10+ Properties</p>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 group-hover:text-blue-900 transition-colors" />
-                  <span className="group-hover:text-blue-900 transition-colors">All limited links</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 group-hover:text-blue-900 transition-colors" />
-                  <span className="group-hover:text-blue-900 transition-colors">Own analytics platform</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 group-hover:text-blue-900 transition-colors" />
-                  <span className="group-hover:text-blue-900 transition-colors">Chat support</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 group-hover:text-blue-900 transition-colors" />
-                  <span className="group-hover:text-blue-900 transition-colors">Optimize hashtags</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 group-hover:text-blue-900 transition-colors" />
-                  <span className="group-hover:text-blue-900 transition-colors">Unlimited users</span>
-                </li>
-              </ul>
-              <button className="w-full bg-white text-blue-900 group-hover:bg-blue-200 py-3 rounded-xl font-semibold transition-all">Choose plan</button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Pricing Section - Now using LandingPagePricing component with payment integration */}
+      <LandingPagePricing />
 
       <section id="how-it-works" className="py-20 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
