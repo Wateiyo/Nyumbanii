@@ -36,14 +36,19 @@ import {
   User,
   Check,
   CheckCheck,
-  X
+  X,
+  DollarSign,
+  BarChart3,
+  AlertTriangle
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
+import { canViewFinancials } from '../utils/formatters';
 
 const MaintenanceStaffDashboard = () => {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
   const [teamMember, setTeamMember] = useState(null);
+  const [teamPermissions, setTeamPermissions] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [properties, setProperties] = useState([]);
@@ -94,6 +99,8 @@ const MaintenanceStaffDashboard = () => {
     actualDuration: '',
     actualCostBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
   });
+  const [budgetInfo, setBudgetInfo] = useState(null);
+  const [showBudgetSummary, setShowBudgetSummary] = useState(false);
 
   // Quote submission states
   const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -144,6 +151,27 @@ const MaintenanceStaffDashboard = () => {
 
     fetchTeamMember();
   }, [currentUser, navigate]);
+
+  // Fetch landlord team permissions
+  useEffect(() => {
+    if (!teamMember?.landlordId) return;
+
+    const landlordSettingsRef = doc(db, 'landlordSettings', teamMember.landlordId);
+    const unsubscribe = onSnapshot(landlordSettingsRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const settings = docSnapshot.data();
+        setTeamPermissions(settings.teamPermissions || {});
+      } else {
+        // Default to no permissions if settings don't exist
+        setTeamPermissions({});
+      }
+    }, (error) => {
+      console.error('Error fetching team permissions:', error);
+      setTeamPermissions({});
+    });
+
+    return () => unsubscribe();
+  }, [teamMember?.landlordId]);
 
   const handleLogout = async () => {
     try {
@@ -810,7 +838,7 @@ const MaintenanceStaffDashboard = () => {
   };
 
   // COMPLETE WORK HANDLERS
-  const handleOpenCompleteWorkModal = (request) => {
+  const handleOpenCompleteWorkModal = async (request) => {
     setSelectedRequestForCompletion(request);
 
     // Pre-fill with estimated data if available
@@ -820,6 +848,49 @@ const MaintenanceStaffDashboard = () => {
       actualDuration: request.estimatedDuration || '',
       actualCostBreakdown: request.costBreakdown || [{ item: '', quantity: 1, unitCost: '', total: 0 }]
     });
+
+    // Fetch budget information for this property/landlord
+    try {
+      const monthlyBudget = 50000; // Default budget - should come from landlord settings
+
+      // Get all completed requests for this month for this landlord
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const completedRequestsQuery = query(
+        collection(db, 'maintenanceRequests'),
+        where('landlordId', '==', request.landlordId),
+        where('status', '==', 'completed')
+      );
+
+      const completedSnapshot = await getDocs(completedRequestsQuery);
+      const completedRequests = completedSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(r => {
+          const completedDate = r.completedAt?.toDate();
+          return completedDate && completedDate >= startOfMonth;
+        });
+
+      const totalSpentThisMonth = completedRequests.reduce((sum, r) => sum + (r.actualCost || 0), 0);
+
+      // Get staff member's total spending this month
+      const staffSpending = completedRequests
+        .filter(r => r.completedBy === currentUser.uid)
+        .reduce((sum, r) => sum + (r.actualCost || 0), 0);
+
+      setBudgetInfo({
+        monthlyBudget,
+        totalSpentThisMonth,
+        staffSpending,
+        remainingBudget: monthlyBudget - totalSpentThisMonth,
+        utilizationPercent: (totalSpentThisMonth / monthlyBudget) * 100,
+        staffUtilizationPercent: (staffSpending / monthlyBudget) * 100,
+        completedCount: completedRequests.length,
+        staffCompletedCount: completedRequests.filter(r => r.completedBy === currentUser.uid).length
+      });
+    } catch (error) {
+      console.error('Error fetching budget info:', error);
+    }
 
     setShowCompleteWorkModal(true);
   };
@@ -895,12 +966,25 @@ const MaintenanceStaffDashboard = () => {
         maintenanceRequestId: selectedRequestForCompletion.id
       });
 
-      alert('Work marked as completed successfully!');
-      handleCloseCompleteWorkModal();
+      // Close the completion modal and show budget summary
+      setShowCompleteWorkModal(false);
+      setShowBudgetSummary(true);
     } catch (error) {
       console.error('Error completing work:', error);
       alert('Error completing work. Please try again.');
     }
+  };
+
+  const handleCloseBudgetSummary = () => {
+    setShowBudgetSummary(false);
+    setSelectedRequestForCompletion(null);
+    setCompletionData({
+      actualCost: '',
+      completionNotes: '',
+      actualDuration: '',
+      actualCostBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+    setBudgetInfo(null);
   };
 
   // Quote submission handlers
@@ -1220,7 +1304,7 @@ const MaintenanceStaffDashboard = () => {
                       )}
                       {request.assignedTo === teamMember.id && request.status?.toLowerCase() === 'in-progress' && (
                         <button
-                          onClick={() => handleUpdateStatus(request.id, 'completed', request)}
+                          onClick={() => handleOpenCompleteWorkModal(request)}
                           className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm"
                         >
                           Complete
@@ -1246,7 +1330,7 @@ const MaintenanceStaffDashboard = () => {
                         <p className="text-xs text-gray-600">{request.property} - Unit {request.unit}</p>
                       </div>
                       <button
-                        onClick={() => handleUpdateStatus(request.id, 'completed', request)}
+                        onClick={() => handleOpenCompleteWorkModal(request)}
                         className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm"
                       >
                         Complete
@@ -1475,11 +1559,9 @@ const MaintenanceStaffDashboard = () => {
                                 // Match by property name or property ID
                                 const matchByName = r.property === property.name;
                                 const matchById = r.propertyId === property.id;
-                                // Open requests are: pending, submitted, awaiting_estimate, estimate_submitted (anything not in-progress or completed)
+                                // Open requests are anything NOT completed or closed
                                 const status = r.status?.toLowerCase();
-                                const isOpen = status === 'pending' || status === 'submitted' ||
-                                              status === 'awaiting_estimate' || status === 'estimate_submitted' ||
-                                              !status;
+                                const isOpen = status !== 'completed' && status !== 'closed' && status !== 'verified';
                                 const matches = (matchByName || matchById) && isOpen;
 
                                 return matches;
@@ -2447,6 +2529,177 @@ const MaintenanceStaffDashboard = () => {
             >
               <Send className="w-5 h-5" />
               Submit Quote
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Budget Summary Modal */}
+    {showBudgetSummary && selectedRequestForCompletion && budgetInfo && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Work Completed Successfully!</h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              {selectedRequestForCompletion.issue} - {selectedRequestForCompletion.property}
+            </p>
+          </div>
+
+          {/* Cost Summary */}
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-3 flex items-center gap-2">
+              <DollarSign className="w-5 h-5" />
+              Cost Summary
+            </h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {selectedRequestForCompletion.estimatedCost && (
+                <div>
+                  <span className="text-blue-600 dark:text-blue-400">Estimated Cost:</span>
+                  <div className="font-semibold text-blue-900 dark:text-blue-200 text-lg">
+                    KSH {selectedRequestForCompletion.estimatedCost.toLocaleString()}
+                  </div>
+                </div>
+              )}
+              <div>
+                <span className="text-blue-600 dark:text-blue-400">Actual Cost:</span>
+                <div className="font-semibold text-blue-900 dark:text-blue-200 text-lg">
+                  KSH {parseFloat(completionData.actualCost).toLocaleString()}
+                </div>
+              </div>
+              {selectedRequestForCompletion.estimatedCost && (
+                <div className="col-span-2">
+                  <span className="text-blue-600 dark:text-blue-400">Variance:</span>
+                  <div className={`font-semibold text-lg ${
+                    parseFloat(completionData.actualCost) <= selectedRequestForCompletion.estimatedCost
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {parseFloat(completionData.actualCost) <= selectedRequestForCompletion.estimatedCost ? '-' : '+'}
+                    KSH {Math.abs(parseFloat(completionData.actualCost) - selectedRequestForCompletion.estimatedCost).toLocaleString()}
+                    {' '}
+                    ({parseFloat(completionData.actualCost) <= selectedRequestForCompletion.estimatedCost ? 'Under' : 'Over'} Budget)
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Budget Information */}
+          <div className="space-y-4 mb-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Monthly Budget Status
+            </h3>
+
+            {/* Overall Budget */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Total Monthly Budget</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  KSH {budgetInfo.monthlyBudget.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Spent This Month</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  KSH {budgetInfo.totalSpentThisMonth.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Remaining Budget</span>
+                <span className={`font-semibold ${
+                  budgetInfo.remainingBudget > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}>
+                  KSH {budgetInfo.remainingBudget.toLocaleString()}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-1">
+                <div
+                  className={`h-3 rounded-full transition-all ${
+                    budgetInfo.utilizationPercent >= 100 ? 'bg-red-600' :
+                    budgetInfo.utilizationPercent >= 80 ? 'bg-yellow-500' :
+                    'bg-green-600'
+                  }`}
+                  style={{ width: `${Math.min(budgetInfo.utilizationPercent, 100)}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
+                {budgetInfo.utilizationPercent.toFixed(1)}% utilized
+              </div>
+            </div>
+
+            {/* Staff Usage */}
+            <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+              <h4 className="font-semibold text-purple-900 dark:text-purple-300 mb-3 flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Your Usage This Month
+              </h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-purple-600 dark:text-purple-400">Your Spending:</span>
+                  <div className="font-semibold text-purple-900 dark:text-purple-200 text-lg">
+                    KSH {budgetInfo.staffSpending.toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-purple-600 dark:text-purple-400">Completed Jobs:</span>
+                  <div className="font-semibold text-purple-900 dark:text-purple-200 text-lg">
+                    {budgetInfo.staffCompletedCount} job{budgetInfo.staffCompletedCount !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="w-full bg-purple-200 dark:bg-purple-700 rounded-full h-3 mb-1">
+                    <div
+                      className="bg-purple-600 dark:bg-purple-400 h-3 rounded-full transition-all"
+                      style={{ width: `${Math.min(budgetInfo.staffUtilizationPercent, 100)}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-purple-600 dark:text-purple-400 text-right">
+                    {budgetInfo.staffUtilizationPercent.toFixed(1)}% of total budget
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Budget Alert */}
+            {budgetInfo.utilizationPercent >= 80 && (
+              <div className={`${
+                budgetInfo.utilizationPercent >= 100 ? 'bg-red-50 border-red-200 dark:bg-red-900/30 dark:border-red-800' :
+                'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/30 dark:border-yellow-800'
+              } border rounded-lg p-4 flex items-start gap-3`}>
+                <AlertTriangle className={`w-5 h-5 flex-shrink-0 ${
+                  budgetInfo.utilizationPercent >= 100 ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'
+                }`} />
+                <div>
+                  <h4 className={`font-semibold mb-1 ${
+                    budgetInfo.utilizationPercent >= 100 ? 'text-red-900 dark:text-red-300' : 'text-yellow-900 dark:text-yellow-300'
+                  }`}>
+                    {budgetInfo.utilizationPercent >= 100 ? 'Budget Exceeded!' : 'Budget Alert'}
+                  </h4>
+                  <p className={`text-sm ${
+                    budgetInfo.utilizationPercent >= 100 ? 'text-red-700 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'
+                  }`}>
+                    {budgetInfo.utilizationPercent >= 100
+                      ? 'The monthly maintenance budget has been exceeded. Please consult with the landlord.'
+                      : 'The monthly maintenance budget is nearly exhausted. Consider discussing with the landlord before approving additional expenses.'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Close Button */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleCloseBudgetSummary}
+              className="flex-1 px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium"
+            >
+              Close
             </button>
           </div>
         </div>

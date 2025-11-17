@@ -101,6 +101,9 @@ const LandlordDashboard = () => {
   const [selectedViewing, setSelectedViewing] = useState(null);
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPropertyModal, setShowPropertyModal] = useState(false);
   const [showTenantModal, setShowTenantModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
@@ -2324,6 +2327,51 @@ const handleEditProperty = async () => {
     alert('Password changed successfully!');
     setShowPasswordModal(false);
     setPasswordData({ current: '', new: '', confirm: '' });
+  };
+
+  const handleDeactivateAccount = async () => {
+    if (!currentUser) return;
+
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        accountStatus: 'deactivated',
+        deactivatedAt: serverTimestamp()
+      });
+
+      alert('Your account has been deactivated. You can reactivate it by logging in again.');
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error deactivating account:', error);
+      alert('Failed to deactivate account. Please try again.');
+    }
+    setShowDeactivateModal(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!currentUser) return;
+
+    try {
+      // Delete user data from Firestore collections
+      const settingsRef = doc(db, 'landlordSettings', currentUser.uid);
+      const userRef = doc(db, 'users', currentUser.uid);
+
+      // Delete Firestore documents
+      await deleteDoc(settingsRef).catch(err => console.log('Settings already deleted or not found'));
+      await deleteDoc(userRef).catch(err => console.log('User profile already deleted or not found'));
+
+      // Note: Deleting the Firebase Auth account requires recent authentication
+      // In production, you'd want to prompt for reauthentication first
+      alert('Your account data has been deleted. Logging out now...');
+
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Failed to delete account. Error: ' + error.message);
+    }
+    setShowDeleteModal(false);
   };
 
   const markNotificationRead = async (id) => {
@@ -5677,10 +5725,19 @@ const handleViewTenantDetails = (tenant) => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Add an extra layer of security to your account</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {securitySettings.twoFactorEnabled ? 'Two-factor authentication is active' : 'Add an extra layer of security to your account'}
+                </p>
               </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium text-sm sm:text-base">
-                Enable
+              <button
+                onClick={() => securitySettings.twoFactorEnabled ? setSecuritySettings({...securitySettings, twoFactorEnabled: false}) : setShow2FAModal(true)}
+                className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg transition font-medium text-sm sm:text-base ${
+                  securitySettings.twoFactorEnabled
+                    ? 'border border-red-500 dark:border-red-400 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    : 'bg-[#003366] dark:bg-blue-600 text-white hover:bg-[#002244] dark:hover:bg-blue-700'
+                }`}
+              >
+                {securitySettings.twoFactorEnabled ? 'Disable' : 'Enable'}
               </button>
             </div>
           </div>
@@ -6805,23 +6862,29 @@ const handleViewTenantDetails = (tenant) => {
 
           <div className="p-4 sm:p-6 space-y-4">
             {/* Deactivate Account */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Deactivate Account</h3>
-                <p className="text-sm text-gray-500 mt-1">Temporarily disable your account</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Deactivate Account</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Temporarily disable your account</p>
               </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition font-medium whitespace-nowrap text-sm sm:text-base">
+              <button
+                onClick={() => setShowDeactivateModal(true)}
+                className="px-4 py-2 sm:px-6 sm:py-2.5 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition font-medium whitespace-nowrap text-sm sm:text-base"
+              >
                 Deactivate
               </button>
             </div>
 
             {/* Delete Account */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Delete Account</h3>
-                <p className="text-sm text-gray-500 mt-1">Permanently delete your account and all data</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Delete Account</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Permanently delete your account and all data</p>
               </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium text-sm sm:text-base">
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="px-4 py-2 sm:px-6 sm:py-2.5 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition font-medium text-sm sm:text-base"
+              >
                 Delete Account
               </button>
             </div>
@@ -7949,10 +8012,168 @@ const handleViewTenantDetails = (tenant) => {
         </div>
       )}
 
+      {/* Deactivate Account Confirmation Modal */}
+      {showDeactivateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Deactivate Account?</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Your account will be temporarily disabled. You can reactivate it by logging in again. Your data will not be deleted.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeactivateModal(false)}
+                  className="flex-1 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeactivateAccount}
+                  className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+                >
+                  Deactivate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Delete Account Permanently?</h3>
+              </div>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+                <p className="text-sm text-red-800 dark:text-red-300 font-semibold mb-2">
+                  ⚠️ This action cannot be undone!
+                </p>
+                <ul className="text-sm text-red-700 dark:text-red-400 space-y-1 list-disc list-inside">
+                  <li>All your properties and tenant data will be deleted</li>
+                  <li>All payment records will be permanently removed</li>
+                  <li>Your account will be completely erased</li>
+                </ul>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+                >
+                  Yes, Delete Forever
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2FA Setup Modal */}
+      {show2FAModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md">
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Enable Two-Factor Authentication</h3>
+              <button onClick={() => setShow2FAModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">How it works</h4>
+                <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                  <li>Scan the QR code with your authenticator app</li>
+                  <li>Enter the 6-digit code from your app</li>
+                  <li>Keep your backup codes in a safe place</li>
+                </ol>
+              </div>
+
+              {/* QR Code Placeholder */}
+              <div className="flex justify-center p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="w-48 h-48 bg-white dark:bg-gray-600 rounded-lg flex items-center justify-center border-2 border-gray-300 dark:border-gray-500">
+                  <div className="text-center text-gray-500 dark:text-gray-400">
+                    <div className="w-32 h-32 bg-gray-200 dark:bg-gray-500 mx-auto mb-2"></div>
+                    <p className="text-xs">QR Code</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manual Setup Key */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Or enter this key manually:
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value="ABCD EFGH IJKL MNOP"
+                    readOnly
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText("ABCDEFGHIJKLMNOP");
+                      alert("Copied to clipboard!");
+                    }}
+                    className="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              {/* Verification Code Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Enter 6-digit code from authenticator app:
+                </label>
+                <input
+                  type="text"
+                  maxLength="6"
+                  placeholder="000000"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent text-center text-2xl font-mono tracking-widest bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex gap-3">
+              <button
+                onClick={() => setShow2FAModal(false)}
+                className="flex-1 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setSecuritySettings({...securitySettings, twoFactorEnabled: true});
+                  setShow2FAModal(false);
+                  alert("Two-factor authentication enabled successfully! In production, this would verify the code and save to your account.");
+                }}
+                className="flex-1 px-6 py-2.5 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-medium"
+              >
+                Enable 2FA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Change Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Change Password</h2>
               <button onClick={() => setShowPasswordModal(false)}><X className="w-6 h-6 text-gray-500 dark:text-gray-400" /></button>

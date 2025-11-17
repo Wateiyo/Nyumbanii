@@ -65,6 +65,8 @@ const TenantDashboard = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showDocumentUploadModal, setShowDocumentUploadModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
@@ -82,6 +84,8 @@ const TenantDashboard = () => {
   const [tenantData, setTenantData] = useState(null);
   const [availableListings, setAvailableListings] = useState([]);
   const [loadingListings, setLoadingListings] = useState(true);
+  const [landlordSettings, setLandlordSettings] = useState(null);
+  const [loadingSettings, setLoadingSettings] = useState(true);
 
   // Navbar scroll state
   const [showNavbar, setShowNavbar] = useState(true);
@@ -289,6 +293,68 @@ const TenantDashboard = () => {
       }));
     }
   }, [tenantData]);
+
+  // Permission check helpers
+  const canAccessPortal = () => {
+    if (!landlordSettings) return true; // Allow access while loading
+    return landlordSettings.communicationPrefs?.tenantPortalEnabled !== false;
+  };
+
+  const canUseSelfService = () => {
+    if (!landlordSettings) return true; // Allow access while loading
+    return landlordSettings.communicationPrefs?.allowTenantSelfService !== false;
+  };
+
+  // Fetch landlord settings to enforce permissions
+  useEffect(() => {
+    if (!tenantData?.landlordId) {
+      setLoadingSettings(false);
+      return;
+    }
+
+    const fetchLandlordSettings = async () => {
+      try {
+        setLoadingSettings(true);
+        const settingsRef = doc(db, 'landlordSettings', tenantData.landlordId);
+
+        // Use onSnapshot for real-time updates
+        const unsubscribe = onSnapshot(settingsRef, (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const settings = docSnapshot.data();
+            console.log('Landlord settings loaded:', settings);
+            setLandlordSettings(settings);
+          } else {
+            console.log('No landlord settings found, using defaults');
+            // Set defaults if no settings found
+            setLandlordSettings({
+              communicationPrefs: {
+                tenantPortalEnabled: true,
+                allowTenantSelfService: true
+              }
+            });
+          }
+          setLoadingSettings(false);
+        }, (error) => {
+          console.error('Error fetching landlord settings:', error);
+          // On error, allow access (fail open)
+          setLandlordSettings({
+            communicationPrefs: {
+              tenantPortalEnabled: true,
+              allowTenantSelfService: true
+            }
+          });
+          setLoadingSettings(false);
+        });
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error setting up landlord settings listener:', error);
+        setLoadingSettings(false);
+      }
+    };
+
+    fetchLandlordSettings();
+  }, [tenantData?.landlordId]);
 
   // Fetch listings filtered by tenant's landlordId
   useEffect(() => {
@@ -2119,45 +2185,127 @@ const TenantDashboard = () => {
                 </div>
               )}
 
-              {/* Blue Banner */}
-              {tenantData && (
-                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Welcome back, {profileSettings.name}!</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Here's an overview of your tenancy</p>
+              {/* Portal Access Denied Message */}
+              {!canAccessPortal() && (
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-6">
+                  <h3 className="font-semibold text-red-900 dark:text-red-300 mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Portal Access Disabled
+                  </h3>
+                  <p className="text-red-700 dark:text-red-400">
+                    Your landlord has temporarily disabled tenant portal access. Please contact your landlord for assistance or to regain access to your tenant portal.
+                  </p>
+                </div>
+              )}
+
+              {/* Personalized Welcome Card */}
+              {tenantData && canAccessPortal() && (
+                <div className="bg-gradient-to-br from-[#003366] to-[#002244] rounded-xl shadow-lg overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                      {/* Property Image */}
+                      <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
+                        {tenantData.propertyImage ? (
+                          <img
+                            src={tenantData.propertyImage}
+                            alt={tenantData.propertyName || 'Property'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                            <Home className="w-20 h-20 text-white opacity-50" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tenant Info */}
+                      <div className="flex-1 text-white">
+                        <h2 className="text-2xl md:text-3xl font-bold mb-2">Welcome Home, {profileSettings.name?.split(' ')[0] || 'Tenant'}!</h2>
+                        <p className="text-blue-100 mb-4">We're glad to have you back</p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                              <Home className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-blue-200">Property</p>
+                              <p className="font-semibold">{tenantData.propertyName || 'N/A'}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                              <MapPin className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-blue-200">Unit Number</p>
+                              <p className="font-semibold">{tenantData.unit || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                <button
-                  onClick={() => setCurrentView('payments')}
-                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full hover:scale-105 transform"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Next Payment Due</h4>
-                    <Calendar className="w-5 h-5 text-[#003366] dark:text-blue-400" />
+              {/* Blue Banner */}
+              {tenantData && canAccessPortal() && (
+                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Quick Overview</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Here's what's happening with your tenancy</p>
                   </div>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
-                    {tenantData?.rentDueDate ? new Date(tenantData.rentDueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}
+                </div>
+              )}
+
+              {/* Stats Cards - 2 columns matching landlord dashboard */}
+              {canAccessPortal() && (
+              <>
+              <div className="grid grid-cols-2 gap-4 lg:gap-6">
+                <div
+                  onClick={() => setCurrentView('payments')}
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-105 transform"
+                >
+                  {/* Icon at the top */}
+                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 rounded-lg flex items-center justify-center mb-3">
+                    <Calendar className="w-6 h-6 lg:w-7 lg:h-7" />
+                  </div>
+
+                  {/* Label */}
+                  <p className="text-gray-600 dark:text-gray-400 text-xs lg:text-sm mb-2">Next Payment Due</p>
+
+                  {/* Value */}
+                  <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {tenantData?.rentDueDate ? new Date(tenantData.rentDueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Not set'}
                   </p>
-                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
+
+                  {/* Subtitle */}
+                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">
                     KES {tenantData?.rent ? tenantData.rent.toLocaleString() : '0'}
                   </p>
-                </button>
+                </div>
 
-                <button
+                <div
                   onClick={() => setCurrentView('documents')}
-                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full hover:scale-105 transform"
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-105 transform"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Lease Expires</h4>
-                    <FileText className="w-5 h-5 text-[#003366] dark:text-blue-400" />
+                  {/* Icon at the top */}
+                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 rounded-lg flex items-center justify-center mb-3">
+                    <FileText className="w-6 h-6 lg:w-7 lg:h-7" />
                   </div>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
-                    {tenantData?.leaseEnd ? new Date(tenantData.leaseEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}
+
+                  {/* Label */}
+                  <p className="text-gray-600 dark:text-gray-400 text-xs lg:text-sm mb-2">Lease Expires</p>
+
+                  {/* Value */}
+                  <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {tenantData?.leaseEnd ? new Date(tenantData.leaseEnd).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Not set'}
                   </p>
-                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
+
+                  {/* Subtitle */}
+                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">
                     {tenantData?.leaseEnd ? (() => {
                       const today = new Date();
                       const leaseEndDate = new Date(tenantData.leaseEnd);
@@ -2166,48 +2314,161 @@ const TenantDashboard = () => {
                       return `${diffMonths} months left`;
                     })() : 'N/A'}
                   </p>
-                </button>
+                </div>
 
-                <button
+                <div
                   onClick={() => setCurrentView('maintenance')}
-                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full hover:scale-105 transform"
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-105 transform"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Maintenance</h4>
-                    <Wrench className="w-5 h-5 text-[#003366] dark:text-blue-400" />
+                  {/* Icon at the top */}
+                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-lg flex items-center justify-center mb-3">
+                    <Wrench className="w-6 h-6 lg:w-7 lg:h-7" />
                   </div>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">2 Open</p>
-                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">1 in progress</p>
-                </button>
 
-                <button
+                  {/* Label */}
+                  <p className="text-gray-600 dark:text-gray-400 text-xs lg:text-sm mb-2">Maintenance</p>
+
+                  {/* Value */}
+                  <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">2 Open</p>
+
+                  {/* Subtitle */}
+                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">1 in progress</p>
+                </div>
+
+                <div
                   onClick={() => setCurrentView('messages')}
-                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-[#003366] dark:hover:border-blue-400 transition-all cursor-pointer text-left w-full hover:scale-105 transform"
+                  className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-105 transform"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400">Messages</h4>
-                    <MessageSquare className="w-5 h-5 text-[#003366] dark:text-blue-400" />
+                  {/* Icon at the top */}
+                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-300 rounded-lg flex items-center justify-center mb-3">
+                    <MessageSquare className="w-6 h-6 lg:w-7 lg:h-7" />
                   </div>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
+
+                  {/* Label */}
+                  <p className="text-gray-600 dark:text-gray-400 text-xs lg:text-sm mb-2">Messages</p>
+
+                  {/* Value */}
+                  <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">
                     {unreadMessagesCount}
                   </p>
-                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
+
+                  {/* Subtitle */}
+                  <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">
                     {unreadMessagesCount === 1 ? 'Unread message' : 'Unread messages'}
                   </p>
-                </button>
+                </div>
               </div>
+
+              {/* Kenya Power Alert Banner */}
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center animate-pulse">
+                      <Bell className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-yellow-900 dark:text-yellow-100">Kenya Power Alerts</h3>
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200">Auto-checks every 6 hours for power interruptions</p>
+                    </div>
+                  </div>
+                  <a
+                    href="https://kplc.co.ke/category/view/50/planned-power-interruptions"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium text-sm transition flex items-center gap-2"
+                  >
+                    ⚡ Check KPLC Website
+                  </a>
+                </div>
+              </div>
+
+              {/* Updates & Notifications Section */}
+              {updates.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                  <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Megaphone className="w-5 h-5 text-[#003366] dark:text-blue-400" />
+                      Important Updates
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Recent announcements and alerts</p>
+                  </div>
+
+                  <div className="p-4 sm:p-6">
+                    <div className="space-y-3">
+                      {updates.slice(0, 3).map((update) => {
+                        const isPowerInterruption = update.category === 'power_interruption';
+                        const isSystemAlert = update.category === 'system_alert';
+
+                        return (
+                          <div
+                            key={update.id}
+                            className={`border rounded-lg p-4 hover:shadow-md transition ${
+                              isPowerInterruption
+                                ? 'border-yellow-400 dark:border-yellow-600 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20'
+                                : isSystemAlert
+                                ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20'
+                                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {isPowerInterruption && (
+                                <div className="flex-shrink-0 w-8 h-8 bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center">
+                                  <Bell className="w-4 h-4 text-white" />
+                                </div>
+                              )}
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <h4 className={`font-semibold text-sm ${
+                                    isPowerInterruption ? 'text-yellow-900 dark:text-yellow-100' : 'text-gray-900 dark:text-white'
+                                  }`}>
+                                    {update.title}
+                                  </h4>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                    {update.date}
+                                  </span>
+                                </div>
+                                <p className={`text-sm line-clamp-2 ${
+                                  isPowerInterruption ? 'text-yellow-800 dark:text-yellow-200' : 'text-gray-600 dark:text-gray-400'
+                                }`}>
+                                  {update.message}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {updates.length > 3 && (
+                      <button
+                        onClick={() => setCurrentView('updates')}
+                        className="mt-4 w-full py-2 text-sm text-[#003366] dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition font-medium"
+                      >
+                        View All Updates ({updates.length})
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Quick Actions */}
               <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-3 lg:mb-4 text-sm lg:text-base">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-2 lg:gap-3">
-                  <button
-                    onClick={() => setShowMaintenanceModal(true)}
-                    className="p-3 lg:p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition text-center"
-                  >
-                    <Wrench className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600 dark:text-orange-400 mx-auto mb-1 lg:mb-2" />
-                    <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">Add Maintenance Request</span>
-                  </button>
+                  {canUseSelfService() ? (
+                    <button
+                      onClick={() => setShowMaintenanceModal(true)}
+                      className="p-3 lg:p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition text-center"
+                    >
+                      <Wrench className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600 dark:text-orange-400 mx-auto mb-1 lg:mb-2" />
+                      <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">Add Maintenance Request</span>
+                    </button>
+                  ) : (
+                    <div className="p-3 lg:p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-center opacity-50 cursor-not-allowed">
+                      <Wrench className="w-5 h-5 lg:w-6 lg:h-6 text-gray-500 dark:text-gray-400 mx-auto mb-1 lg:mb-2" />
+                      <span className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400 block">Disabled by Landlord</span>
+                    </div>
+                  )}
 
                   <button
                     onClick={() => setCurrentView('documents')}
@@ -2279,30 +2540,42 @@ const TenantDashboard = () => {
                   </div>
                 </div>
               </div>
+              </>
+              )}
             </div>
           )}
 
           {/* Payments View */}
           {currentView === 'payments' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
-              {/* Blue Banner */}
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Payment History</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Track your rent payments and receipts</p>
+              {!canUseSelfService() ? (
+                // Access restricted message
+                <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-300 mb-2">Access Restricted</h3>
+                  <p className="text-yellow-700 dark:text-yellow-400">
+                    Your landlord has restricted access to payment history. Please contact your landlord to view payment information.
+                  </p>
                 </div>
-                <button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Record Payment
-                </button>
-              </div>
+              ) : (
+                <>
+                  {/* Blue Banner */}
+                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Payment History</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Track your rent payments and receipts</p>
+                    </div>
+                    <button
+                      onClick={() => setShowPaymentModal(true)}
+                      className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Record Payment
+                    </button>
+                  </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                       <tr>
                         <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Month</th>
@@ -2341,25 +2614,47 @@ const TenantDashboard = () => {
                   </table>
                 </div>
               </div>
+                </>
+              )}
             </div>
           )}
 
           {/* Maintenance View */}
           {currentView === 'maintenance' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
+              {/* Access denied message if self-service is disabled */}
+              {!canUseSelfService() && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-300 mb-2">Access Restricted</h3>
+                  <p className="text-yellow-700 dark:text-yellow-400">
+                    Your landlord has restricted the ability to submit maintenance requests through the portal. Please contact your landlord directly to report maintenance issues.
+                  </p>
+                </div>
+              )}
+
               {/* Blue Banner */}
               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Maintenance Requests</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Report and track maintenance issues</p>
                 </div>
-                <button
-                  onClick={() => setShowMaintenanceModal(true)}
-                  className="px-6 py-3 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-semibold whitespace-nowrap flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  New Request
-                </button>
+                {canUseSelfService() ? (
+                  <button
+                    onClick={() => setShowMaintenanceModal(true)}
+                    className="px-6 py-3 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-semibold whitespace-nowrap flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    New Request
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="px-6 py-3 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed font-semibold whitespace-nowrap flex items-center gap-2 opacity-50"
+                  >
+                    <Plus className="w-5 h-5" />
+                    New Request
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
@@ -2460,10 +2755,10 @@ const TenantDashboard = () => {
                       </div>
                       <button
                         onClick={() => handleDownloadDocument(doc)}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white transition text-sm font-medium flex-shrink-0"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white dark:hover:text-white transition text-sm font-medium flex-shrink-0"
                       >
-                        <Download className="w-4 h-4" />
-                        Download
+                        <Eye className="w-4 h-4" />
+                        View Document
                       </button>
                     </div>
                   ))}
@@ -3262,10 +3557,19 @@ const TenantDashboard = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Add an extra layer of security to your account</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
+                  {twoFactorEnabled ? 'Two-factor authentication is active' : 'Add an extra layer of security to your account'}
+                </p>
               </div>
-              <button className="px-4 py-2 sm:px-6 sm:py-2.5 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-medium text-sm sm:text-base">
-                Enable
+              <button
+                onClick={() => twoFactorEnabled ? setTwoFactorEnabled(false) : setShow2FAModal(true)}
+                className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg transition font-medium text-sm sm:text-base ${
+                  twoFactorEnabled
+                    ? 'border border-red-500 dark:border-red-400 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    : 'bg-[#003366] dark:bg-blue-600 text-white hover:bg-[#002244] dark:hover:bg-blue-700'
+                }`}
+              >
+                {twoFactorEnabled ? 'Disable' : 'Enable'}
               </button>
             </div>
           </div>
@@ -3557,29 +3861,29 @@ const TenantDashboard = () => {
       {/* Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex justify-between items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">Record Payment</h3>
-              <button onClick={() => setShowPaymentModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-300">
+              <button onClick={() => setShowPaymentModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
                 <X className="w-5 h-5 lg:w-6 lg:h-6" />
               </button>
             </div>
             <div className="p-4 lg:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (KES)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (KES)</label>
                 <input
                   type="number"
                   value={newPayment.amount}
                   onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})}
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
                 <select
                   value={newPayment.method}
                   onChange={(e) => setNewPayment({...newPayment, method: e.target.value})}
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
                 >
                   <option value="M-Pesa">M-Pesa</option>
                   <option value="Bank Transfer">Bank Transfer</option>
@@ -3588,34 +3892,34 @@ const TenantDashboard = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reference Number</label>
                 <input
                   type="text"
                   value={newPayment.reference}
                   onChange={(e) => setNewPayment({...newPayment, reference: e.target.value})}
                   placeholder="e.g., M-Pesa code"
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm lg:text-base"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Date</label>
                 <input
                   type="date"
                   value={newPayment.date}
                   onChange={(e) => setNewPayment({...newPayment, date: e.target.value})}
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent text-sm lg:text-base"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
                 />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm lg:text-base"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm lg:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddPayment}
-                  className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm lg:text-base"
+                  className="flex-1 px-4 py-2 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition text-sm lg:text-base"
                 >
                   Submit
                 </button>
@@ -3824,10 +4128,100 @@ const TenantDashboard = () => {
         </div>
       )}
 
+      {/* 2FA Setup Modal */}
+      {show2FAModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md">
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Enable Two-Factor Authentication</h3>
+              <button onClick={() => setShow2FAModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">How it works</h4>
+                <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                  <li>Scan the QR code with your authenticator app</li>
+                  <li>Enter the 6-digit code from your app</li>
+                  <li>Keep your backup codes in a safe place</li>
+                </ol>
+              </div>
+
+              {/* QR Code Placeholder */}
+              <div className="flex justify-center p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="w-48 h-48 bg-white dark:bg-gray-600 rounded-lg flex items-center justify-center border-2 border-gray-300 dark:border-gray-500">
+                  <div className="text-center text-gray-500 dark:text-gray-400">
+                    <div className="w-32 h-32 bg-gray-200 dark:bg-gray-500 mx-auto mb-2"></div>
+                    <p className="text-xs">QR Code</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manual Setup Key */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Or enter this key manually:
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value="ABCD EFGH IJKL MNOP"
+                    readOnly
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText("ABCDEFGHIJKLMNOP");
+                      alert("Copied to clipboard!");
+                    }}
+                    className="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              {/* Verification Code Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Enter 6-digit code from authenticator app:
+                </label>
+                <input
+                  type="text"
+                  maxLength="6"
+                  placeholder="000000"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent text-center text-2xl font-mono tracking-widest bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex gap-3">
+              <button
+                onClick={() => setShow2FAModal(false)}
+                className="flex-1 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setTwoFactorEnabled(true);
+                  setShow2FAModal(false);
+                  alert("Two-factor authentication enabled successfully! In production, this would verify the code and save to your account.");
+                }}
+                className="flex-1 px-6 py-2.5 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition font-medium"
+              >
+                Enable 2FA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md">
             <div className="border-b border-gray-200 px-4 lg:px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">Change Password</h3>
               <button onClick={() => setShowPasswordModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-300">
