@@ -155,29 +155,29 @@ const SubscriptionModal = ({ isOpen, onClose, initialPlan = null }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-2xl font-bold text-gray-900">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             {showPlans ? 'Choose Your Plan' : 'Complete Payment'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
             disabled={loading}
           >
-            <X className="h-6 w-6 text-gray-500" />
+            <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-6">
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-red-800 font-semibold">Error</p>
-                <p className="text-red-700 text-sm">{error}</p>
+                <p className="text-red-800 dark:text-red-300 font-semibold">Error</p>
+                <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
               </div>
             </div>
           )}
@@ -191,17 +191,17 @@ const SubscriptionModal = ({ isOpen, onClose, initialPlan = null }) => {
           ) : (
             <div className="max-w-2xl mx-auto">
               {/* Selected Plan Summary */}
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 mb-6 border border-blue-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-6 mb-6 border border-blue-200 dark:border-blue-700">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                   {selectedPlan?.name} Plan
                 </h3>
-                <p className="text-3xl font-bold text-[#003366] mb-4">
+                <p className="text-3xl font-bold text-[#003366] dark:text-blue-400 mb-4">
                   {formatPrice(selectedPlan?.price)}
-                  <span className="text-lg text-gray-600"> /{selectedPlan?.interval || 'month'}</span>
+                  <span className="text-lg text-gray-600 dark:text-gray-400"> /{selectedPlan?.interval || 'month'}</span>
                 </p>
                 <div className="space-y-2">
                   {selectedPlan?.features.map((feature, index) => (
-                    <p key={index} className="text-gray-700 text-sm">
+                    <p key={index} className="text-gray-700 dark:text-gray-300 text-sm">
                       ✓ {feature}
                     </p>
                   ))}
@@ -209,14 +209,14 @@ const SubscriptionModal = ({ isOpen, onClose, initialPlan = null }) => {
               </div>
 
               {/* Payment Information */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
                 <div className="flex items-start gap-3">
-                  <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-blue-900 font-semibold text-sm">
+                    <p className="text-blue-900 dark:text-blue-300 font-semibold text-sm">
                       Secure Payment
                     </p>
-                    <p className="text-blue-800 text-sm">
+                    <p className="text-blue-800 dark:text-blue-400 text-sm">
                       Your payment is processed securely through Paystack. We never store your card details.
                     </p>
                   </div>
@@ -224,32 +224,32 @@ const SubscriptionModal = ({ isOpen, onClose, initialPlan = null }) => {
               </div>
 
               {/* Payment Details */}
-              <div className="border border-gray-200 rounded-lg p-6 mb-6">
-                <h4 className="font-semibold text-gray-900 mb-4">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6 bg-white dark:bg-gray-800">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
                   Payment Details
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Email</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-gray-600 dark:text-gray-400">Email</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {currentUser?.email}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Plan</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-gray-600 dark:text-gray-400">Plan</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {selectedPlan?.name}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Billing Cycle</span>
-                    <span className="font-medium text-gray-900 capitalize">{selectedPlan?.interval || 'Monthly'}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Billing Cycle</span>
+                    <span className="font-medium text-gray-900 dark:text-white capitalize">{selectedPlan?.interval || 'Monthly'}</span>
                   </div>
-                  <div className="border-t border-gray-200 pt-3 flex justify-between">
-                    <span className="text-lg font-semibold text-gray-900">
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3 flex justify-between">
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
                       Total
                     </span>
-                    <span className="text-lg font-bold text-[#003366]">
+                    <span className="text-lg font-bold text-[#003366] dark:text-blue-400">
                       {formatPrice(selectedPlan?.price)}
                     </span>
                   </div>
@@ -261,21 +261,21 @@ const SubscriptionModal = ({ isOpen, onClose, initialPlan = null }) => {
                 <button
                   onClick={handleBackToPlans}
                   disabled={loading}
-                  className="flex-1 py-3 px-6 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 px-6 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Back to Plans
                 </button>
                 <button
                   onClick={handlePayment}
                   disabled={loading}
-                  className="flex-1 py-3 px-6 bg-[#003366] text-white rounded-lg font-semibold hover:bg-[#002244] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 px-6 bg-[#003366] dark:bg-blue-600 text-white rounded-lg font-semibold hover:bg-[#002244] dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <CreditCard className="h-5 w-5" />
                   {loading ? 'Processing...' : 'Pay Now'}
                 </button>
               </div>
 
-              <p className="text-center text-xs text-gray-500 mt-4">
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
                 By clicking "Pay Now", you agree to our Terms of Service and Privacy Policy
               </p>
             </div>

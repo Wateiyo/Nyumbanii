@@ -42,11 +42,18 @@ import {
   CheckCheck
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
+import {
+  canAddTenant,
+  canEditRent,
+  canManageProperties,
+  canSendMessages
+} from '../utils/formatters';
 
 const PropertyManagerDashboard = () => {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
   const [teamMember, setTeamMember] = useState(null);
+  const [teamPermissions, setTeamPermissions] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [properties, setProperties] = useState([]);
@@ -125,6 +132,27 @@ const PropertyManagerDashboard = () => {
 
     fetchTeamMember();
   }, [currentUser, navigate]);
+
+  // Fetch landlord team permissions
+  useEffect(() => {
+    if (!teamMember?.landlordId) return;
+
+    const landlordSettingsRef = doc(db, 'landlordSettings', teamMember.landlordId);
+    const unsubscribe = onSnapshot(landlordSettingsRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const settings = docSnapshot.data();
+        setTeamPermissions(settings.teamPermissions || {});
+      } else {
+        // Default to no permissions if settings don't exist
+        setTeamPermissions({});
+      }
+    }, (error) => {
+      console.error('Error fetching team permissions:', error);
+      setTeamPermissions({});
+    });
+
+    return () => unsubscribe();
+  }, [teamMember?.landlordId]);
 
   const handleLogout = async () => {
     try {

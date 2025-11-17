@@ -73,8 +73,8 @@ const SubscriptionSettings = () => {
   return (
     <div className="space-y-6">
       {/* Current Subscription Card */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-[#003366] px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-[#003366] dark:bg-blue-900 px-6 py-4">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
             <Crown className="h-6 w-6" />
             Current Subscription
@@ -85,16 +85,16 @@ const SubscriptionSettings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Plan Details */}
             <div>
-              <h4 className="font-semibold text-gray-900 mb-4">Plan Details</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Plan Details</h4>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Plan</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="text-gray-600 dark:text-gray-400">Plan</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
                     {tierDetails.name}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Status</span>
+                  <span className="text-gray-600 dark:text-gray-400">Status</span>
                   <div className="flex items-center gap-2">
                     <statusInfo.icon className={`h-5 w-5 text-${statusInfo.color}-500`} />
                     <span className={`font-semibold text-${statusInfo.color}-600 capitalize`}>
@@ -105,14 +105,14 @@ const SubscriptionSettings = () => {
                 {subscription?.subscriptionEndDate && (
                   <>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Valid Until</span>
-                      <span className="font-medium text-gray-900">
+                      <span className="text-gray-600 dark:text-gray-400">Valid Until</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
                         {subscription.subscriptionEndDate.toDate().toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Days Remaining</span>
-                      <span className={`font-semibold ${daysRemaining < 7 ? 'text-red-600' : 'text-gray-900'}`}>
+                      <span className="text-gray-600 dark:text-gray-400">Days Remaining</span>
+                      <span className={`font-semibold ${daysRemaining < 7 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                         {daysRemaining} days
                       </span>
                     </div>
@@ -123,12 +123,12 @@ const SubscriptionSettings = () => {
 
             {/* Features */}
             <div>
-              <h4 className="font-semibold text-gray-900 mb-4">Features Included</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Features Included</h4>
               <div className="space-y-2">
                 {tierDetails.features.map((feature, index) => (
                   <div key={index} className="flex items-start gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700 text-sm">{feature}</span>
+                    <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -136,10 +136,10 @@ const SubscriptionSettings = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="w-full md:w-auto px-6 py-3 bg-[#003366] text-white rounded-lg font-semibold hover:bg-[#002244] transition-colors"
+              className="w-full md:w-auto px-6 py-3 bg-[#003366] dark:bg-blue-600 text-white rounded-lg font-semibold hover:bg-[#002244] dark:hover:bg-blue-700 transition-colors"
             >
               {subscription && isSubscriptionActive(subscription)
                 ? 'Upgrade Plan'
@@ -151,25 +151,25 @@ const SubscriptionSettings = () => {
 
       {/* Billing Information */}
       {subscription && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
             Billing Information
           </h3>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Current Amount</span>
-              <span className="font-semibold text-gray-900">
+              <span className="text-gray-600 dark:text-gray-400">Current Amount</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
                 {formatPrice(subscription.amount || 0)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Billing Cycle</span>
-              <span className="font-medium text-gray-900">Monthly</span>
+              <span className="text-gray-600 dark:text-gray-400">Billing Cycle</span>
+              <span className="font-medium text-gray-900 dark:text-white">Monthly</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Auto Renewal</span>
-              <span className="font-medium text-gray-900">
+              <span className="text-gray-600 dark:text-gray-400">Auto Renewal</span>
+              <span className="font-medium text-gray-900 dark:text-white">
                 {subscription.autoRenew ? 'Enabled' : 'Disabled'}
               </span>
             </div>
@@ -178,64 +178,64 @@ const SubscriptionSettings = () => {
       )}
 
       {/* Payment History */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Calendar className="h-5 w-5" />
           Payment History
         </h3>
 
         {paymentHistory.length === 0 ? (
-          <p className="text-gray-600 text-center py-8">No payment history yet.</p>
+          <p className="text-gray-600 dark:text-gray-400 text-center py-8">No payment history yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Plan
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Amount
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Reference
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {paymentHistory.map((payment) => (
                   <tr key={payment.id}>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {payment.transactionDate?.toDate
                         ? payment.transactionDate.toDate().toLocaleDateString()
                         : 'N/A'}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white capitalize">
                       {payment.plan || 'N/A'}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
                       {formatPrice(payment.amount || 0)}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 py-1 text-xs font-semibold rounded-full ${
                           payment.status === 'success'
-                            ? 'bg-green-100 text-green-800'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                             : payment.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
                         }`}
                       >
                         {payment.status}
                       </span>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 font-mono">
                       {payment.paystackReference?.substring(0, 20)}...
                     </td>
                   </tr>
