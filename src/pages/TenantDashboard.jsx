@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, deleteDoc, orderBy, getDocs } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'firebase/auth';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser, updateProfile } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -1270,7 +1270,7 @@ const TenantDashboard = () => {
         tenantId: tenantData.id,
         tenantName: tenantData.name,
         propertyId: tenantData.propertyId || '',
-        propertyName: tenantData.propertyName || '',
+        propertyName: tenantData.property || tenantData.propertyName || '',
         unitNumber: tenantData.unit || '',
         landlordId: tenantData.landlordId
       };
@@ -1311,7 +1311,7 @@ const TenantDashboard = () => {
         tenantEmail: tenantData.email,
         tenantPhone: tenantData.phone,
         propertyId: tenantData.propertyId || '',
-        propertyName: tenantData.propertyName || '',
+        propertyName: tenantData.property || tenantData.propertyName || '',
         unitNumber: tenantData.unit || '',
         landlordId: tenantData.landlordId
       };
@@ -1322,7 +1322,7 @@ const TenantDashboard = () => {
       // Also save to maintenanceRequests collection for compatibility
       await addDoc(collection(db, 'maintenanceRequests'), {
         ...maintenanceData,
-        property: tenantData.propertyName || '',
+        property: tenantData.property || tenantData.propertyName || '',
         unit: tenantData.unit || ''
       });
 
@@ -1331,7 +1331,7 @@ const TenantDashboard = () => {
         await addDoc(collection(db, 'notifications'), {
           userId: tenantData.landlordId,
           title: 'New Maintenance Request',
-          message: `${tenantData.name} has submitted a ${newMaintenance.priority} priority maintenance request: ${newMaintenance.issue} at ${tenantData.propertyName} (Unit: ${tenantData.unit})`,
+          message: `${tenantData.name} has submitted a ${newMaintenance.priority} priority maintenance request: ${newMaintenance.issue} at ${tenantData.property || tenantData.propertyName} (Unit: ${tenantData.unit})`,
           type: 'maintenance',
           read: false,
           createdAt: serverTimestamp()
@@ -1359,7 +1359,7 @@ const TenantDashboard = () => {
                 addDoc(collection(db, 'notifications'), {
                   userId: teamMemberData.userId,
                   title: 'New Maintenance Request',
-                  message: `${tenantData.name} has submitted a ${newMaintenance.priority} priority maintenance request: ${newMaintenance.issue} at ${tenantData.propertyName} (Unit: ${tenantData.unit})`,
+                  message: `${tenantData.name} has submitted a ${newMaintenance.priority} priority maintenance request: ${newMaintenance.issue} at ${tenantData.property || tenantData.propertyName} (Unit: ${tenantData.unit})`,
                   type: 'maintenance',
                   read: false,
                   createdAt: serverTimestamp()
@@ -1837,7 +1837,7 @@ const TenantDashboard = () => {
       });
 
       // Update Firebase Auth profile
-      await currentUser.updateProfile({
+      await updateProfile(currentUser, {
         photoURL: photoURL
       });
 
@@ -2205,17 +2205,11 @@ const TenantDashboard = () => {
                     <div className="flex flex-col md:flex-row gap-6 items-start">
                       {/* Property Image */}
                       <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
-                        {tenantData.propertyImage ? (
-                          <img
-                            src={tenantData.propertyImage}
-                            alt={tenantData.propertyName || 'Property'}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                            <Home className="w-20 h-20 text-white opacity-50" />
-                          </div>
-                        )}
+                        <img
+                          src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=500&fit=crop"
+                          alt="Beautiful Home"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
 
                       {/* Tenant Info */}
@@ -2230,7 +2224,7 @@ const TenantDashboard = () => {
                             </div>
                             <div>
                               <p className="text-xs text-blue-200">Property</p>
-                              <p className="font-semibold">{tenantData.propertyName || 'N/A'}</p>
+                              <p className="font-semibold">{tenantData.property || tenantData.propertyName || 'N/A'}</p>
                             </div>
                           </div>
 
@@ -4504,7 +4498,7 @@ yth              <button
                       otherUserId: tenantData.landlordId,
                       otherUserName: 'Landlord',
                       otherUserRole: 'landlord',
-                      propertyName: tenantData.propertyName || '',
+                      propertyName: tenantData.property || tenantData.propertyName || '',
                       unit: tenantData.unit || ''
                     });
                   }}
@@ -4527,7 +4521,7 @@ yth              <button
                       otherUserId: propertyManager.userId,
                       otherUserName: propertyManager.name || 'Property Manager',
                       otherUserRole: 'property_manager',
-                      propertyName: tenantData.propertyName || '',
+                      propertyName: tenantData.property || tenantData.propertyName || '',
                       unit: tenantData.unit || ''
                     });
                   }}
@@ -4550,7 +4544,7 @@ yth              <button
                       otherUserId: maintenanceStaff.userId,
                       otherUserName: maintenanceStaff.name || 'Maintenance Team',
                       otherUserRole: 'maintenance',
-                      propertyName: tenantData.propertyName || '',
+                      propertyName: tenantData.property || tenantData.propertyName || '',
                       unit: tenantData.unit || ''
                     });
                   }}

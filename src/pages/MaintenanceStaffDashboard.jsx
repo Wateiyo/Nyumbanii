@@ -710,7 +710,23 @@ const MaintenanceStaffDashboard = () => {
         ...(status === 'completed' && { completedAt: serverTimestamp() })
       };
 
+      // Update maintenanceRequests collection
       await updateDoc(doc(db, 'maintenanceRequests', id), updateData);
+
+      // Also update maintenance collection for tenant dashboard sync
+      if (request.tenantId) {
+        const maintenanceQuery = query(
+          collection(db, 'maintenance'),
+          where('tenantId', '==', request.tenantId),
+          where('issue', '==', request.issue),
+          where('createdAt', '==', request.createdAt)
+        );
+        const maintenanceSnapshot = await getDocs(maintenanceQuery);
+        const updatePromises = maintenanceSnapshot.docs.map(doc =>
+          updateDoc(doc.ref, updateData)
+        );
+        await Promise.all(updatePromises);
+      }
 
       // Send notification to property manager and landlord
       if (status === 'completed') {
@@ -945,7 +961,7 @@ const MaintenanceStaffDashboard = () => {
     try {
       const requestRef = doc(db, 'maintenanceRequests', selectedRequestForCompletion.id);
 
-      await updateDoc(requestRef, {
+      const updateData = {
         status: 'completed',
         actualCost: parseFloat(completionData.actualCost),
         completionNotes: completionData.completionNotes,
@@ -953,7 +969,25 @@ const MaintenanceStaffDashboard = () => {
         actualCostBreakdown: completionData.actualCostBreakdown,
         completedAt: serverTimestamp(),
         completedBy: currentUser.uid
-      });
+      };
+
+      // Update maintenanceRequests collection
+      await updateDoc(requestRef, updateData);
+
+      // Also update maintenance collection for tenant dashboard sync
+      if (selectedRequestForCompletion.tenantId) {
+        const maintenanceQuery = query(
+          collection(db, 'maintenance'),
+          where('tenantId', '==', selectedRequestForCompletion.tenantId),
+          where('issue', '==', selectedRequestForCompletion.issue),
+          where('createdAt', '==', selectedRequestForCompletion.createdAt)
+        );
+        const maintenanceSnapshot = await getDocs(maintenanceQuery);
+        const updatePromises = maintenanceSnapshot.docs.map(doc =>
+          updateDoc(doc.ref, updateData)
+        );
+        await Promise.all(updatePromises);
+      }
 
       // Create notification for landlord
       await addDoc(collection(db, 'notifications'), {

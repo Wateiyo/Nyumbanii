@@ -32,6 +32,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { updateProfile } from 'firebase/auth';
 import {
   formatCurrency,
   formatDate,
@@ -788,6 +789,13 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
 
         await Promise.all(updatePromises);
         console.log('✅ Marked', notificationsSnapshot.size, 'message notifications as read');
+
+        // Update the conversation's unread status in the local state
+        setConversations(prev => prev.map(conv =>
+          conv.conversationId === selectedConversation.conversationId
+            ? { ...conv, unread: false }
+            : conv
+        ));
       } catch (error) {
         console.error('Error marking conversation notifications as read:', error);
       }
@@ -1006,7 +1014,7 @@ useEffect(() => {
       });
 
       // Update Firebase Auth profile
-      await currentUser.updateProfile({
+      await updateProfile(currentUser, {
         photoURL: photoURL
       });
 
