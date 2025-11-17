@@ -2206,7 +2206,7 @@ const TenantDashboard = () => {
                       {/* Property Image */}
                       <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
                         <img
-                          src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=500&fit=crop"
+                          src="https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?w=500&h=500&fit=crop"
                           alt="Beautiful Home"
                           className="w-full h-full object-cover"
                         />
@@ -2585,7 +2585,7 @@ const TenantDashboard = () => {
                         <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium text-gray-900 dark:text-white">{payment.month}</td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-900 dark:text-white">KES {payment.amount.toLocaleString()}</td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500 dark:text-gray-400">{payment.date || `Due: ${payment.dueDate}`}</td>
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500 dark:text-gray-400">{payment.paidDate || payment.date || (payment.dueDate ? `Due: ${payment.dueDate}` : '-')}</td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500 dark:text-gray-400">{payment.method || '-'}</td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
