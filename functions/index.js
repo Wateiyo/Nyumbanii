@@ -585,6 +585,161 @@ exports.sendViewingConfirmationEmail = onCall(
   }
 );
 
+/**
+ * Send Viewing Notification Email to Landlord
+ * Called when a tenant books a viewing
+ */
+exports.sendViewingNotification = onCall(
+  {
+    region: "us-central1"
+  },
+  async (request) => {
+    try {
+      const {
+        bookingId,
+        propertyName,
+        tenantName,
+        tenantEmail,
+        viewingDate,
+        viewingTime,
+        credibilityScore
+      } = request.data;
+
+      if (!tenantName || !propertyName) {
+        throw new Error('Missing required viewing notification data');
+      }
+
+      logger.info('Sending viewing notification for booking:', bookingId);
+
+      // Get the viewing request to find landlord email
+      const db = admin.firestore();
+      const bookingDoc = await db.collection('viewingRequests').doc(bookingId).get();
+
+      if (!bookingDoc.exists) {
+        throw new Error('Viewing request not found');
+      }
+
+      const bookingData = bookingDoc.data();
+      const landlordId = bookingData.landlordId;
+
+      if (!landlordId) {
+        throw new Error('Landlord ID not found in viewing request');
+      }
+
+      // Get landlord details
+      const landlordDoc = await db.collection('users').doc(landlordId).get();
+
+      if (!landlordDoc.exists) {
+        throw new Error('Landlord not found');
+      }
+
+      const landlordData = landlordDoc.data();
+      const landlordEmail = landlordData.email;
+
+      if (!landlordEmail) {
+        throw new Error('Landlord email not found');
+      }
+
+      // Get property managers assigned to this property
+      const propertyManagerEmails = [];
+      const propertyId = bookingData.propertyId;
+
+      if (propertyId) {
+        const teamMembersSnapshot = await db.collection('teamMembers')
+          .where('landlordId', '==', landlordId)
+          .where('role', '==', 'property_manager')
+          .where('assignedProperties', 'array-contains', propertyId)
+          .get();
+
+        teamMembersSnapshot.forEach(doc => {
+          const member = doc.data();
+          if (member.email) {
+            propertyManagerEmails.push(member.email);
+          }
+        });
+
+        logger.info(`Found ${propertyManagerEmails.length} property managers for property ${propertyId}`);
+      }
+
+      // Combine landlord and property manager emails
+      const recipientEmails = [landlordEmail, ...propertyManagerEmails];
+
+      // Send notification email to landlord and property managers
+      const { data, error } = await resend.emails.send({
+        from: 'Nyumbanii <onboarding@resend.dev>',
+        to: recipientEmails,
+        subject: `New Viewing Request - ${propertyName}`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }
+              .info-box { background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+              .score { font-size: 24px; font-weight: bold; color: #003366; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🏠 New Viewing Request</h1>
+              </div>
+              <div class="content">
+                <p>Dear ${landlordData.displayName || 'Landlord'},</p>
+                <p>You have received a new viewing request for your property:</p>
+
+                <div class="info-box">
+                  <h3 style="margin-top: 0;">Property Details</h3>
+                  <p><strong>Property:</strong> ${propertyName}</p>
+                  <p><strong>Requested Date:</strong> ${viewingDate}</p>
+                  <p><strong>Requested Time:</strong> ${viewingTime}</p>
+                </div>
+
+                <div class="info-box">
+                  <h3 style="margin-top: 0;">Tenant Information</h3>
+                  <p><strong>Name:</strong> ${tenantName}</p>
+                  <p><strong>Email:</strong> ${tenantEmail}</p>
+                  ${credibilityScore ? `<p><strong>Credibility Score:</strong> <span class="score">${credibilityScore}/100</span></p>` : ''}
+                </div>
+
+                <p>Please log in to your Nyumbanii dashboard to review and respond to this viewing request.</p>
+
+                <center>
+                  <a href="https://nyumbanii.web.app/landlord/dashboard"
+                     style="display: inline-block; background-color: #003366; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+                    View Dashboard
+                  </a>
+                </center>
+
+                <p>Best regards,<br>The Nyumbanii Team</p>
+              </div>
+              <div class="footer">
+                <p>© 2025 Nyumbanii Property Management. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      });
+
+      if (error) {
+        logger.error('Error sending viewing notification email:', error);
+        throw new Error(error.message);
+      }
+
+      logger.info(`Viewing notification email sent successfully to ${recipientEmails.length} recipient(s):`, recipientEmails);
+      return { success: true, emailId: data.id, recipients: recipientEmails.length };
+    } catch (error) {
+      logger.error('Error in sendViewingNotification:', error);
+      throw new Error(error.message);
+    }
+  }
+);
+
 // ==========================================
 // SCHEDULED FUNCTIONS (Automated Workflows)
 // ==========================================
