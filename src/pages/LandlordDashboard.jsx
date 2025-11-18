@@ -563,6 +563,30 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     }
   }, [preferences.darkMode]);
 
+  // Check for pending upgrade from registration
+  useEffect(() => {
+    const pendingUpgradeData = sessionStorage.getItem('pendingUpgrade');
+    if (pendingUpgradeData && currentUser) {
+      try {
+        const upgradeData = JSON.parse(pendingUpgradeData);
+        // Check if data is recent (within 30 minutes)
+        if (Date.now() - upgradeData.timestamp < 30 * 60 * 1000) {
+          // Auto-switch to subscription view to show upgrade options
+          setCurrentView('subscription');
+          // Clear the pending upgrade after 5 seconds (user will see subscription page)
+          setTimeout(() => {
+            sessionStorage.removeItem('pendingUpgrade');
+          }, 5000);
+        } else {
+          // Clear stale data
+          sessionStorage.removeItem('pendingUpgrade');
+        }
+      } catch (e) {
+        sessionStorage.removeItem('pendingUpgrade');
+      }
+    }
+  }, [currentUser]);
+
   // Load settings from Firestore on mount
   useEffect(() => {
     const loadSettings = async () => {
