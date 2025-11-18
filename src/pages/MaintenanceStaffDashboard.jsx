@@ -233,6 +233,10 @@ const MaintenanceStaffDashboard = () => {
         ...doc.data()
       }));
 
+      console.log('📊 ALL Maintenance Requests from DB:', requestsData.length);
+      console.log('👤 Team Member ID:', teamMember.id);
+      console.log('🏢 Landlord ID:', teamMember.landlordId);
+
       // Filter to show:
       // 1. Requests assigned to this maintenance staff
       // 2. Unassigned requests (no assignedTo field or null)
@@ -240,16 +244,32 @@ const MaintenanceStaffDashboard = () => {
         request.assignedTo === teamMember.id || !request.assignedTo
       );
 
+      console.log('✅ Filtered Requests (assigned to me or unassigned):', filteredRequests.length);
+
       setMaintenanceRequests(filteredRequests);
 
       // Debug logging
-      console.log('🔧 Maintenance Requests:', filteredRequests.map(r => ({
+      console.log('🔧 Maintenance Requests Details:', filteredRequests.map(r => ({
         id: r.id,
         property: r.property,
         propertyId: r.propertyId,
         status: r.status,
-        assignedTo: r.assignedTo
+        statusLower: r.status?.toLowerCase(),
+        assignedTo: r.assignedTo,
+        landlordId: r.landlordId
       })));
+
+      // Log requests that were filtered out
+      const excludedRequests = requestsData.filter(request =>
+        request.assignedTo !== teamMember.id && request.assignedTo
+      );
+      if (excludedRequests.length > 0) {
+        console.log('❌ Excluded Requests (assigned to others):', excludedRequests.map(r => ({
+          id: r.id,
+          status: r.status,
+          assignedTo: r.assignedTo
+        })));
+      }
     });
 
     return unsubscribe;
@@ -854,7 +874,7 @@ const MaintenanceStaffDashboard = () => {
   };
 
   // COMPLETE WORK HANDLERS
-  const handleOpenCompleteWorkModal = async (request) => {
+  const handleOpenCompleteWorkModal = (request) => {
     setSelectedRequestForCompletion(request);
 
     // Pre-fill with estimated data if available
@@ -865,50 +885,55 @@ const MaintenanceStaffDashboard = () => {
       actualCostBreakdown: request.costBreakdown || [{ item: '', quantity: 1, unitCost: '', total: 0 }]
     });
 
-    // Fetch budget information for this property/landlord
-    try {
-      const monthlyBudget = 50000; // Default budget - should come from landlord settings
-
-      // Get all completed requests for this month for this landlord
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      const completedRequestsQuery = query(
-        collection(db, 'maintenanceRequests'),
-        where('landlordId', '==', request.landlordId),
-        where('status', '==', 'completed')
-      );
-
-      const completedSnapshot = await getDocs(completedRequestsQuery);
-      const completedRequests = completedSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(r => {
-          const completedDate = r.completedAt?.toDate();
-          return completedDate && completedDate >= startOfMonth;
-        });
-
-      const totalSpentThisMonth = completedRequests.reduce((sum, r) => sum + (r.actualCost || 0), 0);
-
-      // Get staff member's total spending this month
-      const staffSpending = completedRequests
-        .filter(r => r.completedBy === currentUser.uid)
-        .reduce((sum, r) => sum + (r.actualCost || 0), 0);
-
-      setBudgetInfo({
-        monthlyBudget,
-        totalSpentThisMonth,
-        staffSpending,
-        remainingBudget: monthlyBudget - totalSpentThisMonth,
-        utilizationPercent: (totalSpentThisMonth / monthlyBudget) * 100,
-        staffUtilizationPercent: (staffSpending / monthlyBudget) * 100,
-        completedCount: completedRequests.length,
-        staffCompletedCount: completedRequests.filter(r => r.completedBy === currentUser.uid).length
-      });
-    } catch (error) {
-      console.error('Error fetching budget info:', error);
-    }
-
+    // Open modal immediately for better UX
     setShowCompleteWorkModal(true);
+
+    // Fetch budget information asynchronously in the background
+    (async () => {
+      try {
+        const monthlyBudget = 50000; // Default budget - should come from landlord settings
+
+        // Get all completed requests for this month for this landlord
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const completedRequestsQuery = query(
+          collection(db, 'maintenanceRequests'),
+          where('landlordId', '==', request.landlordId),
+          where('status', '==', 'completed')
+        );
+
+        const completedSnapshot = await getDocs(completedRequestsQuery);
+        const completedRequests = completedSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(r => {
+            const completedDate = r.completedAt?.toDate();
+            return completedDate && completedDate >= startOfMonth;
+          });
+
+        const totalSpentThisMonth = completedRequests.reduce((sum, r) => sum + (r.actualCost || 0), 0);
+
+        // Get staff member's total spending this month
+        const staffSpending = completedRequests
+          .filter(r => r.completedBy === currentUser.uid)
+          .reduce((sum, r) => sum + (r.actualCost || 0), 0);
+
+        setBudgetInfo({
+          monthlyBudget,
+          totalSpentThisMonth,
+          staffSpending,
+          remainingBudget: monthlyBudget - totalSpentThisMonth,
+          utilizationPercent: (totalSpentThisMonth / monthlyBudget) * 100,
+          staffUtilizationPercent: (staffSpending / monthlyBudget) * 100,
+          completedCount: completedRequests.length,
+          staffCompletedCount: completedRequests.filter(r => r.completedBy === currentUser.uid).length
+        });
+      } catch (error) {
+        console.error('Error fetching budget info:', error);
+        // Set null to indicate budget info couldn't be loaded
+        setBudgetInfo(null);
+      }
+    })();
   };
 
   const handleCloseCompleteWorkModal = () => {
@@ -971,38 +996,47 @@ const MaintenanceStaffDashboard = () => {
         completedBy: currentUser.uid
       };
 
-      // Update maintenanceRequests collection
+      // Update maintenanceRequests collection (primary operation)
       await updateDoc(requestRef, updateData);
 
-      // Also update maintenance collection for tenant dashboard sync
-      if (selectedRequestForCompletion.tenantId) {
-        const maintenanceQuery = query(
-          collection(db, 'maintenance'),
-          where('tenantId', '==', selectedRequestForCompletion.tenantId),
-          where('issue', '==', selectedRequestForCompletion.issue),
-          where('createdAt', '==', selectedRequestForCompletion.createdAt)
-        );
-        const maintenanceSnapshot = await getDocs(maintenanceQuery);
-        const updatePromises = maintenanceSnapshot.docs.map(doc =>
-          updateDoc(doc.ref, updateData)
-        );
-        await Promise.all(updatePromises);
-      }
-
-      // Create notification for landlord
-      await addDoc(collection(db, 'notifications'), {
-        type: 'maintenance_completed',
-        userId: selectedRequestForCompletion.landlordId,
-        title: 'Maintenance Work Completed',
-        message: `Work completed for "${selectedRequestForCompletion.issue}" at ${selectedRequestForCompletion.property}, Unit ${selectedRequestForCompletion.unit}. Final cost: KSH ${parseFloat(completionData.actualCost).toLocaleString()}`,
-        read: false,
-        createdAt: serverTimestamp(),
-        maintenanceRequestId: selectedRequestForCompletion.id
-      });
-
-      // Close the completion modal and show budget summary
+      // Close modal immediately after primary update for better UX
       setShowCompleteWorkModal(false);
       setShowBudgetSummary(true);
+
+      // Perform secondary operations in background (non-blocking)
+      (async () => {
+        try {
+          // Update maintenance collection for tenant dashboard sync
+          if (selectedRequestForCompletion.tenantId) {
+            const maintenanceQuery = query(
+              collection(db, 'maintenance'),
+              where('tenantId', '==', selectedRequestForCompletion.tenantId),
+              where('issue', '==', selectedRequestForCompletion.issue),
+              where('createdAt', '==', selectedRequestForCompletion.createdAt)
+            );
+            const maintenanceSnapshot = await getDocs(maintenanceQuery);
+            const updatePromises = maintenanceSnapshot.docs.map(doc =>
+              updateDoc(doc.ref, updateData)
+            );
+            await Promise.all(updatePromises);
+          }
+
+          // Create notification for landlord
+          await addDoc(collection(db, 'notifications'), {
+            type: 'maintenance_completed',
+            userId: selectedRequestForCompletion.landlordId,
+            title: 'Maintenance Work Completed',
+            message: `Work completed for "${selectedRequestForCompletion.issue}" at ${selectedRequestForCompletion.property}, Unit ${selectedRequestForCompletion.unit}. Final cost: KSH ${parseFloat(completionData.actualCost).toLocaleString()}`,
+            read: false,
+            createdAt: serverTimestamp(),
+            maintenanceRequestId: selectedRequestForCompletion.id
+          });
+        } catch (bgError) {
+          console.error('Error in background operations:', bgError);
+          // Don't show alert since modal is already closed
+        }
+      })();
+
     } catch (error) {
       console.error('Error completing work:', error);
       alert('Error completing work. Please try again.');

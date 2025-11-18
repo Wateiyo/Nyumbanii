@@ -515,27 +515,64 @@ const PropertyManagerDashboard = () => {
     return unsubscribe;
   }, [properties]);
 
-  // Fetch viewing bookings
+  // Fetch viewing bookings from both collections
   useEffect(() => {
     if (!properties.length) return;
 
     const propertyNames = properties.map(p => p.name);
-    const q = query(
+    const propertyIds = properties.map(p => p.id);
+
+    // Query viewings collection (legacy)
+    const viewingsQuery = query(
       collection(db, 'viewings'),
       where('property', 'in', propertyNames.slice(0, 10)),
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Query viewingRequests collection (new format)
+    const viewingRequestsQuery = query(
+      collection(db, 'viewingRequests'),
+      where('propertyId', 'in', propertyIds.slice(0, 10)),
+      orderBy('createdAt', 'desc')
+    );
+
+    // Subscribe to both collections
+    const unsubscribeViewings = onSnapshot(viewingsQuery, (snapshot) => {
       const viewingsData = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        source: 'viewings'
       }));
-      console.log('📅 Fetched viewing bookings:', viewingsData.length, 'for properties:', propertyNames);
-      setViewingBookings(viewingsData);
+
+      // Merge with existing viewingRequests data
+      setViewingBookings(prev => {
+        const requestsOnly = prev.filter(v => v.source === 'viewingRequests');
+        return [...viewingsData, ...requestsOnly];
+      });
     });
 
-    return unsubscribe;
+    const unsubscribeRequests = onSnapshot(viewingRequestsQuery, (snapshot) => {
+      const requestsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        source: 'viewingRequests',
+        // Map propertyName to property for consistency
+        property: doc.data().propertyName || doc.data().property
+      }));
+
+      console.log('📅 Fetched viewing requests:', requestsData.length, 'for properties:', propertyNames);
+
+      // Merge with existing viewings data
+      setViewingBookings(prev => {
+        const viewingsOnly = prev.filter(v => v.source === 'viewings');
+        return [...viewingsOnly, ...requestsData];
+      });
+    });
+
+    return () => {
+      unsubscribeViewings();
+      unsubscribeRequests();
+    };
   }, [properties]);
 
   // Fetch maintenance requests for the landlord
