@@ -160,6 +160,9 @@ const LandlordDashboard = () => {
   // Updates state (for Kenya Power alerts)
   const [updates, setUpdates] = useState([]);
 
+  // Get updateUserProfile from auth context
+  const { updateUserProfile } = useAuth();
+
   // Invitation modal state
   const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [pendingInvitation, setPendingInvitation] = useState(null);
@@ -1062,11 +1065,13 @@ useEffect(() => {
         photoURL: photoURL
       });
 
-      // Reload the current user to get updated photoURL
+      // Reload the current user to get updated photoURL in auth
       await currentUser.reload();
 
+      // Update local userProfile state via AuthContext
+      await updateUserProfile({ photoURL: photoURL });
+
       alert('Profile photo updated successfully!');
-      window.location.reload(); // Refresh to show new photo
     } catch (error) {
       console.error('Error uploading profile photo:', error);
       alert('Failed to upload profile photo. Please try again.');
@@ -2987,7 +2992,23 @@ const handleViewTenantDetails = (tenant) => {
   </div>
 )}
       </div>
-      <div className="w-10 h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+      {/* Profile Photo or Avatar */}
+      {userProfile?.photoURL || currentUser?.photoURL ? (
+        <img
+          src={userProfile?.photoURL || currentUser?.photoURL}
+          alt="Profile"
+          className="w-10 h-10 rounded-full object-cover border-2 border-[#003366] dark:border-blue-500 flex-shrink-0"
+          onError={(e) => {
+            // Fallback to initials if image fails to load
+            e.target.style.display = 'none';
+            e.target.nextElementSibling.style.display = 'flex';
+          }}
+        />
+      ) : null}
+      <div
+        className="w-10 h-10 bg-[#003366] dark:bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
+        style={{ display: (userProfile?.photoURL || currentUser?.photoURL) ? 'none' : 'flex' }}
+      >
         {profileSettings.name.split(' ').map(n => n[0]).join('')}
       </div>
     </div>
