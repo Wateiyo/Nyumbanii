@@ -2330,20 +2330,32 @@ const handleEditProperty = async () => {
           ? tenants
           : tenants.filter(t => t.property === newMemo.targetAudience);
 
-        const notificationPromises = targetTenants.map(tenant =>
-          addDoc(collection(db, 'notifications'), {
-            userId: tenant.userId || tenant.id,
+        console.log('📬 Creating notifications for tenants:', targetTenants.map(t => ({
+          name: t.name,
+          userId: t.userId,
+          docId: t.docId,
+          id: t.id
+        })));
+
+        const notificationPromises = targetTenants.map(tenant => {
+          const userId = tenant.userId || tenant.id;
+          console.log(`📨 Creating notification for ${tenant.name}, userId: ${userId}`);
+
+          return addDoc(collection(db, 'notifications'), {
+            userId: userId,
             type: 'memo',
             title: `New Memo: ${newMemo.title}`,
             message: newMemo.message.substring(0, 100) + (newMemo.message.length > 100 ? '...' : ''),
             priority: newMemo.priority,
             read: false,
+            timestamp: serverTimestamp(), // Change from createdAt to timestamp to match the query
             createdAt: serverTimestamp(),
             landlordId: currentUser.uid
-          })
-        );
+          });
+        });
 
         await Promise.all(notificationPromises);
+        console.log('✅ All notifications created successfully');
 
         setNewMemo({ title: '', message: '', priority: 'normal', targetAudience: 'all' });
         setShowMemoModal(false);

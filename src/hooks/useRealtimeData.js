@@ -246,30 +246,104 @@ export const useViewings = (userId, userRole) => {
     }
 
     const field = userRole === 'landlord' ? 'landlordId' : 'tenantId';
-    const q = query(
-      collection(db, 'viewings'),
-      where(field, '==', userId)
-    );
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const viewingsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setViewings(viewingsData);
-        setLoading(false);
-      },
-      (err) => {
-        console.error('Error fetching viewings:', err);
-        setError(err);
-        setViewings([]);
-        setLoading(false);
-      }
-    );
+    // Subscribe to both viewings and viewingRequests collections for landlords
+    if (userRole === 'landlord') {
+      const viewingsQuery = query(
+        collection(db, 'viewings'),
+        where(field, '==', userId)
+      );
 
-    return () => unsubscribe();
+      const viewingRequestsQuery = query(
+        collection(db, 'viewingRequests'),
+        where(field, '==', userId)
+      );
+
+      // Listen to both collections
+      const unsubscribeViewings = onSnapshot(
+        viewingsQuery,
+        (snapshot) => {
+          const viewingsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            source: 'viewings',
+            ...doc.data()
+          }));
+
+          // Also fetch viewingRequests
+          const unsubscribeViewingRequests = onSnapshot(
+            viewingRequestsQuery,
+            (requestSnapshot) => {
+              const requestsData = requestSnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  source: 'viewingRequests',
+                  // Map viewingRequests fields to viewings format for compatibility
+                  property: data.propertyName || '',
+                  location: data.location || '',
+                  date: data.viewingDate || '',
+                  time: data.viewingTime || '',
+                  tenant: data.tenantInfo?.name || '',
+                  email: data.tenantInfo?.email || '',
+                  phone: data.tenantInfo?.phone || '',
+                  credibilityScore: data.credibilityScore || 0,
+                  ...data
+                };
+              });
+
+              // Merge both arrays
+              const allViewings = [...viewingsData, ...requestsData];
+              console.log('📋 Loaded viewings:', viewingsData.length, 'and requests:', requestsData.length);
+              setViewings(allViewings);
+              setLoading(false);
+            },
+            (err) => {
+              console.error('Error fetching viewing requests:', err);
+              // Still show viewings even if requests fail
+              setViewings(viewingsData);
+              setLoading(false);
+            }
+          );
+
+          return unsubscribeViewingRequests;
+        },
+        (err) => {
+          console.error('Error fetching viewings:', err);
+          setError(err);
+          setViewings([]);
+          setLoading(false);
+        }
+      );
+
+      return () => unsubscribeViewings();
+    } else {
+      // For non-landlords, just use viewings collection
+      const q = query(
+        collection(db, 'viewings'),
+        where(field, '==', userId)
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const viewingsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            source: 'viewings',
+            ...doc.data()
+          }));
+          setViewings(viewingsData);
+          setLoading(false);
+        },
+        (err) => {
+          console.error('Error fetching viewings:', err);
+          setError(err);
+          setViewings([]);
+          setLoading(false);
+        }
+      );
+
+      return () => unsubscribe();
+    }
   }, [userId, userRole]);
 
   return { viewings, loading, error };
