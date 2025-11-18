@@ -28,30 +28,41 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
+  const [pendingPlanUpgrade, setPendingPlanUpgrade] = useState(null);
 
   const handleNavigateHome = () => {
     navigate('/');
   };
 
-  // Validate invitation token or check for pre-payment on component mount
+  // Check for pending plan upgrade and validate invitation
   useEffect(() => {
     const inviteToken = searchParams.get('invite');
     const inviteType = searchParams.get('type');
-    const paymentRef = searchParams.get('ref');
     const selectedPlan = searchParams.get('plan');
-    const prePaymentEmail = searchParams.get('email');
+    const billing = searchParams.get('billing');
+
+    // Check for pending upgrade from landing page
+    const pendingUpgradeData = sessionStorage.getItem('pendingUpgrade');
+    if (pendingUpgradeData) {
+      try {
+        const upgradeData = JSON.parse(pendingUpgradeData);
+        // Check if data is recent (within 30 minutes)
+        if (Date.now() - upgradeData.timestamp < 30 * 60 * 1000) {
+          setPendingPlanUpgrade(upgradeData);
+          setSelectedRole('landlord'); // Plan upgrades are only for landlords
+        } else {
+          // Clear stale data
+          sessionStorage.removeItem('pendingUpgrade');
+        }
+      } catch (e) {
+        sessionStorage.removeItem('pendingUpgrade');
+      }
+    }
 
     if (inviteToken) {
       validateInvitation(inviteToken, inviteType);
-    } else if (paymentRef && selectedPlan) {
-      // User has completed payment on landing page
-      // Pre-fill email if provided
-      if (prePaymentEmail) {
-        setFormData(prev => ({
-          ...prev,
-          email: decodeURIComponent(prePaymentEmail)
-        }));
-      }
+    } else if (selectedPlan && selectedPlan !== 'free-trial') {
+      // If plan is specified in URL but no pendingUpgrade in storage, set landlord role
       setSelectedRole('landlord');
     }
   }, [searchParams]);
@@ -203,62 +214,8 @@ const Register = () => {
         selectedRole
       );
 
-      // If this is a registration with pre-payment, activate the paid subscription
-      const paymentRef = searchParams.get('ref');
-      const selectedPlanId = searchParams.get('plan');
-
-      if (paymentRef && selectedPlanId && selectedRole === 'landlord') {
-        try {
-          // Retrieve payment info from sessionStorage
-          const billingCycle = sessionStorage.getItem('billingCycle') || 'monthly';
-          const paymentEmail = sessionStorage.getItem('paymentEmail');
-
-          // Verify the email matches
-          if (paymentEmail && paymentEmail !== formData.email) {
-            console.warn('Email mismatch between payment and registration');
-          }
-
-          // Import the necessary functions
-          const { doc, setDoc } = await import('firebase/firestore');
-          const { db } = await import('../firebase');
-          const { SUBSCRIPTION_TIERS } = await import('../services/paystackService');
-
-          // Get tier details
-          const tier = Object.values(SUBSCRIPTION_TIERS).find(t => t.id === selectedPlanId);
-
-          if (tier) {
-            const now = new Date();
-            const endDate = new Date();
-            const durationDays = billingCycle === 'annual' ? 365 : 30;
-            endDate.setDate(endDate.getDate() + durationDays);
-
-            // Update landlordSettings with paid subscription (overwrite the trial)
-            await setDoc(doc(db, 'landlordSettings', result.user.uid), {
-              userId: result.user.uid,
-              subscriptionStatus: 'active',
-              subscriptionTier: selectedPlanId,
-              subscriptionStartDate: now,
-              subscriptionEndDate: endDate,
-              propertyLimit: tier.propertyLimit,
-              tenantLimit: tier.tenantLimit || -1,
-              isTrial: false,
-              billingCycle: billingCycle,
-              paymentReference: paymentRef,
-              createdAt: now.toISOString(),
-              updatedAt: now.toISOString()
-            });
-
-            // Clear sessionStorage
-            sessionStorage.removeItem('paymentReference');
-            sessionStorage.removeItem('paymentEmail');
-            sessionStorage.removeItem('selectedPlan');
-            sessionStorage.removeItem('billingCycle');
-          }
-        } catch (paymentErr) {
-          console.error('Error activating paid subscription:', paymentErr);
-          // Continue anyway - user can upgrade later
-        }
-      }
+      // Note: Subscription upgrades are now handled post-registration via the dashboard
+      // pendingUpgrade data in sessionStorage will trigger the subscription modal in dashboard
 
       // If this is a registration with an invitation, update the records
       if (invitationData) {
@@ -312,6 +269,7 @@ const Register = () => {
       }
 
       // Redirect based on role
+      // Keep pendingUpgrade in sessionStorage so dashboard can show upgrade modal
       if (selectedRole === 'landlord') {
         navigate('/landlord/dashboard');
       } else if (selectedRole === 'tenant') {
@@ -385,7 +343,7 @@ const Register = () => {
           <div>
             <div className="text-center mb-8">
               <div className="flex justify-center mb-6">
-                <button 
+                <button
                   onClick={handleNavigateHome}
                   className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-transform hover:scale-105"
                   aria-label="Go to home page"
@@ -395,6 +353,18 @@ const Register = () => {
               </div>
               <h1 className="text-4xl font-bold text-white mb-2">Create Your Account</h1>
               <p className="text-blue-200 text-lg">Join Karibu Nyumbanii today</p>
+
+              {/* Selected Plan Badge */}
+              {pendingPlanUpgrade && (
+                <div className="mt-4 inline-block bg-green-500/20 border border-green-400/50 backdrop-blur-sm rounded-full px-6 py-2">
+                  <p className="text-white text-sm font-semibold">
+                    Selected: {pendingPlanUpgrade.planName} Plan ({pendingPlanUpgrade.billingCycle})
+                  </p>
+                  <p className="text-green-200 text-xs mt-0.5">
+                    You'll be able to upgrade after creating your account
+                  </p>
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="bg-white/15 backdrop-blur-md rounded-3xl shadow-2xl p-8 border border-white/20 max-h-[600px] overflow-y-auto">

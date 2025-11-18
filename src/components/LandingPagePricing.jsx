@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Crown, ArrowRight } from 'lucide-react';
-import { SUBSCRIPTION_TIERS, formatPrice, initializePayment, generateReference } from '../services/paystackService';
+import { SUBSCRIPTION_TIERS, formatPrice } from '../services/paystackService';
 
 const LandingPagePricing = () => {
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState('monthly');
-  const [loading, setLoading] = useState(false);
-  const [processingPlan, setProcessingPlan] = useState(null);
 
   const tiers = Object.values(SUBSCRIPTION_TIERS).filter(tier => tier.id !== 'free');
 
@@ -16,63 +14,26 @@ const LandingPagePricing = () => {
     navigate('/register?plan=free-trial');
   };
 
-  const handleSelectPaidPlan = async (tier) => {
+  const handleSelectPaidPlan = (tier) => {
     // Check if this is a contact pricing plan
     if (tier.contactForPricing || tier.price === null) {
       window.location.href = 'mailto:support@nyumbanii.com?subject=Enterprise Plan Inquiry';
       return;
     }
 
-    setProcessingPlan(tier.id);
-    setLoading(true);
+    // Store selected plan details for post-registration upgrade
+    const displayPrice = billingCycle === 'annual' ? tier.annualPrice : tier.price;
 
-    try {
-      // Get email from user first
-      const email = prompt('Enter your email address to proceed with payment:');
+    sessionStorage.setItem('pendingUpgrade', JSON.stringify({
+      planId: tier.id,
+      planName: tier.name,
+      billingCycle: billingCycle,
+      price: displayPrice,
+      timestamp: Date.now()
+    }));
 
-      if (!email || !email.includes('@')) {
-        alert('Please enter a valid email address');
-        setLoading(false);
-        setProcessingPlan(null);
-        return;
-      }
-
-      const displayPrice = billingCycle === 'annual' ? tier.annualPrice : tier.price;
-      const reference = generateReference('guest', tier.id);
-
-      // Initialize payment
-      await initializePayment({
-        email,
-        amount: displayPrice,
-        reference,
-        metadata: {
-          plan: tier.id,
-          planName: tier.name,
-          interval: billingCycle,
-          email: email,
-          isPreRegistration: true
-        },
-        onSuccess: (transaction) => {
-          // Store payment reference in sessionStorage
-          sessionStorage.setItem('paymentReference', reference);
-          sessionStorage.setItem('paymentEmail', email);
-          sessionStorage.setItem('selectedPlan', tier.id);
-          sessionStorage.setItem('billingCycle', billingCycle);
-
-          // Redirect to registration
-          navigate(`/register?ref=${reference}&plan=${tier.id}&email=${encodeURIComponent(email)}`);
-        },
-        onClose: () => {
-          setLoading(false);
-          setProcessingPlan(null);
-        }
-      });
-    } catch (error) {
-      console.error('Payment error:', error);
-      alert('Failed to initialize payment. Please try again.');
-      setLoading(false);
-      setProcessingPlan(null);
-    }
+    // Redirect to registration
+    navigate(`/register?plan=${tier.id}&billing=${billingCycle}`);
   };
 
   return (
@@ -114,7 +75,6 @@ const LandingPagePricing = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {tiers.map((tier) => {
             const displayPrice = billingCycle === 'annual' ? tier.annualPrice : tier.price;
-            const isProcessing = loading && processingPlan === tier.id;
             const isContactPricing = tier.contactForPricing || displayPrice === null;
 
             return (
@@ -160,16 +120,13 @@ const LandingPagePricing = () => {
 
                   <button
                     onClick={() => handleSelectPaidPlan(tier)}
-                    disabled={loading && !isContactPricing}
                     className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors mb-6 flex items-center justify-center gap-2 ${
                       tier.popular
                         ? 'bg-[#003366] text-white hover:bg-[#002244]'
                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    } ${loading && !isContactPricing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    }`}
                   >
-                    {isProcessing ? (
-                      <>Processing...</>
-                    ) : isContactPricing ? (
+                    {isContactPricing ? (
                       <>
                         Contact Us
                         <ArrowRight className="h-4 w-4" />
