@@ -44,6 +44,7 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
           {tiers.map((tier) => {
             const displayPrice = billingCycle === 'annual' ? tier.annualPrice : tier.price;
             const displayInterval = billingCycle === 'annual' ? '/year' : '/month';
+            const isContactPricing = tier.contactForPricing || displayPrice === null;
 
             return (
             <div
@@ -71,19 +72,27 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
                 </h3>
 
                 <div className="mb-6">
-                  <span className="text-3xl font-bold text-[#003366] dark:text-blue-400">
-                    {formatPrice(displayPrice)}
-                  </span>
-                  <span className="text-gray-600 dark:text-gray-400 ml-2 text-sm">{displayInterval}</span>
-                  {billingCycle === 'annual' && (
-                    <div className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
-                      Save {formatPrice(tier.price * 12 - tier.annualPrice)}/year
+                  {isContactPricing ? (
+                    <div className="text-2xl font-bold text-[#003366] dark:text-blue-400">
+                      Contact for Pricing
                     </div>
+                  ) : (
+                    <>
+                      <span className="text-3xl font-bold text-[#003366] dark:text-blue-400">
+                        {formatPrice(displayPrice)}
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400 ml-2 text-sm">{displayInterval}</span>
+                      {billingCycle === 'annual' && (
+                        <div className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
+                          Save {formatPrice(tier.price * 12 - tier.annualPrice)}/year
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
                 <button
-                  onClick={() => onSelectPlan({ ...tier, interval: billingCycle, price: displayPrice })}
+                  onClick={() => isContactPricing ? window.location.href = 'mailto:support@nyumbanii.com?subject=Enterprise Plan Inquiry' : onSelectPlan({ ...tier, interval: billingCycle, price: displayPrice })}
                   disabled={loading || currentPlan === tier.id}
                   className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors mb-6 ${
                     tier.popular
@@ -99,6 +108,8 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
                     ? 'Processing...'
                     : currentPlan === tier.id
                     ? 'Current Plan'
+                    : isContactPricing
+                    ? 'Contact Us'
                     : 'Get Started'}
                 </button>
 

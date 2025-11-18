@@ -33,14 +33,16 @@ export const SUBSCRIPTION_TIERS = {
     interval: 'monthly',
     features: [
       'Up to 5 Properties',
-      'Unlimited Tenants',
+      'Up to 500 Tenants',
       'Payment Tracking & Reminders',
       'Maintenance Request Management',
-      'Basic Reports',
+      '2 Team Member Accounts',
+      'Basic Reports & Analytics',
       'Email Support'
     ],
     propertyLimit: 5,
-    tenantLimit: -1, // -1 means unlimited
+    tenantLimit: 500,
+    teamMemberLimit: 2,
     popular: false
   },
   PROFESSIONAL: {
@@ -52,16 +54,18 @@ export const SUBSCRIPTION_TIERS = {
     interval: 'monthly',
     features: [
       'Up to 20 Properties',
-      'Unlimited Tenants',
+      'Up to 2,000 Tenants',
       'Advanced Payment Tracking',
-      'Team Management',
-      'Maintenance Request Management',
+      '5 Team Member Accounts',
+      'Maintenance Management',
       'Advanced Analytics & Reports',
-      'Bulk Messaging',
-      'Priority Support'
+      'Bulk SMS & Email Messaging',
+      'Document Management',
+      'Priority Email Support'
     ],
     propertyLimit: 20,
-    tenantLimit: -1,
+    tenantLimit: 2000,
+    teamMemberLimit: 5,
     popular: true
   },
   BUSINESS: {
@@ -73,35 +77,39 @@ export const SUBSCRIPTION_TIERS = {
     interval: 'monthly',
     features: [
       'Up to 50 Properties',
-      'Unlimited Tenants',
+      'Up to 5,000 Tenants',
       'All Professional Features',
-      'Custom Branding',
-      'API Access',
+      '10 Team Member Accounts',
+      'Custom Branding & Logo',
+      'API Access for Integrations',
       'Advanced Team Permissions',
-      'Priority Support',
-      'Custom Reports'
+      'Automated Workflows',
+      'Custom Report Builder',
+      'Priority Phone & Email Support'
     ],
     propertyLimit: 50,
-    tenantLimit: -1,
+    tenantLimit: 5000,
+    teamMemberLimit: 10,
     popular: false
   },
   ENTERPRISE: {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 999900, // KES 9,999/month in kobo
-    annualPrice: 9599040, // KES 95,990.40/year (20% discount) in kobo
+    price: null, // Contact for pricing
+    annualPrice: null, // Contact for pricing
     currency: 'KES',
-    interval: 'monthly',
+    interval: 'custom',
+    contactForPricing: true,
     features: [
       'Unlimited Properties',
       'Unlimited Tenants',
       'All Business Features',
-      'White Label Solution',
-      'Full API Access',
-      'Dedicated Account Manager',
-      '24/7 Priority Support',
-      'Custom Integrations',
-      'SLA Guarantee'
+      'Custom Solutions & Integrations',
+      'Dedicated Support',
+      'Priority Email & Phone Support',
+      'Advanced Analytics & Reporting',
+      'Custom Training & Onboarding',
+      'Flexible Contract Terms'
     ],
     propertyLimit: -1,
     tenantLimit: -1,
