@@ -1836,6 +1836,9 @@ const TenantDashboard = () => {
         photoURL: photoURL
       });
 
+      // Reload the current user to get updated photoURL
+      await currentUser.reload();
+
       alert('Profile photo updated successfully!');
       window.location.reload(); // Refresh to show new photo
     } catch (error) {

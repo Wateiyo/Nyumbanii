@@ -1038,6 +1038,9 @@ useEffect(() => {
         photoURL: photoURL
       });
 
+      // Reload the current user to get updated photoURL
+      await currentUser.reload();
+
       alert('Profile photo updated successfully!');
       window.location.reload(); // Refresh to show new photo
     } catch (error) {
@@ -1345,6 +1348,7 @@ const handleEditProperty = async () => {
     try {
       await addDoc(collection(db, 'payments'), {
         tenant: newPayment.tenant,
+        tenantId: newPayment.tenantId || null,
         property: newPayment.property,
         unit: newPayment.unit,
         amount: parseInt(newPayment.amount),
@@ -1357,7 +1361,7 @@ const handleEditProperty = async () => {
         createdAt: serverTimestamp()
       });
 
-      setNewPayment({ tenant: '', property: '', unit: '', amount: '', dueDate: '', method: '', referenceNumber: '' });
+      setNewPayment({ tenant: '', tenantId: '', property: '', unit: '', amount: '', dueDate: '', method: '', referenceNumber: '' });
       setShowPaymentModal(false);
       alert('Payment record added successfully!');
     } catch (error) {
@@ -2513,12 +2517,18 @@ const handleAssignToProperty = async (memberId, propertyId) => {
   try {
     const memberRef = doc(db, 'teamMembers', memberId);
     const member = teamMembers.find(m => m.id === memberId);
-    
+
     const updatedProperties = member.assignedProperties.includes(propertyId)
       ? member.assignedProperties.filter(id => id !== propertyId)
       : [...member.assignedProperties, propertyId];
-    
+
     await updateDoc(memberRef, {
+      assignedProperties: updatedProperties
+    });
+
+    // Update the selectedTeamMember state to reflect changes immediately
+    setSelectedTeamMember({
+      ...selectedTeamMember,
       assignedProperties: updatedProperties
     });
   } catch (error) {
@@ -7825,6 +7835,7 @@ const handleViewTenantDetails = (tenant) => {
                     setNewPayment({
                       ...newPayment,
                       tenant: e.target.value,
+                      tenantId: selectedTenant?.id || '',
                       property: selectedTenant?.property || '',
                       unit: selectedTenant?.unit || '',
                       amount: selectedTenant?.rent || ''
