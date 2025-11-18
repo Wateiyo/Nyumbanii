@@ -4327,7 +4327,8 @@ const TenantDashboard = () => {
                           ...bookingData,
                           name: profileSettings.name,
                           email: profileSettings.email,
-                          phone: profileSettings.phone
+                          phone: profileSettings.phone,
+                          emailVerified: currentUser?.emailVerified || false
                         });
                       }}
                       className="flex items-center gap-2 px-4 py-2 bg-[#003366] dark:bg-blue-600 text-white rounded-lg hover:bg-[#002244] dark:hover:bg-blue-700 transition"
@@ -4439,7 +4440,7 @@ const TenantDashboard = () => {
             </div>
 
             <div className="sticky bottom-0 bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 rounded-b-xl">
-yth              <button
+              <button
                 onClick={() => {
                   setShowBookingModal(false);
                   setSelectedListing(null);

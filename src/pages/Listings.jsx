@@ -318,12 +318,27 @@ const Listings = () => {
             <div className="flex items-center gap-4">
               {currentUser ? (
                 <>
-                  <div className="flex items-center gap-2 text-gray-700">
+                  <button
+                    onClick={() => {
+                      // Navigate to appropriate dashboard based on user role
+                      const role = userData?.role || 'tenant';
+                      if (role === 'landlord') {
+                        navigate('/landlord-dashboard');
+                      } else if (role === 'property_manager') {
+                        navigate('/property-manager-dashboard');
+                      } else if (role === 'maintenance') {
+                        navigate('/maintenance-dashboard');
+                      } else {
+                        navigate('/tenant-dashboard');
+                      }
+                    }}
+                    className="flex items-center gap-2 text-gray-700 hover:text-[#003366] transition-colors"
+                  >
                     <User className="w-5 h-5 text-[#003366]" />
                     <span className="font-medium">
                       {userData?.fullName || userData?.name || currentUser.email}
                     </span>
-                  </div>
+                  </button>
                   <button
                     onClick={async () => {
                       try {
