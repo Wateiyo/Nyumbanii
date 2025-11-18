@@ -1565,7 +1565,7 @@ const TenantDashboard = () => {
         description: newMaintenance.description,
         priority: newMaintenance.priority,
         location: newMaintenance.location || 'Not specified',
-        status: 'Pending',
+        status: 'pending',
         date: new Date().toISOString().split('T')[0],
         createdAt: serverTimestamp(),
         tenantId: tenantData.id,
@@ -1980,8 +1980,8 @@ const TenantDashboard = () => {
 
     setUploadingPhoto(true);
     try {
-      // Upload to Firebase Storage
-      const fileRef = ref(storage, `profile-photos/${tenantData.id}/${Date.now()}_${file.name}`);
+      // Upload to Firebase Storage using authenticated user's UID
+      const fileRef = ref(storage, `profilePhotos/${currentUser.uid}/${Date.now()}_${file.name}`);
       await uploadBytes(fileRef, file);
       const downloadURL = await getDownloadURL(fileRef);
 
