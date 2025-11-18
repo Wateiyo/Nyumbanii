@@ -2313,6 +2313,7 @@ const handleEditProperty = async () => {
         await addDoc(collection(db, 'memos'), {
           title: newMemo.title,
           message: newMemo.message,
+          content: newMemo.message, // Add content field for consistency
           priority: newMemo.priority,
           targetAudience: newMemo.targetAudience,
           recipientType: recipientType, // Add this for the query
@@ -2324,9 +2325,29 @@ const handleEditProperty = async () => {
           createdAt: serverTimestamp()
         });
 
+        // Create notifications for all tenants who should receive this memo
+        const targetTenants = isAllTenants
+          ? tenants
+          : tenants.filter(t => t.property === newMemo.targetAudience);
+
+        const notificationPromises = targetTenants.map(tenant =>
+          addDoc(collection(db, 'notifications'), {
+            userId: tenant.userId || tenant.id,
+            type: 'memo',
+            title: `New Memo: ${newMemo.title}`,
+            message: newMemo.message.substring(0, 100) + (newMemo.message.length > 100 ? '...' : ''),
+            priority: newMemo.priority,
+            read: false,
+            createdAt: serverTimestamp(),
+            landlordId: currentUser.uid
+          })
+        );
+
+        await Promise.all(notificationPromises);
+
         setNewMemo({ title: '', message: '', priority: 'normal', targetAudience: 'all' });
         setShowMemoModal(false);
-        alert('Memo sent successfully to all recipients!');
+        alert(`Memo sent successfully to ${targetTenants.length} tenant(s)!`);
       } catch (error) {
         console.error('Error sending memo:', error);
         alert('Error sending memo. Please try again.');

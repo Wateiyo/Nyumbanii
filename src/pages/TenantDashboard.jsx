@@ -192,6 +192,10 @@ const TenantDashboard = () => {
 
   const [notifications, setNotifications] = useState([]);
 
+  // Context menu states for memos and updates
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, itemId: null, itemType: null });
+  const [longPressTimerMemo, setLongPressTimerMemo] = useState(null);
+
   const [newPayment, setNewPayment] = useState({
     amount: '35000',
     method: 'M-Pesa',
@@ -1156,12 +1160,16 @@ const TenantDashboard = () => {
     setIsSubmittingBooking(true);
 
     try {
-      // Save to Firestore
+      // Save to Firestore with proper null checks
+      const propertyName = selectedListing?.property || selectedListing?.name || 'Property';
+      const unitInfo = selectedListing?.unit ? ` - ${selectedListing.unit}` : '';
+      const fullPropertyName = `${propertyName}${unitInfo}`;
+
       const bookingRef = await addDoc(collection(db, 'viewingRequests'), {
-        propertyId: selectedListing.id,
-        propertyName: selectedListing.name,
-        location: selectedListing.location,
-        rent: selectedListing.rent,
+        propertyId: selectedListing?.id || '',
+        propertyName: fullPropertyName,
+        location: selectedListing?.location || selectedListing?.address || propertyName,
+        rent: selectedListing?.rent || 0,
         viewingDate: bookingData.date,
         viewingTime: bookingData.time,
         tenantInfo: {
@@ -1171,18 +1179,18 @@ const TenantDashboard = () => {
           emailVerified: bookingData.emailVerified
         },
         employmentInfo: {
-          status: bookingData.employmentStatus,
-          employerName: bookingData.employerName,
-          employerPhone: bookingData.employerPhone,
-          occupation: bookingData.occupation,
-          monthlyIncome: bookingData.monthlyIncome
+          status: bookingData.employmentStatus || '',
+          employerName: bookingData.employerName || '',
+          employerPhone: bookingData.employerPhone || '',
+          occupation: bookingData.occupation || '',
+          monthlyIncome: bookingData.monthlyIncome || ''
         },
         additionalInfo: {
-          motivation: bookingData.motivation,
-          moveInDate: bookingData.moveInDate,
-          currentResidence: bookingData.currentResidence,
-          references: bookingData.references,
-          message: bookingData.message
+          motivation: bookingData.motivation || '',
+          moveInDate: bookingData.moveInDate || '',
+          currentResidence: bookingData.currentResidence || '',
+          references: bookingData.references || '',
+          message: bookingData.message || ''
         },
         credibilityScore: credibilityScore,
         status: 'pending',
@@ -1195,7 +1203,7 @@ const TenantDashboard = () => {
         const sendNotification = httpsCallable(functions, 'sendViewingNotification');
         await sendNotification({
           bookingId: bookingRef.id,
-          propertyName: selectedListing.name,
+          propertyName: fullPropertyName,
           tenantName: bookingData.name,
           tenantEmail: bookingData.email,
           viewingDate: bookingData.date,
@@ -1446,6 +1454,84 @@ const TenantDashboard = () => {
       alert('Failed to delete payment. Please try again.');
     }
   };
+
+  // Context menu handlers for memos and updates
+  const handleMemoUpdateContextMenu = (e, itemId, itemType) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      itemId,
+      itemType
+    });
+  };
+
+  const handleMemoUpdateLongPressStart = (itemId, itemType) => {
+    const timer = setTimeout(() => {
+      setContextMenu({
+        visible: true,
+        x: window.innerWidth / 2 - 50,
+        y: window.innerHeight / 2,
+        itemId,
+        itemType
+      });
+    }, 500); // 500ms long press
+    setLongPressTimerMemo(timer);
+  };
+
+  const handleMemoUpdateLongPressEnd = () => {
+    if (longPressTimerMemo) {
+      clearTimeout(longPressTimerMemo);
+      setLongPressTimerMemo(null);
+    }
+  };
+
+  const handleDeleteMemo = async (memoId) => {
+    if (!window.confirm('Are you sure you want to delete this memo?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'memos', memoId));
+      setContextMenu({ visible: false, x: 0, y: 0, itemId: null, itemType: null });
+      alert('Memo deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting memo:', error);
+      alert('Failed to delete memo. Please try again.');
+    }
+  };
+
+  const handleDeleteUpdate = async (updateId) => {
+    if (!window.confirm('Are you sure you want to delete this update?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'updates', updateId));
+      setContextMenu({ visible: false, x: 0, y: 0, itemId: null, itemType: null });
+      alert('Update deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting update:', error);
+      alert('Failed to delete update. Please try again.');
+    }
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu({ visible: false, x: 0, y: 0, itemId: null, itemType: null });
+  };
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        closeContextMenu();
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [contextMenu.visible]);
 
   const handleAddMaintenanceRequest = async () => {
     if (!newMaintenance.issue || !newMaintenance.description) {
@@ -3402,13 +3488,17 @@ const TenantDashboard = () => {
                         return (
                           <div
                             key={update.id}
-                            className={`border rounded-lg p-4 hover:shadow-md transition ${
+                            className={`border rounded-lg p-4 hover:shadow-md transition cursor-pointer ${
                               isPowerInterruption
                                 ? 'border-yellow-400 dark:border-yellow-600 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 shadow-sm'
                                 : isSystemAlert
                                 ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20'
                                 : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                             }`}
+                            onContextMenu={(e) => handleMemoUpdateContextMenu(e, update.id, 'update')}
+                            onTouchStart={() => handleMemoUpdateLongPressStart(update.id, 'update')}
+                            onTouchEnd={handleMemoUpdateLongPressEnd}
+                            onMouseLeave={handleMemoUpdateLongPressEnd}
                           >
                             <div className="flex items-start gap-3">
                               {/* Icon Badge */}
@@ -3511,13 +3601,17 @@ const TenantDashboard = () => {
                       {memos.map((memo) => (
                         <div
                           key={memo.id}
-                          className={`border rounded-lg p-4 hover:shadow-md transition ${
+                          className={`border rounded-lg p-4 hover:shadow-md transition cursor-pointer ${
                             memo.priority === 'high'
                               ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
                               : memo.priority === 'medium'
                               ? 'border-yellow-300 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20'
                               : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                           }`}
+                          onContextMenu={(e) => handleMemoUpdateContextMenu(e, memo.id, 'memo')}
+                          onTouchStart={() => handleMemoUpdateLongPressStart(memo.id, 'memo')}
+                          onTouchEnd={handleMemoUpdateLongPressEnd}
+                          onMouseLeave={handleMemoUpdateLongPressEnd}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
@@ -4461,7 +4555,9 @@ const TenantDashboard = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4 flex justify-between items-center z-10">
-              <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">{selectedListing.name}</h3>
+              <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">
+                {selectedListing.property}{selectedListing.unit && ` - ${selectedListing.unit}`}
+              </h3>
               <button onClick={() => setSelectedListing(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <X className="w-5 h-5 lg:w-6 lg:h-6" />
               </button>
@@ -4471,7 +4567,7 @@ const TenantDashboard = () => {
               <div className="relative mb-6">
                 <img 
                   src={selectedListing.images[currentImageIndex]} 
-                  alt={selectedListing.name}
+                  alt={selectedListing.property || 'Property'}
                   className="w-full h-64 lg:h-96 object-cover rounded-lg"
                 />
                 {selectedListing.images.length > 1 && (
@@ -4570,7 +4666,10 @@ const TenantDashboard = () => {
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Book a Viewing</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedListing.name} - {selectedListing.location}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {selectedListing.property}{selectedListing.unit && ` - ${selectedListing.unit}`}
+                    {selectedListing.location && ` • ${selectedListing.location}`}
+                  </p>
                 </div>
                 <button
                   onClick={() => {
@@ -4774,6 +4873,32 @@ const TenantDashboard = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Context Menu for Memos and Updates */}
+      {contextMenu.visible && (
+        <div
+          className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-2 z-50"
+          style={{
+            left: `${contextMenu.x}px`,
+            top: `${contextMenu.y}px`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              if (contextMenu.itemType === 'memo') {
+                handleDeleteMemo(contextMenu.itemId);
+              } else if (contextMenu.itemType === 'update') {
+                handleDeleteUpdate(contextMenu.itemId);
+              }
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete {contextMenu.itemType === 'memo' ? 'Memo' : 'Update'}
+          </button>
         </div>
       )}
 
