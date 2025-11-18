@@ -1150,11 +1150,6 @@ const TenantDashboard = () => {
       return;
     }
 
-    if (!bookingData.emailVerified) {
-      alert('Please verify your email before submitting the booking request');
-      return;
-    }
-
     const credibilityScore = calculateCredibilityScore();
 
     setIsSubmittingBooking(true);
