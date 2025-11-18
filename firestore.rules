@@ -13,9 +13,12 @@ service cloud.firestore {
       allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Landlord Settings collection - only accessible by the landlord themselves
+    // Landlord Settings collection
     match /landlordSettings/{userId} {
+      // Landlord can read and write their own settings
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      // Tenants can read their landlord's settings for permission enforcement
+      allow read: if isAuthenticated() && exists(/databases/$(database)/documents/tenants/$(request.auth.uid)) && get(/databases/$(database)/documents/tenants/$(request.auth.uid)).data.landlordId == userId;
     }
     
     // Properties collection
@@ -67,6 +70,14 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if true; // Allow public users to book viewings from Listings page
       allow update: if isAuthenticated(); // Allow any authenticated user to update status
+      allow delete: if isAuthenticated();
+    }
+
+    // Viewing Requests collection
+    match /viewingRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // Allow authenticated users to create viewing requests
+      allow update: if isAuthenticated();
       allow delete: if isAuthenticated();
     }
     
