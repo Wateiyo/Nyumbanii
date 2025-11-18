@@ -17,6 +17,12 @@ const LandingPagePricing = () => {
   };
 
   const handleSelectPaidPlan = async (tier) => {
+    // Check if this is a contact pricing plan
+    if (tier.contactForPricing || tier.price === null) {
+      window.location.href = 'mailto:support@nyumbanii.com?subject=Enterprise Plan Inquiry';
+      return;
+    }
+
     setProcessingPlan(tier.id);
     setLoading(true);
 
@@ -109,6 +115,7 @@ const LandingPagePricing = () => {
           {tiers.map((tier) => {
             const displayPrice = billingCycle === 'annual' ? tier.annualPrice : tier.price;
             const isProcessing = loading && processingPlan === tier.id;
+            const isContactPricing = tier.contactForPricing || displayPrice === null;
 
             return (
               <div
@@ -130,30 +137,43 @@ const LandingPagePricing = () => {
                   </h3>
 
                   <div className="mb-6">
-                    <span className="text-4xl font-bold text-[#003366]">
-                      {formatPrice(displayPrice)}
-                    </span>
-                    <span className="text-gray-600 ml-2">
-                      /{billingCycle === 'annual' ? 'year' : 'month'}
-                    </span>
-                    {billingCycle === 'annual' && (
-                      <div className="text-sm text-green-600 font-medium mt-2">
-                        Save {formatPrice(tier.price * 12 - tier.annualPrice)}/year
+                    {isContactPricing ? (
+                      <div className="text-2xl font-bold text-[#003366] py-3">
+                        Contact for Pricing
                       </div>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold text-[#003366]">
+                          {formatPrice(displayPrice)}
+                        </span>
+                        <span className="text-gray-600 ml-2">
+                          /{billingCycle === 'annual' ? 'year' : 'month'}
+                        </span>
+                        {billingCycle === 'annual' && (
+                          <div className="text-sm text-green-600 font-medium mt-2">
+                            Save {formatPrice(tier.price * 12 - tier.annualPrice)}/year
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
                   <button
                     onClick={() => handleSelectPaidPlan(tier)}
-                    disabled={loading}
+                    disabled={loading && !isContactPricing}
                     className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors mb-6 flex items-center justify-center gap-2 ${
                       tier.popular
                         ? 'bg-[#003366] text-white hover:bg-[#002244]'
                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${loading && !isContactPricing ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {isProcessing ? (
                       <>Processing...</>
+                    ) : isContactPricing ? (
+                      <>
+                        Contact Us
+                        <ArrowRight className="h-4 w-4" />
+                      </>
                     ) : (
                       <>
                         Get Started
