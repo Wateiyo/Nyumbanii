@@ -1165,11 +1165,23 @@ const TenantDashboard = () => {
       const unitInfo = selectedListing?.unit ? ` - ${selectedListing.unit}` : '';
       const fullPropertyName = `${propertyName}${unitInfo}`;
 
+      // Ensure we have landlordId from listing or tenant data
+      const landlordId = selectedListing?.landlordId || tenantData?.landlordId || '';
+
+      console.log('📝 Creating viewing request with landlordId:', landlordId);
+      console.log('Selected listing:', selectedListing);
+      console.log('Tenant data:', tenantData);
+
+      if (!landlordId) {
+        throw new Error('Landlord ID not found. Please try again or contact support.');
+      }
+
       const bookingRef = await addDoc(collection(db, 'viewingRequests'), {
         propertyId: selectedListing?.id || '',
         propertyName: fullPropertyName,
         location: selectedListing?.location || selectedListing?.address || propertyName,
         rent: selectedListing?.rent || 0,
+        landlordId: landlordId, // Add landlordId for landlord to fetch their viewing requests
         viewingDate: bookingData.date,
         viewingTime: bookingData.time,
         tenantInfo: {
@@ -1197,6 +1209,8 @@ const TenantDashboard = () => {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+
+      console.log('✅ Viewing request created successfully:', bookingRef.id);
 
       // Send notification email to landlord
       try {
