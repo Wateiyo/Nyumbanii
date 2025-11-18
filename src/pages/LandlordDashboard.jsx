@@ -771,6 +771,7 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     // Mark all message notifications for this conversation as read
     const markConversationNotificationsRead = async () => {
       try {
+        // Mark notifications as read
         const notificationsQuery = query(
           collection(db, 'notifications'),
           where('userId', '==', currentUser.uid),
@@ -780,15 +781,34 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
         );
 
         const notificationsSnapshot = await getDocs(notificationsQuery);
-        const updatePromises = notificationsSnapshot.docs.map(doc =>
+        const notificationUpdatePromises = notificationsSnapshot.docs.map(doc =>
           updateDoc(doc.ref, {
             read: true,
             readAt: serverTimestamp()
           })
         );
 
-        await Promise.all(updatePromises);
+        await Promise.all(notificationUpdatePromises);
         console.log('✅ Marked', notificationsSnapshot.size, 'message notifications as read');
+
+        // Also mark the actual messages as read
+        const messagesQuery = query(
+          collection(db, 'messages'),
+          where('conversationId', '==', selectedConversation.conversationId),
+          where('recipientId', '==', currentUser.uid),
+          where('read', '==', false)
+        );
+
+        const messagesSnapshot = await getDocs(messagesQuery);
+        const messageUpdatePromises = messagesSnapshot.docs.map(doc =>
+          updateDoc(doc.ref, {
+            read: true,
+            readAt: serverTimestamp()
+          })
+        );
+
+        await Promise.all(messageUpdatePromises);
+        console.log('✅ Marked', messagesSnapshot.size, 'messages as read');
 
         // Update the conversation's unread status in the local state
         setConversations(prev => prev.map(conv =>
