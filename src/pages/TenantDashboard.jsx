@@ -148,7 +148,8 @@ const TenantDashboard = () => {
     name: profileSettings.name,
     email: profileSettings.email,
     phone: profileSettings.phone,
-    message: ''
+    message: '',
+    emailVerified: false
   });
 
   const [verificationCodes, setVerificationCodes] = useState({
