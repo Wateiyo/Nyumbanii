@@ -2452,7 +2452,7 @@ const TenantDashboard = () => {
                   <div className="flex flex-col items-center text-center gap-4 lg:flex-row lg:items-start lg:text-left">
                     <Bell className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-1" />
                     <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-2">Tenant Profile Not Found</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Tenant Profile Not Found</h3>
                       <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
                         We couldn't find your tenant profile. This usually happens if:
                       </p>
@@ -2732,7 +2732,7 @@ const TenantDashboard = () => {
 
               {/* Quick Actions */}
               <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-3 lg:mb-4 text-sm lg:text-base">Quick Actions</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 lg:mb-4 text-sm lg:text-base">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-2 lg:gap-3">
                   {canUseSelfService() ? (
                     <button
@@ -2797,7 +2797,7 @@ const TenantDashboard = () => {
                       <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div>
                           <p className="font-medium text-sm lg:text-base text-gray-900 dark:text-white">{payment.month}</p>
-                          <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{payment.date || `Due: ${payment.dueDate}`}</p>
+                          <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">{payment.date || `Due: ${payment.dueDate}`}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-sm lg:text-base text-gray-900 dark:text-white">KES {payment.amount.toLocaleString()}</p>
@@ -2827,7 +2827,7 @@ const TenantDashboard = () => {
                             {request.status}
                           </span>
                         </div>
-                        <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{request.date}</p>
+                        <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">{request.date}</p>
                       </div>
                     ))}
                   </div>
@@ -2854,7 +2854,7 @@ const TenantDashboard = () => {
                   {/* Blue Banner */}
                   <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Payment History</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Payment History</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-300">Track your rent payments and receipts</p>
                     </div>
                     <button
@@ -3026,7 +3026,7 @@ const TenantDashboard = () => {
               {documents.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                   <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-white mb-2">No Documents Yet</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Documents Yet</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">Upload your first document to get started</p>
                   <button
                     onClick={() => setShowDocumentUploadModal(true)}
@@ -3711,7 +3711,7 @@ const TenantDashboard = () => {
         {/* Blue Banner */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white mb-1">Account Settings</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Account Settings</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Manage your profile, security, and preferences</p>
           </div>
           <button
@@ -3857,8 +3857,8 @@ const TenantDashboard = () => {
             {/* Password */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white">Password</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Last changed 3 months ago</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Password</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Last changed 3 months ago</p>
               </div>
               <button
                 onClick={() => setShowPasswordModal(true)}
@@ -3871,8 +3871,8 @@ const TenantDashboard = () => {
             {/* Two-Factor Authentication */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Two-Factor Authentication</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {twoFactorEnabled ? 'Two-factor authentication is active' : 'Add an extra layer of security to your account'}
                 </p>
               </div>
@@ -3899,8 +3899,8 @@ const TenantDashboard = () => {
           <div className="p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white">Email Notifications</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Receive updates via email</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Email Notifications</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Receive updates via email</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -3918,8 +3918,8 @@ const TenantDashboard = () => {
 
             <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white dark:text-white">Push Notifications</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Receive browser push notifications</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Push Notifications</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Receive browser push notifications</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
