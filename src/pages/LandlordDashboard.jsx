@@ -204,7 +204,8 @@ const LandlordDashboard = () => {
     units: '',
     occupied: '',
     revenue: '',
-    images: []
+    images: [],
+    whatsappGroupLink: ''
   });
   
   const [newTenant, setNewTenant] = useState({
@@ -1101,11 +1102,12 @@ useEffect(() => {
           occupied: parseInt(newProperty.occupied) || 0,
           revenue: parseInt(newProperty.revenue) || 0,
           images: newProperty.images || [],
+          whatsappGroupLink: newProperty.whatsappGroupLink || '',
           landlordId: currentUser.uid,
           createdAt: serverTimestamp()
         });
 
-        setNewProperty({ name: '', location: '', units: '', occupied: '', revenue: '', images: [] });
+        setNewProperty({ name: '', location: '', units: '', occupied: '', revenue: '', images: [], whatsappGroupLink: '' });
         setShowPropertyModal(false);
         alert('Property added successfully!');
       } catch (error) {
@@ -1140,7 +1142,8 @@ const handleEditProperty = async () => {
         units: parseInt(editingProperty.units),
         occupied: parseInt(editingProperty.occupied) || 0,
         revenue: parseInt(editingProperty.revenue) || 0,
-        images: editingProperty.images || []
+        images: editingProperty.images || [],
+        whatsappGroupLink: editingProperty.whatsappGroupLink || ''
       });
       
       setEditingProperty(null);
@@ -7075,6 +7078,17 @@ const handleViewTenantDetails = (tenant) => {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">WhatsApp Group Link</label>
+                <input
+                  type="url"
+                  value={newProperty.whatsappGroupLink}
+                  onChange={(e) => setNewProperty({...newProperty, whatsappGroupLink: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+                  placeholder="https://chat.whatsapp.com/..."
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional: Share with tenants to join estate group</p>
+              </div>
+              <div>
   <label className="block text-sm font-medium text-gray-700 mb-2">Property Images</label>
     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#003366] transition">
        <input
@@ -7200,6 +7214,17 @@ const handleViewTenantDetails = (tenant) => {
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
             placeholder="240000"
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">WhatsApp Group Link</label>
+          <input
+            type="url"
+            value={editingProperty.whatsappGroupLink || ''}
+            onChange={(e) => setEditingProperty({...editingProperty, whatsappGroupLink: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
+            placeholder="https://chat.whatsapp.com/..."
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional: Share with tenants to join estate group</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Property Images</label>
