@@ -1216,6 +1216,7 @@ exports.helloWorld = onRequest(
 /**
  * Scrape Kenya Power website for planned power interruptions
  * Runs every 6 hours to check for new interruptions
+ * Uses multiple fallback URLs for reliability
  */
 exports.scrapeKenyaPowerInterruptions = onSchedule(
   {
@@ -1229,15 +1230,48 @@ exports.scrapeKenyaPowerInterruptions = onSchedule(
       logger.info("🔌 Starting Kenya Power interruption scrape...");
 
       const db = admin.firestore();
-      const KENYA_POWER_URL = "https://www.kplc.co.ke/customer-support#powerschedule";
 
-      // Fetch the Kenya Power page
-      const response = await axios.get(KENYA_POWER_URL, {
-        timeout: 30000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      // Multiple fallback URLs - try in order until one works
+      const KPLC_URLS = [
+        "https://www.kplc.co.ke/customer-support#powerschedule",
+        "https://kplc.co.ke/category/view/50/planned-power-interruptions",
+        "https://www.kplc.co.ke/content/item/4100/interruptions",
+        "https://kplc.co.ke/interruptions",
+        "https://www.kplc.co.ke/customer-support"
+      ];
+
+      let response = null;
+      let successfulUrl = null;
+
+      // Try each URL until one works
+      for (const url of KPLC_URLS) {
+        try {
+          logger.info(`🔗 Trying URL: ${url}`);
+          response = await axios.get(url, {
+            timeout: 30000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.5',
+              'Connection': 'keep-alive'
+            },
+            maxRedirects: 5
+          });
+
+          if (response.status === 200 && response.data) {
+            successfulUrl = url;
+            logger.info(`✅ Successfully fetched from: ${url}`);
+            break;
+          }
+        } catch (urlError) {
+          logger.warn(`❌ Failed to fetch ${url}: ${urlError.message}`);
+          continue;
         }
-      });
+      }
+
+      if (!response || !successfulUrl) {
+        throw new Error('All KPLC URLs failed. Website may be down or URLs have changed.');
+      }
 
       const $ = cheerio.load(response.data);
       const interruptions = [];
