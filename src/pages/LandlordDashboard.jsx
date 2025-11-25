@@ -3588,10 +3588,10 @@ const handleViewTenantDetails = (tenant) => {
                 </div>
               </div>
               <span className={`px-2 lg:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap self-start ${
-                viewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                viewing.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                'bg-gray-100 text-gray-800'
+                viewing.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                viewing.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                viewing.status === 'completed' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
               }`}>
                 {viewing.status}
               </span>
@@ -3624,16 +3624,16 @@ const handleViewTenantDetails = (tenant) => {
                       style={{ width: `${viewing.credibilityScore}%` }}
                     ></div>
                   </div>
-                  <span className="font-semibold text-gray-900 text-xs lg:text-sm whitespace-nowrap">{viewing.credibilityScore}/100</span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-xs lg:text-sm whitespace-nowrap">{viewing.credibilityScore}/100</span>
                 </div>
               </div>
             )}
             
             {/* Action Buttons - Mobile Optimized */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-gray-100">
-              <button 
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+              <button
                 onClick={() => setSelectedViewing(viewing)}
-                className="text-[#003366] hover:text-[#002244] text-xs lg:text-sm font-medium text-center sm:text-left"
+                className="text-[#003366] dark:text-blue-400 hover:text-[#002244] dark:hover:text-blue-300 text-xs lg:text-sm font-medium text-center sm:text-left"
               >
                 View Full Details →
               </button>
@@ -8372,30 +8372,30 @@ const handleViewTenantDetails = (tenant) => {
             <div className="p-6 space-y-6">
               {/* Prospect Info */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                   <Users className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   Prospect Information
                 </h3>
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-gray-600">Full Name</p>
-                      <p className="font-medium text-gray-900">{selectedViewing.prospectName}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Full Name</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.prospectName}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600">Email</p>
-                      <p className="font-medium text-gray-900">{selectedViewing.email}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Email</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.email}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600">Phone</p>
-                      <p className="font-medium text-gray-900">{selectedViewing.phone}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Phone</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.phone}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600">Status</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Status</p>
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                        selectedViewing.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                        selectedViewing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                        selectedViewing.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                        selectedViewing.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                        'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300'
                       }`}>
                         {selectedViewing.status}
                       </span>
@@ -8406,27 +8406,27 @@ const handleViewTenantDetails = (tenant) => {
 
               {/* Property & Viewing Info */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                   <Building className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                   Property & Viewing Details
                 </h3>
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-gray-600">Property</p>
-                      <p className="font-medium text-gray-900">{selectedViewing.property}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Property</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.property}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600">Viewing Date</p>
-                      <p className="font-medium text-gray-900">{selectedViewing.date}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Viewing Date</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.date}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600">Preferred Time</p>
-                      <p className="font-medium text-gray-900">{selectedViewing.time}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Preferred Time</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.time}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600">Submitted</p>
-                      <p className="font-medium text-gray-900">{selectedViewing.submittedDate || 'Today'}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Submitted</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.submittedDate || 'Today'}</p>
                     </div>
                   </div>
                 </div>
@@ -8435,20 +8435,20 @@ const handleViewTenantDetails = (tenant) => {
               {/* Credibility Score */}
               {selectedViewing.credibilityScore && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Credibility Assessment</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Credibility Assessment</h3>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Overall Score</span>
                       <span className={`text-2xl font-bold ${
-                        selectedViewing.credibilityScore >= 80 ? 'text-green-600' :
-                        selectedViewing.credibilityScore >= 60 ? 'text-yellow-600' :
-                        'text-red-600'
+                        selectedViewing.credibilityScore >= 80 ? 'text-green-600 dark:text-green-400' :
+                        selectedViewing.credibilityScore >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-red-600 dark:text-red-400'
                       }`}>
                         {selectedViewing.credibilityScore}/100
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-                      <div 
+                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3 mb-2">
+                      <div
                         className={`h-3 rounded-full transition-all ${
                           selectedViewing.credibilityScore >= 80 ? 'bg-green-500' :
                           selectedViewing.credibilityScore >= 60 ? 'bg-yellow-500' :
@@ -8478,16 +8478,16 @@ const handleViewTenantDetails = (tenant) => {
               {/* Employment Info */}
               {selectedViewing.employment && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Employment Information</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Employment Information</h3>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-2">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-gray-600">Status</p>
-                        <p className="font-medium text-gray-900">{selectedViewing.employment}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Status</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.employment}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-600">Income Range</p>
-                        <p className="font-medium text-gray-900">{selectedViewing.incomeRange || 'Not specified'}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Income Range</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{selectedViewing.incomeRange || 'Not specified'}</p>
                       </div>
                     </div>
                   </div>
@@ -8497,7 +8497,7 @@ const handleViewTenantDetails = (tenant) => {
               {/* Motivation */}
               {selectedViewing.motivation && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Why They're Interested</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Why They're Interested</h3>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{selectedViewing.motivation}</p>
                   </div>
@@ -8506,7 +8506,7 @@ const handleViewTenantDetails = (tenant) => {
 
               {/* Actions */}
               {selectedViewing.status === 'pending' && (
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button 
                     onClick={() => {
                       handleUpdateViewingStatus(selectedViewing.id, 'confirmed');
