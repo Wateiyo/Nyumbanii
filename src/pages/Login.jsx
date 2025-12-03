@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext'; // ADD THIS
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, signInWithGoogle } = useAuth(); // ADD THIS
+  const { login, signInWithGoogle, currentUser, userRole } = useAuth(); // ADD THIS
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -13,6 +13,22 @@ const Login = () => {
     email: '',
     password: ''
   });
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (currentUser && userRole) {
+      // User is already authenticated, redirect to their dashboard
+      if (userRole === 'landlord') {
+        navigate('/landlord/dashboard', { replace: true });
+      } else if (userRole === 'tenant' || userRole === 'prospect') {
+        navigate('/tenant/dashboard', { replace: true });
+      } else if (userRole === 'property_manager') {
+        navigate('/property-manager/dashboard', { replace: true });
+      } else if (userRole === 'maintenance') {
+        navigate('/maintenance/dashboard', { replace: true });
+      }
+    }
+  }, [currentUser, userRole, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
