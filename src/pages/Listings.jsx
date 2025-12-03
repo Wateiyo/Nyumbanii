@@ -323,18 +323,18 @@ const Listings = () => {
                       // Navigate to appropriate dashboard based on user role
                       const role = userData?.role || 'tenant';
                       if (role === 'landlord') {
-                        navigate('/landlord-dashboard');
+                        navigate('/landlord/dashboard');
                       } else if (role === 'property_manager') {
-                        navigate('/property-manager-dashboard');
+                        navigate('/property-manager/dashboard');
                       } else if (role === 'maintenance') {
-                        navigate('/maintenance-dashboard');
+                        navigate('/maintenance/dashboard');
                       } else {
-                        navigate('/tenant-dashboard');
+                        navigate('/tenant/dashboard');
                       }
                     }}
-                    className="flex items-center gap-2 text-gray-700 hover:text-[#003366] transition-colors"
+                    className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-[#003366] dark:hover:text-blue-400 transition-colors"
                   >
-                    <User className="w-5 h-5 text-[#003366]" />
+                    <User className="w-5 h-5 text-[#003366] dark:text-blue-400" />
                     <span className="font-medium">
                       {userData?.fullName || userData?.name || currentUser.email}
                     </span>

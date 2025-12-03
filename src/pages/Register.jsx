@@ -9,7 +9,7 @@ const db = getFirestore();
 const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { register, signInWithGoogle } = useAuth();
+  const { register, signInWithGoogle, currentUser, userRole } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('landlord');
@@ -33,6 +33,22 @@ const Register = () => {
   const handleNavigateHome = () => {
     navigate('/');
   };
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (currentUser && userRole) {
+      // User is already authenticated, redirect to their dashboard
+      if (userRole === 'landlord') {
+        navigate('/landlord/dashboard', { replace: true });
+      } else if (userRole === 'tenant' || userRole === 'prospect') {
+        navigate('/tenant/dashboard', { replace: true });
+      } else if (userRole === 'property_manager') {
+        navigate('/property-manager/dashboard', { replace: true });
+      } else if (userRole === 'maintenance') {
+        navigate('/maintenance/dashboard', { replace: true });
+      }
+    }
+  }, [currentUser, userRole, navigate]);
 
   // Check for pending plan upgrade and validate invitation
   useEffect(() => {
