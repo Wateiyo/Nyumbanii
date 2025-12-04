@@ -3147,7 +3147,7 @@ const handleViewTenantDetails = (tenant) => {
         <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <span className="font-medium text-gray-900 dark:text-white text-xs lg:text-sm">Collection Rate</span>
-            <span className="font-bold text-[#003366] dark:text-blue-400 dark:text-blue-400 text-base lg:text-lg">
+            <span className="font-bold text-[#003366] dark:text-blue-400 text-base lg:text-lg">
               {paymentStats.expected > 0 ? Math.round((paymentStats.received / paymentStats.expected) * 100) : 0}%
             </span>
           </div>
@@ -3504,8 +3504,8 @@ const handleViewTenantDetails = (tenant) => {
                   <span className="font-bold text-[#003366] dark:text-blue-400 text-lg">{formatCurrency(listing.rent, businessPreferences.currency)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Deposit: {formatCurrency(listing.deposit, businessPreferences.currency)}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Posted: {formatDate(listing.postedDate, businessPreferences.dateFormat)}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Deposit: {formatCurrency(listing.deposit, businessPreferences.currency)}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Posted: {formatDate(listing.postedDate, businessPreferences.dateFormat)}</span>
                 </div>
               </div>
               
@@ -4158,7 +4158,7 @@ const handleViewTenantDetails = (tenant) => {
                       {getRecentTaxPeriods().map((period, index) => (
                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{period.monthName} {period.year}</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{period.monthName} {period.year}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{formatCurrency(period.totalIncome, businessPreferences.currency)}</div>
@@ -4958,7 +4958,7 @@ const handleViewTenantDetails = (tenant) => {
             {/* Calendar Header - Days of Week */}
             <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 border-gray-200 last:border-r-0">
+                <div key={day} className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0">
                   {day}
                 </div>
               ))}
@@ -4967,27 +4967,27 @@ const handleViewTenantDetails = (tenant) => {
             {/* Calendar Body */}
             <div className="grid grid-cols-7 auto-rows-fr">
               {/* Empty cells */}
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
+              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
               
               {/* Days 1-4 */}
               {[1, 2, 3, 4].map(day => (
-                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition cursor-pointer ${day !== 4 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{day}</div>
+                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${day !== 4 ? 'border-r' : ''}`}>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
                 </div>
               ))}
 
               {/* Days 5-6 */}
               {[5, 6].map(day => (
                 <div key={day} className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{day}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
                 </div>
               ))}
               
               {/* Day 7 - With Events */}
               <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white mb-1">7</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">7</div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
                     <CalendarCheck className="w-3 h-3 flex-shrink-0" />
@@ -5002,7 +5002,7 @@ const handleViewTenantDetails = (tenant) => {
               
               {/* Day 8 - With Events */}
               <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white mb-1">8</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">8</div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
                     <CalendarCheck className="w-3 h-3 flex-shrink-0" />
@@ -5017,7 +5017,7 @@ const handleViewTenantDetails = (tenant) => {
               
               {/* Day 9 - With Event */}
               <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white mb-1">9</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">9</div>
                 <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
                   <Wrench className="w-3 h-3 flex-shrink-0" />
                   <span>1</span>
@@ -5026,15 +5026,15 @@ const handleViewTenantDetails = (tenant) => {
               
               {/* Days 10-11 */}
               {[10, 11].map(day => (
-                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition cursor-pointer ${day === 10 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{day}</div>
+                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${day === 10 ? 'border-r' : ''}`}>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
                 </div>
               ))}
 
               {/* Weeks 3-5 */}
               {[12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map((day, idx) => (
-                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition cursor-pointer ${(idx + 5) % 7 !== 6 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white dark:text-white">{day}</div>
+                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${(idx + 5) % 7 !== 6 ? 'border-r' : ''}`}>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
                 </div>
               ))}
               <div className="aspect-square min-h-[80px] sm:min-h-[100px] p-2 bg-gray-50"></div>
@@ -5897,7 +5897,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Display Preferences Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Display Preferences</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Display Preferences</h2>
           </div>
 
           <div className="p-4 sm:p-6 space-y-4">
@@ -6034,7 +6034,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Business Preferences Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Business Preferences</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Business Preferences</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure your business settings and regional preferences</p>
           </div>
 
@@ -6119,7 +6119,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Automated Workflows Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Automated Workflows</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Automated Workflows</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Save time with automated tasks and notifications</p>
           </div>
 
@@ -6336,7 +6336,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Financial Settings Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Financial Settings</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Financial Settings</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure payment methods, fees, and financial preferences</p>
           </div>
 
@@ -6462,7 +6462,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Communication Preferences Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Communication Preferences</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Communication Preferences</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage how you communicate with tenants</p>
           </div>
 
@@ -6541,7 +6541,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Property Management Settings Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Property Management</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Property Management</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Set default policies for your properties</p>
           </div>
 
@@ -6753,7 +6753,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Reporting & Analytics Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Reporting & Analytics</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Reporting & Analytics</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Customize your reporting and data export preferences</p>
           </div>
 
@@ -6808,7 +6808,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Security & Privacy Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Security & Privacy</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Security & Privacy</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your account security and data retention</p>
           </div>
 
@@ -6862,7 +6862,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Integration Settings Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white dark:text-white">Integration Settings</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Integration Settings</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Connect external services and platforms</p>
           </div>
 
@@ -7959,7 +7959,7 @@ const handleViewTenantDetails = (tenant) => {
                     type="text"
                     value={newPayment.property}
                     readOnly
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white bg-gray-50"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
@@ -7968,7 +7968,7 @@ const handleViewTenantDetails = (tenant) => {
                     type="text"
                     value={newPayment.unit}
                     readOnly
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white bg-gray-50"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>

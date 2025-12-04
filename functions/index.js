@@ -1788,3 +1788,350 @@ exports.checkSubscriptionStatus = onCall(
     }
   }
 );
+
+// ==========================================
+// KPLC POWER OUTAGE MONITORING
+// ==========================================
+
+/**
+ * Monitor Kenya Power Twitter for outage announcements
+ * Runs every 30 minutes
+ */
+exports.monitorKPLCTwitter = onSchedule(
+  {
+    schedule: "*/30 * * * *", // Every 30 minutes
+    region: "us-central1",
+    timeoutSeconds: 540,
+    memory: "512MiB"
+  },
+  async (event) => {
+    try {
+      logger.info("🔍 Starting KPLC Twitter monitoring...");
+
+      // Twitter API credentials (get from environment variables)
+      const TWITTER_BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN;
+
+      if (!TWITTER_BEARER_TOKEN) {
+        logger.warn("⚠️ Twitter Bearer Token not configured. Skipping monitoring.");
+        return;
+      }
+
+      // Fetch recent tweets from Kenya Power
+      const response = await axios.get(
+        "https://api.twitter.com/2/users/by/username/KenyaPower_Care",
+        {
+          headers: {
+            Authorization: `Bearer ${TWITTER_BEARER_TOKEN}`
+          }
+        }
+      );
+
+      const userId = response.data.data.id;
+
+      // Fetch user's recent tweets
+      const tweetsResponse = await axios.get(
+        `https://api.twitter.com/2/users/${userId}/tweets`,
+        {
+          headers: {
+            Authorization: `Bearer ${TWITTER_BEARER_TOKEN}`
+          },
+          params: {
+            max_results: 10,
+            "tweet.fields": "created_at,text"
+          }
+        }
+      );
+
+      const tweets = tweetsResponse.data.data || [];
+      logger.info(`📋 Found ${tweets.length} recent tweets`);
+
+      // Process each tweet for power outage information
+      for (const tweet of tweets) {
+        await processOutageTweet(tweet);
+      }
+
+      logger.info("✅ KPLC Twitter monitoring completed");
+    } catch (error) {
+      logger.error("❌ Error monitoring KPLC Twitter:", error);
+    }
+  }
+);
+
+/**
+ * Process a tweet to extract power outage information
+ */
+async function processOutageTweet(tweet) {
+  try {
+    const text = tweet.text.toLowerCase();
+
+    // Keywords that indicate a power outage announcement
+    const outageKeywords = [
+      "power interruption",
+      "scheduled maintenance",
+      "power outage",
+      "planned outage",
+      "electricity interruption",
+      "maintenance works",
+      "power supply interruption"
+    ];
+
+    // Check if tweet mentions power outage
+    const isOutageTweet = outageKeywords.some(keyword =>
+      text.includes(keyword)
+    );
+
+    if (!isOutageTweet) {
+      return;
+    }
+
+    logger.info(`🔔 Found potential outage tweet: ${tweet.id}`);
+
+    // Check if we've already processed this tweet
+    const existingDoc = await admin
+      .firestore()
+      .collection("powerOutages")
+      .where("tweetId", "==", tweet.id)
+      .limit(1)
+      .get();
+
+    if (!existingDoc.empty) {
+      logger.info(`⏭️ Tweet ${tweet.id} already processed`);
+      return;
+    }
+
+    // Extract affected areas and details
+    const outageData = extractOutageDetails(tweet.text, tweet.created_at);
+    outageData.tweetId = tweet.id;
+    outageData.tweetUrl = `https://twitter.com/KenyaPower_Care/status/${tweet.id}`;
+    outageData.rawText = tweet.text;
+    outageData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+    outageData.status = determineOutageStatus(outageData);
+
+    // Save to Firestore
+    const docRef = await admin
+      .firestore()
+      .collection("powerOutages")
+      .add(outageData);
+
+    logger.info(`✅ Saved outage: ${docRef.id} affecting ${outageData.affectedAreas.length} areas`);
+
+    // Send notifications to affected users
+    await notifyAffectedUsers(outageData);
+  } catch (error) {
+    logger.error("❌ Error processing tweet:", error);
+  }
+}
+
+/**
+ * Extract outage details from tweet text
+ */
+function extractOutageDetails(tweetText, createdAt) {
+  const lines = tweetText.split("\n");
+
+  // Common Kenya locations
+  const knownAreas = [
+    "Nairobi", "CBD", "Westlands", "Kilimani", "Karen", "Parklands", "Lavington",
+    "Kileleshwa", "South B", "South C", "Embakasi", "Kasarani", "Ruaraka",
+    "Roysambu", "Kahawa", "Zimmerman", "Githurai", "Ruiru", "Thika",
+    "Juja", "Kiambu", "Kikuyu", "Ngong", "Rongai", "Kitengela",
+    "Mombasa", "Nyali", "Bamburi", "Shanzu", "Diani", "Ukunda", "Kilifi",
+    "Malindi", "Watamu", "Voi", "Taveta", "Kisumu", "Kondele", "Mamboleo",
+    "Milimani", "Kakamega", "Bungoma", "Busia", "Siaya", "Homa Bay",
+    "Kisii", "Migori", "Nakuru", "Naivasha", "Gilgil", "Eldoret", "Kitale",
+    "Kapsabet", "Nyeri", "Nanyuki", "Meru", "Embu", "Kerugoya", "Karatina",
+    "Kwale", "Msambweni", "Lunga Lunga", "Shimoni", "Narok", "Bomet",
+    "Kericho", "Machakos", "Makueni", "Garissa"
+  ];
+
+  // Extract affected areas
+  const affectedAreas = [];
+  for (const area of knownAreas) {
+    const regex = new RegExp(`\\b${area}\\b`, "i");
+    if (regex.test(tweetText)) {
+      affectedAreas.push(area);
+    }
+  }
+
+  // Extract date (common formats in KPLC tweets)
+  let scheduledDate = null;
+  const datePatterns = [
+    /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/,  // DD/MM/YYYY or DD.MM.YYYY
+    /(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(\d{1,2})\w*\s+(January|February|March|April|May|June|July|August|September|October|November|December)/i
+  ];
+
+  for (const pattern of datePatterns) {
+    const match = tweetText.match(pattern);
+    if (match) {
+      scheduledDate = match[0];
+      break;
+    }
+  }
+
+  // Extract time (common format: 9:00 AM - 5:00 PM)
+  const timePattern = /(\d{1,2}):?(\d{2})?\s*(AM|PM|am|pm)?\s*[-–—]\s*(\d{1,2}):?(\d{2})?\s*(AM|PM|am|pm)?/i;
+  const timeMatch = tweetText.match(timePattern);
+
+  let startTime = null;
+  let endTime = null;
+  if (timeMatch) {
+    startTime = timeMatch[1] + (timeMatch[2] ? ":" + timeMatch[2] : ":00") + " " + (timeMatch[3] || "");
+    endTime = timeMatch[4] + (timeMatch[5] ? ":" + timeMatch[5] : ":00") + " " + (timeMatch[6] || "");
+  }
+
+  return {
+    affectedAreas: affectedAreas.length > 0 ? affectedAreas : ["Area not specified"],
+    scheduledDate: scheduledDate || "Date TBA",
+    startTime: startTime,
+    endTime: endTime,
+    description: tweetText.substring(0, 500), // First 500 chars
+    source: "Twitter",
+    postedAt: createdAt
+  };
+}
+
+/**
+ * Determine if outage is active or scheduled
+ */
+function determineOutageStatus(outageData) {
+  if (!outageData.scheduledDate || outageData.scheduledDate === "Date TBA") {
+    return "scheduled";
+  }
+
+  try {
+    const now = new Date();
+    // Simple check - can be enhanced with proper date parsing
+    return "scheduled";
+  } catch (error) {
+    return "scheduled";
+  }
+}
+
+/**
+ * Notify users affected by power outage
+ */
+async function notifyAffectedUsers(outageData) {
+  try {
+    logger.info("📬 Finding affected users...");
+
+    // Get all users with preferredAreas
+    const usersSnapshot = await admin
+      .firestore()
+      .collection("users")
+      .where("preferredAreas", "!=", null)
+      .get();
+
+    let notificationCount = 0;
+
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      const userAreas = userData.preferredAreas || [];
+
+      // Check if any of the user's preferred areas match affected areas
+      const isAffected = outageData.affectedAreas.some(affectedArea =>
+        userAreas.some(userArea =>
+          affectedArea.toLowerCase().includes(userArea.toLowerCase()) ||
+          userArea.toLowerCase().includes(affectedArea.toLowerCase())
+        )
+      );
+
+      if (isAffected) {
+        // Create notification
+        await admin
+          .firestore()
+          .collection("notifications")
+          .add({
+            userId: userDoc.id,
+            title: "⚡ Power Outage Alert",
+            message: `Planned power outage in ${outageData.affectedAreas.join(", ")} on ${outageData.scheduledDate}${outageData.startTime ? ` from ${outageData.startTime} to ${outageData.endTime}` : ""}`,
+            type: "power_outage",
+            outageId: outageData.tweetId,
+            read: false,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            data: {
+              affectedAreas: outageData.affectedAreas,
+              scheduledDate: outageData.scheduledDate,
+              tweetUrl: outageData.tweetUrl
+            }
+          });
+
+        notificationCount++;
+
+        // Send push notification if FCM token exists
+        if (userData.fcmToken) {
+          try {
+            await admin.messaging().send({
+              token: userData.fcmToken,
+              notification: {
+                title: "⚡ Power Outage Alert",
+                body: `Outage planned in ${outageData.affectedAreas.join(", ")} on ${outageData.scheduledDate}`
+              },
+              data: {
+                type: "power_outage",
+                outageId: outageData.tweetId,
+                url: outageData.tweetUrl
+              }
+            });
+          } catch (fcmError) {
+            logger.warn(`⚠️ Failed to send FCM to user ${userDoc.id}:`, fcmError.message);
+          }
+        }
+      }
+    }
+
+    logger.info(`✅ Sent ${notificationCount} notifications for this outage`);
+  } catch (error) {
+    logger.error("❌ Error notifying affected users:", error);
+  }
+}
+
+/**
+ * Manual webhook to add power outage (for testing or manual entry)
+ */
+exports.addPowerOutage = onCall(
+  {
+    region: "us-central1"
+  },
+  async (request) => {
+    try {
+      const { affectedAreas, scheduledDate, startTime, endTime, description } = request.data;
+
+      if (!affectedAreas || !Array.isArray(affectedAreas) || affectedAreas.length === 0) {
+        throw new Error("affectedAreas is required and must be a non-empty array");
+      }
+
+      const outageData = {
+        affectedAreas,
+        scheduledDate: scheduledDate || "Date TBA",
+        startTime: startTime || null,
+        endTime: endTime || null,
+        description: description || "Power outage planned",
+        status: "scheduled",
+        source: "Manual",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        tweetId: `manual_${Date.now()}`,
+        tweetUrl: null,
+        rawText: description
+      };
+
+      // Save to Firestore
+      const docRef = await admin
+        .firestore()
+        .collection("powerOutages")
+        .add(outageData);
+
+      logger.info(`✅ Manually added outage: ${docRef.id}`);
+
+      // Notify affected users
+      await notifyAffectedUsers(outageData);
+
+      return {
+        success: true,
+        outageId: docRef.id,
+        message: "Power outage added and notifications sent"
+      };
+    } catch (error) {
+      logger.error("❌ Error adding power outage:", error);
+      throw new Error(`Failed to add power outage: ${error.message}`);
+    }
+  }
+);
