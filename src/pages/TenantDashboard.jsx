@@ -44,6 +44,8 @@ import {
   Moon,
   Sun
 } from 'lucide-react';
+import LocationPreferences from '../components/LocationPreferences';
+import PowerOutagesList from '../components/PowerOutagesList';
 
 // Initialize Firebase services
 const functions = getFunctions();
@@ -104,6 +106,7 @@ const TenantDashboard = () => {
     phone: '+254 722 123 456',
     idNumber: '12345678',
     emergencyContact: '+254 711 987 654',
+    preferredAreas: [], // Areas for power outage notifications
     notifications: {
       email: true,
       sms: true,
@@ -4043,6 +4046,12 @@ const TenantDashboard = () => {
             </div>
 
           </div>
+        </div>
+
+        {/* Power Outages Section */}
+        <div className="max-w-5xl mx-auto w-full space-y-6">
+          <PowerOutagesList userAreas={profileSettings.preferredAreas || []} />
+          <LocationPreferences userId={currentUser?.uid} />
         </div>
 
         {/* Language & Region Card */}
