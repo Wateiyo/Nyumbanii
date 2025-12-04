@@ -2641,27 +2641,13 @@ const TenantDashboard = () => {
                 </div>
               </div>
 
-              {/* Kenya Power Alert Banner */}
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center animate-pulse">
-                      <Bell className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-yellow-900 dark:text-yellow-100">Kenya Power Alerts</h3>
-                      <p className="text-sm text-yellow-800 dark:text-yellow-200">Auto-checks every 6 hours for power interruptions</p>
-                    </div>
-                  </div>
-                  <a
-                    href="https://www.kplc.co.ke/customer-support#powerschedule"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium text-sm transition flex items-center gap-2"
-                  >
-                    ⚡ Check KPLC Website
-                  </a>
-                </div>
+              {/* KPLC Power Outages Section */}
+              <div className="mb-6">
+                <PowerOutagesList userAreas={profileSettings.preferredAreas || []} />
+              </div>
+
+              <div className="mb-6">
+                <LocationPreferences userId={currentUser?.uid} />
               </div>
 
               {/* Updates & Notifications Section */}
@@ -3491,27 +3477,13 @@ const TenantDashboard = () => {
           {/* Updates & Memos View */}
           {currentView === 'updates' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
-              {/* Kenya Power Alert Banner */}
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center animate-pulse">
-                      <Bell className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-yellow-900 dark:text-yellow-100">Kenya Power Alerts</h3>
-                      <p className="text-sm text-yellow-800 dark:text-yellow-200">Auto-checks every 6 hours for power interruptions</p>
-                    </div>
-                  </div>
-                  <a
-                    href="https://www.kplc.co.ke/customer-support#powerschedule"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium text-sm transition flex items-center gap-2"
-                  >
-                    ⚡ Check KPLC Website
-                  </a>
-                </div>
+              {/* KPLC Power Outages Section */}
+              <div className="mb-6">
+                <PowerOutagesList userAreas={profileSettings.preferredAreas || []} />
+              </div>
+
+              <div className="mb-6">
+                <LocationPreferences userId={currentUser?.uid} />
               </div>
 
               {/* Updates Section */}
@@ -4046,12 +4018,6 @@ const TenantDashboard = () => {
             </div>
 
           </div>
-        </div>
-
-        {/* Power Outages Section */}
-        <div className="max-w-5xl mx-auto w-full space-y-6">
-          <PowerOutagesList userAreas={profileSettings.preferredAreas || []} />
-          <LocationPreferences userId={currentUser?.uid} />
         </div>
 
         {/* Language & Region Card */}

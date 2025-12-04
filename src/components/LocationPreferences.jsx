@@ -5,30 +5,34 @@ import { db } from '../firebase';
 
 // Common areas in Kenya where KPLC operates
 const KENYA_AREAS = [
-  // Nairobi
+  // Nairobi & Environs
   'Nairobi CBD', 'Westlands', 'Kilimani', 'Karen', 'Parklands', 'Lavington',
   'Kileleshwa', 'South B', 'South C', 'Embakasi', 'Kasarani', 'Ruaraka',
-  'Roysambu', 'Kahawa', 'Zimmerman', 'Githurai', 'Ruiru', 'Thika',
-  'Juja', 'Kiambu', 'Kikuyu', 'Ngong', 'Rongai', 'Kitengela',
+  'Roysambu', 'Kahawa', 'Kahawa Sukari', 'Kahawa West', 'Zimmerman', 'Githurai',
+  'Ruiru', 'Thika', 'Juja', 'Kiambu', 'Kikuyu', 'Ngong', 'Rongai', 'Kitengela',
+  'Uthiru', 'Kinoo', 'Regen', 'Muthiga', 'Kawangware', 'Langata', 'Dagoretti',
+  'Riruta', 'Satellite', 'Waiyaki Way', 'Banana', 'Kikuyu', 'Nyathuna',
+  'Upperhill', 'Kilimani', 'Riverside', 'Spring Valley', 'Loresho', 'Muthaiga',
+  'Gigiri', 'Runda', 'Kitisuru', 'Ridgeways', 'Garden Estate', 'Pangani',
+  'Eastleigh', 'South B', 'South C', 'Imara Daima', 'Nyayo Estate', 'Buru Buru',
+  'Umoja', 'Donholm', 'Kariobangi', 'Komarock', 'Pipeline', 'Tena Estate',
+  'Huruma', 'Mathare', 'Ngara', 'Starehe', 'Pumwani', 'Shauri Moyo',
 
-  // Mombasa
+  // Mombasa & Coast
   'Mombasa', 'Nyali', 'Bamburi', 'Shanzu', 'Diani', 'Ukunda', 'Kilifi',
-  'Malindi', 'Watamu', 'Voi', 'Taveta',
+  'Malindi', 'Watamu', 'Voi', 'Taveta', 'Kwale', 'Msambweni', 'Lunga Lunga', 'Shimoni',
 
-  // Kisumu
+  // Kisumu & Western
   'Kisumu', 'Kondele', 'Mamboleo', 'Milimani', 'Kakamega', 'Bungoma',
   'Busia', 'Siaya', 'Homa Bay', 'Kisii', 'Migori',
 
-  // Nakuru
+  // Nakuru & Rift Valley
   'Nakuru', 'Naivasha', 'Gilgil', 'Eldoret', 'Kitale', 'Kapsabet',
 
   // Central Kenya
   'Nyeri', 'Nanyuki', 'Meru', 'Embu', 'Kerugoya', 'Karatina',
 
-  // Coast
-  'Kwale', 'Msambweni', 'Lunga Lunga', 'Shimoni',
-
-  // Other
+  // Other Major Towns
   'Narok', 'Bomet', 'Kericho', 'Machakos', 'Makueni', 'Garissa'
 ].sort();
 

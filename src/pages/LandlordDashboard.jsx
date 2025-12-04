@@ -93,6 +93,8 @@ import {
   Moon,
   Sun
 } from 'lucide-react';
+import LocationPreferences from '../components/LocationPreferences';
+import PowerOutagesList from '../components/PowerOutagesList';
 
 const LandlordDashboard = () => {
   const navigate = useNavigate();
@@ -4778,74 +4780,14 @@ const handleViewTenantDetails = (tenant) => {
           </button>
         </div>
 
-        {/* Kenya Power Alert Banner */}
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4 mb-6">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center animate-pulse">
-                <Bell className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-yellow-900 dark:text-yellow-100">Kenya Power Alerts</h3>
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">Auto-checks every 6 hours for power interruptions in your properties</p>
-              </div>
-            </div>
-            <a
-              href="https://www.kplc.co.ke/customer-support#powerschedule"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium text-sm transition flex items-center gap-2"
-            >
-              ⚡ Check KPLC Website
-            </a>
-          </div>
+        {/* KPLC Power Outages Section */}
+        <div className="mb-6">
+          <PowerOutagesList userAreas={userProfile?.preferredAreas || []} />
         </div>
 
-        {/* Power Interruption Updates */}
-        {updates.filter(u => u.type === 'power_interruption').length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="font-semibold text-gray-900 dark:text-white">⚡ Power Interruption Alerts</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Scheduled power outages affecting your properties</p>
-            </div>
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {updates.filter(u => u.type === 'power_interruption').map(update => (
-                <div key={update.id} className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Bell className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{update.title}</h4>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{update.message}</p>
-                      {update.affectedAreas && update.affectedAreas.length > 0 && (
-                        <div className="mb-2">
-                          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Affected Areas:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {update.affectedAreas.map((area, idx) => (
-                              <span key={idx} className="inline-block px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded text-xs">
-                                {area}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {update.createdAt?.toDate?.() ? new Date(update.createdAt.toDate()).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }) : 'Recently'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="mb-6">
+          <LocationPreferences userId={currentUser?.uid} />
+        </div>
 
         {/* Memos List - showing real memos only */}
         <div className="space-y-4">
