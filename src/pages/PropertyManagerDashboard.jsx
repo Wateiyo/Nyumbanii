@@ -42,6 +42,8 @@ import {
   CheckCheck
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
+import LocationPreferences from '../components/LocationPreferences';
+import PowerOutagesList from '../components/PowerOutagesList';
 import {
   canAddTenant,
   canEditRent,
@@ -1194,6 +1196,15 @@ const PropertyManagerDashboard = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Power Outages Section */}
+              <div className="mb-6">
+                <PowerOutagesList userAreas={userProfile?.preferredAreas || []} />
+              </div>
+
+              <div className="mb-6">
+                <LocationPreferences userId={currentUser?.uid} />
               </div>
 
               <div className="grid lg:grid-cols-2 gap-6">
