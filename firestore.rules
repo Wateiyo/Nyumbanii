@@ -145,5 +145,13 @@ service cloud.firestore {
       // Only server (via Cloud Functions) can write payment history
       allow write: if false;
     }
+
+    // Power Outages collection - for KPLC power interruption notices
+    match /powerOutages/{outageId} {
+      // Anyone can read power outages (public information)
+      allow read: if true;
+      // Only server (via Cloud Functions) can write power outages
+      allow write: if false;
+    }
   }
 }

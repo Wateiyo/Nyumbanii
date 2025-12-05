@@ -9,6 +9,7 @@ const { Resend } = require("resend");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const pdf = require("pdf-parse");
+const Tesseract = require("tesseract.js");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -1829,7 +1830,7 @@ exports.monitorKPLCTwitter = onSchedule(
 
       const userId = response.data.data.id;
 
-      // Fetch user's recent tweets
+      // Fetch user's recent tweets with media
       const tweetsResponse = await axios.get(
         `https://api.twitter.com/2/users/${userId}/tweets`,
         {
@@ -1838,17 +1839,25 @@ exports.monitorKPLCTwitter = onSchedule(
           },
           params: {
             max_results: 10,
-            "tweet.fields": "created_at,text"
+            "tweet.fields": "created_at,text,attachments",
+            "expansions": "attachments.media_keys",
+            "media.fields": "url,preview_image_url,type"
           }
         }
       );
 
       const tweets = tweetsResponse.data.data || [];
-      logger.info(`📋 Found ${tweets.length} recent tweets`);
+      const media = tweetsResponse.data.includes?.media || [];
+      logger.info(`📋 Found ${tweets.length} recent tweets with ${media.length} media items`);
 
       // Process each tweet for power outage information
       for (const tweet of tweets) {
-        await processOutageTweet(tweet);
+        // Get media for this tweet
+        const tweetMedia = tweet.attachments?.media_keys
+          ? media.filter(m => tweet.attachments.media_keys.includes(m.media_key))
+          : [];
+
+        await processOutageTweet(tweet, tweetMedia);
       }
 
       logger.info("✅ KPLC Twitter monitoring completed");
@@ -1861,9 +1870,30 @@ exports.monitorKPLCTwitter = onSchedule(
 /**
  * Process a tweet to extract power outage information
  */
-async function processOutageTweet(tweet) {
+async function processOutageTweet(tweet, tweetMedia = []) {
   try {
-    const text = tweet.text.toLowerCase();
+    let fullText = tweet.text;
+
+    // If tweet has images, extract text from them using OCR
+    if (tweetMedia.length > 0) {
+      logger.info(`📸 Tweet ${tweet.id} has ${tweetMedia.length} image(s), performing OCR...`);
+
+      for (const mediaItem of tweetMedia) {
+        if (mediaItem.type === "photo" && mediaItem.url) {
+          try {
+            const imageText = await extractTextFromImage(mediaItem.url);
+            if (imageText) {
+              fullText += "\n\n" + imageText;
+              logger.info(`✅ Extracted ${imageText.length} characters from image`);
+            }
+          } catch (ocrError) {
+            logger.error("❌ OCR failed for image:", ocrError);
+          }
+        }
+      }
+    }
+
+    const text = fullText.toLowerCase();
 
     // Keywords that indicate a power outage announcement
     const outageKeywords = [
@@ -1871,9 +1901,11 @@ async function processOutageTweet(tweet) {
       "scheduled maintenance",
       "power outage",
       "planned outage",
+      "planned maintenance",
       "electricity interruption",
       "maintenance works",
-      "power supply interruption"
+      "power supply interruption",
+      "maintenance notice"
     ];
 
     // Check if tweet mentions power outage
@@ -1900,11 +1932,11 @@ async function processOutageTweet(tweet) {
       return;
     }
 
-    // Extract affected areas and details
-    const outageData = extractOutageDetails(tweet.text, tweet.created_at);
+    // Extract affected areas and details (using fullText which includes OCR results)
+    const outageData = extractOutageDetails(fullText, tweet.created_at);
     outageData.tweetId = tweet.id;
     outageData.tweetUrl = `https://twitter.com/KenyaPower_Care/status/${tweet.id}`;
-    outageData.rawText = tweet.text;
+    outageData.rawText = fullText; // Store full text including OCR results
     outageData.createdAt = admin.firestore.FieldValue.serverTimestamp();
     outageData.status = determineOutageStatus(outageData);
 
@@ -1924,6 +1956,41 @@ async function processOutageTweet(tweet) {
 }
 
 /**
+ * Extract text from image using OCR (Tesseract.js)
+ */
+async function extractTextFromImage(imageUrl) {
+  try {
+    logger.info(`🔍 Starting OCR for image: ${imageUrl}`);
+
+    // Download image
+    const imageResponse = await axios.get(imageUrl, {
+      responseType: 'arraybuffer'
+    });
+
+    const imageBuffer = Buffer.from(imageResponse.data);
+
+    // Perform OCR
+    const { data: { text } } = await Tesseract.recognize(
+      imageBuffer,
+      'eng',
+      {
+        logger: info => {
+          if (info.status === 'recognizing text') {
+            logger.info(`OCR progress: ${Math.round(info.progress * 100)}%`);
+          }
+        }
+      }
+    );
+
+    logger.info(`✅ OCR completed, extracted ${text.length} characters`);
+    return text.trim();
+  } catch (error) {
+    logger.error("❌ Error extracting text from image:", error);
+    throw error;
+  }
+}
+
+/**
  * Extract outage details from tweet text
  */
 function extractOutageDetails(tweetText, createdAt) {
@@ -1935,13 +2002,16 @@ function extractOutageDetails(tweetText, createdAt) {
     "Kileleshwa", "South B", "South C", "Embakasi", "Kasarani", "Ruaraka",
     "Roysambu", "Kahawa", "Zimmerman", "Githurai", "Ruiru", "Thika",
     "Juja", "Kiambu", "Kikuyu", "Ngong", "Rongai", "Kitengela",
+    "Muthaiga", "Regal Plaza", "Limuru Road", "Runda", "Gigiri", "Spring Valley",
+    "Ridgeways", "Garden Estate", "Pangani", "Eastleigh", "Mathare", "Huruma",
     "Mombasa", "Nyali", "Bamburi", "Shanzu", "Diani", "Ukunda", "Kilifi",
     "Malindi", "Watamu", "Voi", "Taveta", "Kisumu", "Kondele", "Mamboleo",
     "Milimani", "Kakamega", "Bungoma", "Busia", "Siaya", "Homa Bay",
     "Kisii", "Migori", "Nakuru", "Naivasha", "Gilgil", "Eldoret", "Kitale",
     "Kapsabet", "Nyeri", "Nanyuki", "Meru", "Embu", "Kerugoya", "Karatina",
     "Kwale", "Msambweni", "Lunga Lunga", "Shimoni", "Narok", "Bomet",
-    "Kericho", "Machakos", "Makueni", "Garissa"
+    "Kericho", "Machakos", "Makueni", "Garissa", "Adiedo", "Omboga",
+    "Yao Komoro", "Rabware", "Opinde", "Oriang"
   ];
 
   // Extract affected areas
