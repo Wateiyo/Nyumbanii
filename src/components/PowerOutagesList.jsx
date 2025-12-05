@@ -83,7 +83,7 @@ const PowerOutagesList = ({ userAreas = [] }) => {
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              KPLC Power Outage Alerts
+              KPLC Planned Power Maintenance Alerts
             </h3>
           </div>
 
@@ -128,12 +128,12 @@ const PowerOutagesList = ({ userAreas = [] }) => {
           <div className="p-8 text-center">
             <Zap className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
             <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              {filter === 'relevant' ? 'No Outages in Your Areas' : 'No Scheduled Outages'}
+              {filter === 'relevant' ? 'No Maintenance in Your Areas' : 'No Scheduled Maintenance'}
             </h4>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {filter === 'relevant'
-                ? 'There are currently no planned power outages in your selected areas.'
-                : 'There are no scheduled power outages at the moment.'
+                ? 'There are currently no planned power maintenance in your selected areas.'
+                : 'There are no scheduled power maintenance at the moment.'
               }
             </p>
           </div>
