@@ -1802,13 +1802,14 @@ exports.monitorKPLCTwitter = onSchedule(
     schedule: "*/30 * * * *", // Every 30 minutes
     region: "us-central1",
     timeoutSeconds: 540,
-    memory: "512MiB"
+    memory: "512MiB",
+    secrets: ["TWITTER_BEARER_TOKEN"] // Add this to enable secrets
   },
   async (event) => {
     try {
       logger.info("🔍 Starting KPLC Twitter monitoring...");
 
-      // Twitter API credentials (get from environment variables)
+      // Twitter API credentials (get from environment variables or secrets)
       const TWITTER_BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN;
 
       if (!TWITTER_BEARER_TOKEN) {
@@ -2083,6 +2084,29 @@ async function notifyAffectedUsers(outageData) {
     logger.error("❌ Error notifying affected users:", error);
   }
 }
+
+/**
+ * Manual trigger for KPLC Twitter monitoring (for testing)
+ */
+exports.manualMonitorKPLCTwitter = onCall(
+  {
+    region: "us-central1",
+    timeoutSeconds: 540,
+    secrets: ["TWITTER_BEARER_TOKEN"] // Add this to enable secrets
+  },
+  async (request) => {
+    logger.info("🔍 Manual KPLC Twitter monitoring triggered by:", request.auth?.uid);
+
+    try {
+      // Call the monitoring logic directly
+      await exports.monitorKPLCTwitter.run({});
+      return { success: true, message: "Twitter monitoring completed successfully" };
+    } catch (error) {
+      logger.error("Error in manual monitoring:", error);
+      throw new Error(`Failed to monitor Twitter: ${error.message}`);
+    }
+  }
+);
 
 /**
  * Manual webhook to add power outage (for testing or manual entry)

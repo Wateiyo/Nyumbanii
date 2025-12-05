@@ -117,12 +117,12 @@ const LocationPreferences = ({ userId }) => {
       <div className="flex items-center gap-2 mb-4">
         <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          KPLC Power Outage Alerts
+          KPLC Planned Power Maintenance Alerts
         </h3>
       </div>
 
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        Select the areas where you want to receive power outage notifications from Kenya Power.
+        Select the areas where you want to receive planned power maintenance notifications from Kenya Power.
       </p>
 
       {/* Message Display */}
@@ -219,7 +219,7 @@ const LocationPreferences = ({ userId }) => {
       {/* Info Box */}
       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <p className="text-xs text-blue-800 dark:text-blue-200">
-          <strong>Note:</strong> You'll receive notifications when Kenya Power posts about planned outages in your selected areas on their Twitter account.
+          <strong>Note:</strong> You'll receive notifications when Kenya Power posts about planned maintenance in your selected areas on their Twitter account.
         </p>
       </div>
     </div>
