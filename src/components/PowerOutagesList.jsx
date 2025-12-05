@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, MapPin, Calendar, Clock, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Zap, MapPin, Calendar, Clock, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 
 const PowerOutagesList = ({ userAreas = [] }) => {
   const [outages, setOutages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('relevant'); // 'relevant' or 'all'
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
     // Listen for power outages in real-time
@@ -42,6 +45,36 @@ const PowerOutagesList = ({ userAreas = [] }) => {
         )
       )
     : outages;
+
+  // Handle manual refresh of KPLC data
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setRefreshMessage({ type: '', text: '' });
+
+    try {
+      const functions = getFunctions();
+      const manualMonitorKPLCTwitter = httpsCallable(functions, 'manualMonitorKPLCTwitter');
+
+      await manualMonitorKPLCTwitter();
+
+      setRefreshMessage({
+        type: 'success',
+        text: 'Successfully fetched latest updates from Kenya Power Twitter!'
+      });
+
+      setTimeout(() => setRefreshMessage({ type: '', text: '' }), 5000);
+    } catch (error) {
+      console.error('Error refreshing KPLC data:', error);
+      setRefreshMessage({
+        type: 'error',
+        text: 'Failed to fetch updates. Please try again later.'
+      });
+
+      setTimeout(() => setRefreshMessage({ type: '', text: '' }), 5000);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date TBA';
@@ -87,31 +120,56 @@ const PowerOutagesList = ({ userAreas = [] }) => {
             </h3>
           </div>
 
-          {userAreas.length > 0 && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilter('relevant')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                  filter === 'relevant'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                My Areas ({filteredOutages.length})
-              </button>
-              <button
-                onClick={() => setFilter('all')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                  filter === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                All ({outages.length})
-              </button>
-            </div>
-          )}
+          <div className="flex gap-2">
+            {/* Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="px-3 py-1 rounded-lg text-sm font-medium transition flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Fetch latest updates from Kenya Power"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Updating...' : 'Refresh'}
+            </button>
+
+            {/* Filter Buttons */}
+            {userAreas.length > 0 && (
+              <>
+                <button
+                  onClick={() => setFilter('relevant')}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                    filter === 'relevant'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  My Areas ({filteredOutages.length})
+                </button>
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                    filter === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  All ({outages.length})
+                </button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Refresh Message */}
+        {refreshMessage.text && (
+          <div className={`mb-4 p-3 rounded-lg text-sm ${
+            refreshMessage.type === 'success'
+              ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
+              : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
+          }`}>
+            {refreshMessage.text}
+          </div>
+        )}
 
         {userAreas.length === 0 && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
