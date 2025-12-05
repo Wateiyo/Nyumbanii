@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Zap, MapPin, Calendar, Clock, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 
@@ -15,8 +15,7 @@ const PowerOutagesList = ({ userAreas = [] }) => {
     // Listen for power outages in real-time
     const outagesQuery = query(
       collection(db, 'powerOutages'),
-      where('status', 'in', ['scheduled', 'active']),
-      orderBy('scheduledDate', 'asc')
+      where('status', 'in', ['scheduled', 'active'])
     );
 
     const unsubscribe = onSnapshot(outagesQuery, (snapshot) => {
@@ -24,6 +23,14 @@ const PowerOutagesList = ({ userAreas = [] }) => {
         id: doc.id,
         ...doc.data()
       }));
+
+      // Sort by scheduledDate in JavaScript (since Firestore orderBy requires an index)
+      outagesData.sort((a, b) => {
+        const dateA = a.scheduledDate || '';
+        const dateB = b.scheduledDate || '';
+        return dateA.localeCompare(dateB);
+      });
+
       setOutages(outagesData);
       setLoading(false);
     }, (error) => {

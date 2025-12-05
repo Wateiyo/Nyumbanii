@@ -1868,15 +1868,58 @@ exports.monitorKPLCTwitter = onSchedule(
 );
 
 /**
+ * Scrape image URLs from a tweet's web page
+ */
+async function scrapeImageUrlsFromTweet(tweetUrl) {
+  try {
+    logger.info(`🌐 Scraping images from: ${tweetUrl}`);
+
+    const response = await axios.get(tweetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    const $ = cheerio.load(response.data);
+    const imageUrls = [];
+
+    // Twitter/X stores images in various places - check multiple selectors
+    $('img[src*="pbs.twimg.com/media"]').each((i, elem) => {
+      const src = $(elem).attr('src');
+      if (src) {
+        // Convert thumbnail URLs to full-size images
+        const fullSizeUrl = src.replace(/&name=\w+$/, '&name=large');
+        imageUrls.push(fullSizeUrl);
+      }
+    });
+
+    // Also check for image URLs in meta tags
+    $('meta[property="og:image"]').each((i, elem) => {
+      const content = $(elem).attr('content');
+      if (content && content.includes('pbs.twimg.com')) {
+        imageUrls.push(content);
+      }
+    });
+
+    logger.info(`🖼️ Found ${imageUrls.length} image(s) via web scraping`);
+    return [...new Set(imageUrls)]; // Remove duplicates
+  } catch (error) {
+    logger.error("❌ Error scraping tweet images:", error.message);
+    return [];
+  }
+}
+
+/**
  * Process a tweet to extract power outage information
  */
 async function processOutageTweet(tweet, tweetMedia = []) {
   try {
     let fullText = tweet.text;
+    const tweetUrl = `https://twitter.com/KenyaPower_Care/status/${tweet.id}`;
 
-    // If tweet has images, extract text from them using OCR
+    // If tweet has images from API, extract text from them using OCR
     if (tweetMedia.length > 0) {
-      logger.info(`📸 Tweet ${tweet.id} has ${tweetMedia.length} image(s), performing OCR...`);
+      logger.info(`📸 Tweet ${tweet.id} has ${tweetMedia.length} image(s) from API, performing OCR...`);
 
       for (const mediaItem of tweetMedia) {
         if (mediaItem.type === "photo" && mediaItem.url) {
@@ -1890,6 +1933,29 @@ async function processOutageTweet(tweet, tweetMedia = []) {
             logger.error("❌ OCR failed for image:", ocrError);
           }
         }
+      }
+    } else {
+      // If API didn't return media, try scraping the tweet URL
+      logger.info(`🔍 No media from API, attempting to scrape images from tweet URL...`);
+
+      const scrapedImageUrls = await scrapeImageUrlsFromTweet(tweetUrl);
+
+      if (scrapedImageUrls.length > 0) {
+        logger.info(`📸 Found ${scrapedImageUrls.length} image(s) via scraping, performing OCR...`);
+
+        for (const imageUrl of scrapedImageUrls) {
+          try {
+            const imageText = await extractTextFromImage(imageUrl);
+            if (imageText) {
+              fullText += "\n\n" + imageText;
+              logger.info(`✅ Extracted ${imageText.length} characters from scraped image`);
+            }
+          } catch (ocrError) {
+            logger.error("❌ OCR failed for scraped image:", ocrError);
+          }
+        }
+      } else {
+        logger.info(`ℹ️ No images found for tweet ${tweet.id}`);
       }
     }
 
