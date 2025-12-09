@@ -9,111 +9,74 @@ export const SUBSCRIPTION_TIERS = {
     id: 'free',
     name: 'Free Trial',
     price: 0,
-    annualPrice: 0,
     currency: 'KES',
     interval: 'monthly',
     features: [
-      '14 Days Free Trial',
-      'Up to 2 Properties',
-      'Up to 10 Tenants',
+      '1 Property',
+      'Up to 5 Tenants',
       'Basic Payment Tracking',
-      'Email Support'
+      'Limited Support',
+      '7 Days Trial'
     ],
-    propertyLimit: 2,
-    tenantLimit: 10,
-    durationDays: 14,
-    popular: false
+    propertyLimit: 1,
+    tenantLimit: 5,
+    durationDays: 7
   },
-  STARTER: {
-    id: 'starter',
-    name: 'Starter',
-    price: 99900, // KES 999/month in kobo
-    annualPrice: 959040, // KES 9,590.40/year (20% discount) in kobo
+  BASIC: {
+    id: 'basic',
+    name: 'Basic',
+    price: 299900, // KES 2,999 in kobo (Paystack uses smallest currency unit)
     currency: 'KES',
     interval: 'monthly',
     features: [
       'Up to 5 Properties',
-      'Up to 500 Tenants',
+      'Unlimited Tenants',
       'Payment Tracking & Reminders',
       'Maintenance Request Management',
-      '2 Team Member Accounts',
-      'Basic Reports & Analytics',
+      'Basic Reports',
       'Email Support'
     ],
     propertyLimit: 5,
-    tenantLimit: 500,
-    teamMemberLimit: 2,
-    popular: false
+    tenantLimit: -1 // -1 means unlimited
   },
   PROFESSIONAL: {
     id: 'professional',
     name: 'Professional',
-    price: 199900, // KES 1,999/month in kobo
-    annualPrice: 1919040, // KES 19,190.40/year (20% discount) in kobo
+    price: 499900, // KES 4,999 in kobo
     currency: 'KES',
     interval: 'monthly',
     features: [
       'Up to 20 Properties',
-      'Up to 2,000 Tenants',
+      'Unlimited Tenants',
       'Advanced Payment Tracking',
-      '5 Team Member Accounts',
-      'Maintenance Management',
+      'Team Management',
+      'Maintenance Request Management',
       'Advanced Analytics & Reports',
-      'Bulk SMS & Email Messaging',
-      'Document Management',
-      'Priority Email Support'
+      'Bulk Messaging',
+      'Priority Support'
     ],
     propertyLimit: 20,
-    tenantLimit: 2000,
-    teamMemberLimit: 5,
+    tenantLimit: -1,
     popular: true
-  },
-  BUSINESS: {
-    id: 'business',
-    name: 'Business',
-    price: 399900, // KES 3,999/month in kobo
-    annualPrice: 3839040, // KES 38,390.40/year (20% discount) in kobo
-    currency: 'KES',
-    interval: 'monthly',
-    features: [
-      'Up to 50 Properties',
-      'Up to 5,000 Tenants',
-      'All Professional Features',
-      '10 Team Member Accounts',
-      'Custom Branding & Logo',
-      'API Access for Integrations',
-      'Advanced Team Permissions',
-      'Automated Workflows',
-      'Custom Report Builder',
-      'Priority Phone & Email Support'
-    ],
-    propertyLimit: 50,
-    tenantLimit: 5000,
-    teamMemberLimit: 10,
-    popular: false
   },
   ENTERPRISE: {
     id: 'enterprise',
     name: 'Enterprise',
-    price: null, // Contact for pricing
-    annualPrice: null, // Contact for pricing
+    price: 999900, // KES 9,999 in kobo
     currency: 'KES',
-    interval: 'custom',
-    contactForPricing: true,
+    interval: 'monthly',
     features: [
       'Unlimited Properties',
       'Unlimited Tenants',
-      'All Business Features',
-      'Custom Solutions & Integrations',
-      'Dedicated Support',
-      'Priority Email & Phone Support',
-      'Advanced Analytics & Reporting',
-      'Custom Training & Onboarding',
-      'Flexible Contract Terms'
+      'All Professional Features',
+      'Custom Branding',
+      'API Access',
+      'Dedicated Account Manager',
+      '24/7 Priority Support',
+      'Custom Integrations'
     ],
     propertyLimit: -1,
-    tenantLimit: -1,
-    popular: false
+    tenantLimit: -1
   }
 };
 
