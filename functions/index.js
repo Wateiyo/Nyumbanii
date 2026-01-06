@@ -22,12 +22,19 @@ setGlobalOptions({
 });
 
 // Initialize Resend with API key from environment
-// For v2 functions, use process.env with defineString
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_W3AongKC_F2RkznoNFPjDxafD4D3qLXCD";
+// IMPORTANT: Set this with: firebase functions:config:set resend.api_key="YOUR_PRODUCTION_KEY"
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+if (!RESEND_API_KEY) {
+  logger.warn("⚠️ RESEND_API_KEY not set. Emails will fail. Set with: firebase functions:config:set resend.api_key='your_key'");
+}
 const resend = new Resend(RESEND_API_KEY);
 
 // Initialize Paystack Secret Key
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
+// IMPORTANT: Set this with: firebase functions:config:set paystack.secret_key="YOUR_LIVE_SECRET_KEY"
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+if (!PAYSTACK_SECRET_KEY) {
+  logger.warn("⚠️ PAYSTACK_SECRET_KEY not set. Payments will fail. Set with: firebase functions:config:set paystack.secret_key='your_key'");
+}
 
 // Log initialization
 logger.info("✅ Resend initialized with API key");
@@ -99,7 +106,7 @@ exports.sendTeamInvitation = onDocumentCreated(
         : 'Maintenance Staff';
 
       const { data, error } = await resend.emails.send({
-        from: 'delivered@resend.dev',
+        from: 'Nyumbanii Team <noreply@nyumbanii.org>',
         to: [teamMember.email],
         subject: 'Invitation to Join Nyumbanii Property Management',
         html: `
@@ -228,7 +235,7 @@ exports.sendTenantInvitation = onDocumentCreated(
       const propertyName = propertyData?.name || tenant.property;
 
       const { data, error } = await resend.emails.send({
-        from: 'Nyumbanii <onboarding@resend.dev>',
+        from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [tenant.email],
         subject: 'Welcome to Your Tenant Portal - Nyumbanii',
         html: `
@@ -341,9 +348,9 @@ exports.sendMemoToTenants = onCall(
       logger.info('Sending memo to', tenants.length, 'tenants');
 
       // Send email to each tenant
-      const emailPromises = tenants.map(tenant => 
+      const emailPromises = tenants.map(tenant =>
         resend.emails.send({
-          from: 'Nyumbanii <onboarding@resend.dev>',
+          from: 'Nyumbanii <noreply@nyumbanii.org>',
           to: [tenant.email],
           subject: memo.subject,
           html: `
@@ -423,7 +430,7 @@ exports.sendEmailVerificationCode = onCall(
       logger.info('Sending verification code to:', email);
 
       const { data, error } = await resend.emails.send({
-        from: 'Nyumbanii <onboarding@resend.dev>',
+        from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [email],
         subject: 'Verify Your Email - Nyumbanii',
         html: `
@@ -502,7 +509,7 @@ exports.sendViewingRequestEmail = onCall(
       logger.info('Sending viewing request to:', landlordEmail);
 
       const { data, error } = await resend.emails.send({
-        from: 'Nyumbanii <onboarding@resend.dev>',
+        from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [landlordEmail],
         subject: `New Viewing Request - ${viewing.property}`,
         html: `
@@ -553,7 +560,7 @@ exports.sendViewingConfirmationEmail = onCall(
       logger.info('Sending confirmation to:', viewing.email);
 
       const { data, error } = await resend.emails.send({
-        from: 'Nyumbanii <onboarding@resend.dev>',
+        from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [viewing.email],
         subject: `Viewing Confirmed - ${viewing.property}`,
         html: `
@@ -668,7 +675,7 @@ exports.sendRentReminders = onSchedule(
 
               // Send reminder email
               const emailResult = await resend.emails.send({
-                from: 'Karibu Nyumbanii <noreply@nyumbanii.co.ke>',
+                from: 'Nyumbanii <noreply@nyumbanii.org>',
                 to: tenant.email,
                 subject: `Rent Reminder: Payment Due in ${reminderDays} Days`,
                 html: `
@@ -824,7 +831,7 @@ exports.sendOverdueNotices = onSchedule(
 
               // Send overdue notice email
               const emailResult = await resend.emails.send({
-                from: 'Karibu Nyumbanii <noreply@nyumbanii.co.ke>',
+                from: 'Nyumbanii <noreply@nyumbanii.org>',
                 to: tenant.email,
                 subject: `⚠️ Overdue Payment Notice - ${daysOverdue} Days Late`,
                 html: `
@@ -990,7 +997,7 @@ exports.generateMonthlyReports = onSchedule(
 
           // Send report email
           const emailResult = await resend.emails.send({
-            from: 'Karibu Nyumbanii <noreply@nyumbanii.co.ke>',
+            from: 'Nyumbanii <noreply@nyumbanii.org>',
             to: landlord.email,
             subject: `Monthly Report: ${monthName} ${year}`,
             html: `
@@ -1463,7 +1470,7 @@ exports.paystackWebhook = onRequest(
         if (userData?.email) {
           try {
             await resend.emails.send({
-              from: "Nyumbanii <onboarding@resend.dev>",
+              from: "Nyumbanii <noreply@nyumbanii.org>",
               to: userData.email,
               subject: "Payment Successful - Subscription Activated",
               html: `

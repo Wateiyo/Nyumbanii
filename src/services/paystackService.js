@@ -26,6 +26,7 @@ export const SUBSCRIPTION_TIERS = {
     id: 'basic',
     name: 'Basic',
     price: 299900, // KES 2,999 in kobo (Paystack uses smallest currency unit)
+    annualPrice: 2879040, // KES 28,790.40 (20% discount)
     currency: 'KES',
     interval: 'monthly',
     features: [
@@ -43,6 +44,7 @@ export const SUBSCRIPTION_TIERS = {
     id: 'professional',
     name: 'Professional',
     price: 499900, // KES 4,999 in kobo
+    annualPrice: 4799040, // KES 47,990.40 (20% discount)
     currency: 'KES',
     interval: 'monthly',
     features: [
@@ -63,6 +65,7 @@ export const SUBSCRIPTION_TIERS = {
     id: 'enterprise',
     name: 'Enterprise',
     price: 999900, // KES 9,999 in kobo
+    annualPrice: 9599040, // KES 95,990.40 (20% discount)
     currency: 'KES',
     interval: 'monthly',
     features: [
@@ -74,6 +77,27 @@ export const SUBSCRIPTION_TIERS = {
       'Dedicated Account Manager',
       '24/7 Priority Support',
       'Custom Integrations'
+    ],
+    propertyLimit: -1,
+    tenantLimit: -1
+  },
+  CUSTOM: {
+    id: 'custom',
+    name: 'Custom',
+    price: null,
+    annualPrice: null,
+    contactForPricing: true,
+    currency: 'KES',
+    interval: 'monthly',
+    features: [
+      'Everything in Enterprise',
+      'Custom Feature Development',
+      'White Label Solution',
+      'Multi-Region Support',
+      'Custom SLA',
+      'On-Premise Deployment Option',
+      'Personalized Training',
+      'Direct Line to CTO'
     ],
     propertyLimit: -1,
     tenantLimit: -1
