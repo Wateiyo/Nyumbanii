@@ -4,6 +4,7 @@ const {onCall} = require("firebase-functions/v2/https");
 const {onRequest} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
+const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { Resend } = require("resend");
 const axios = require("axios");
@@ -21,23 +22,23 @@ setGlobalOptions({
   memory: "256MiB"
 });
 
-// Initialize Resend with API key from environment
-// IMPORTANT: Set this with: firebase functions:config:set resend.api_key="YOUR_PRODUCTION_KEY"
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-if (!RESEND_API_KEY) {
-  logger.warn("⚠️ RESEND_API_KEY not set. Emails will fail. Set with: firebase functions:config:set resend.api_key='your_key'");
-}
+// Get API keys from Firebase Functions config
+// Set these with: firebase functions:config:set resend.api_key="YOUR_KEY" paystack.secret_key="YOUR_KEY"
+// Using placeholder for build-time, actual keys loaded at runtime
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_placeholder_for_build_only";
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "placeholder";
+
+// Initialize Resend with placeholder for build
 const resend = new Resend(RESEND_API_KEY);
 
-// Initialize Paystack Secret Key
-// IMPORTANT: Set this with: firebase functions:config:set paystack.secret_key="YOUR_LIVE_SECRET_KEY"
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-if (!PAYSTACK_SECRET_KEY) {
-  logger.warn("⚠️ PAYSTACK_SECRET_KEY not set. Payments will fail. Set with: firebase functions:config:set paystack.secret_key='your_key'");
+// Lazy initialization helper that gets config at runtime
+function getApiKeys() {
+  const config = functions.config();
+  return {
+    resendKey: config.resend?.api_key || RESEND_API_KEY,
+    paystackKey: config.paystack?.secret_key || PAYSTACK_SECRET_KEY
+  };
 }
-
-// Log initialization
-logger.info("✅ Resend initialized with API key");
 
 // ==========================================
 // FIRESTORE TRIGGERS (Background Functions)
