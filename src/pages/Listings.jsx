@@ -89,6 +89,8 @@ const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [filterLocation, setFilterLocation] = useState('all');
+  const [locationInput, setLocationInput] = useState('');
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingData, setBookingData] = useState({
     name: '',
@@ -211,15 +213,66 @@ const Listings = () => {
     return () => unsubscribe();
   }, [propertyDetails]);
 
-  const locations = ['all', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Kwale', 'Karen', 'Westlands', 'Kilimani', 'Parklands', 'CBD'];
+  // Comprehensive list of Kenyan locations
+  const allLocations = [
+    'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Malindi', 'Kitale', 'Garissa', 'Kakamega',
+    'Karen', 'Westlands', 'Kilimani', 'Parklands', 'CBD', 'Kileleshwa', 'Lavington', 'Runda', 'Muthaiga',
+    'Upperhill', 'South B', 'South C', 'Hurlingham', 'Ngong', 'Rongai', 'Kitengela', 'Ruaka', 'Ruiru',
+    'Juja', 'Kahawa', 'Kasarani', 'Roysambu', 'Zimmerman', 'Pipeline', 'Embakasi', 'Donholm', 'Buruburu',
+    'Umoja', 'Komarock', 'Kayole', 'Njiru', 'Utawala', 'Syokimau', 'Mlolongo', 'Athi River', 'Machakos',
+    'Nyali', 'Bamburi', 'Shanzu', 'Diani', 'Kilifi', 'Kwale', 'Likoni', 'Changamwe', 'Kisauni',
+    'Kiambu', 'Limuru', 'Kikuyu', 'Ngong Road', 'Langata', 'Nairobi West', 'Adams Arcade', 'Yaya Center',
+    'Junction', 'Gigiri', 'Spring Valley', 'Loresho', 'Ridgeways', 'Rosslyn', 'Red Hill', 'Two Rivers',
+    'Garden Estate', 'Pangani', 'Eastleigh', 'South B', 'Imara Daima', 'Madaraka', 'Nyayo Estate',
+    'Milimani', 'Kilimani', 'Kileleshwa', 'Dennis Pritt', 'Argwings Kodhek', 'Waiyaki Way', 'Muthangari'
+  ].sort();
+
+  // Get filtered location suggestions based on input
+  const getLocationSuggestions = (input) => {
+    if (!input || input.trim() === '') return [];
+    const searchTerm = input.toLowerCase().trim();
+    return allLocations.filter(location =>
+      location.toLowerCase().startsWith(searchTerm)
+    ).slice(0, 8); // Limit to 8 suggestions
+  };
+
+  const locationSuggestions = getLocationSuggestions(locationInput);
 
   const filteredListings = listings.filter(listing => {
     const matchesSearch = listing.propertyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          listing.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          listing.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLocation = filterLocation === 'all' || listing.location.toLowerCase().includes(filterLocation.toLowerCase());
+
+    // If locationInput is being used, filter by it; otherwise use filterLocation
+    const locationToMatch = locationInput.trim() !== '' ? locationInput : filterLocation;
+    const matchesLocation = locationToMatch === 'all' || locationToMatch === '' ||
+                           listing.location.toLowerCase().includes(locationToMatch.toLowerCase());
+
     return matchesSearch && matchesLocation;
   });
+
+  // Handle location selection from autocomplete
+  const handleLocationSelect = (location) => {
+    setLocationInput(location);
+    setFilterLocation(location);
+    setShowLocationSuggestions(false);
+  };
+
+  // Handle location input change
+  const handleLocationInputChange = (value) => {
+    setLocationInput(value);
+    setShowLocationSuggestions(value.trim() !== '');
+    if (value.trim() === '') {
+      setFilterLocation('all');
+    }
+  };
+
+  // Handle clearing location
+  const handleClearLocation = () => {
+    setLocationInput('');
+    setFilterLocation('all');
+    setShowLocationSuggestions(false);
+  };
 
   const handleBookViewing = async () => {
   if (bookingData.name && bookingData.email && bookingData.phone && bookingData.date && bookingData.time) {
@@ -385,18 +438,43 @@ const Listings = () => {
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none text-gray-900"
               />
             </div>
-            <div className="flex gap-2">
-              <select
-                value={filterLocation}
-                onChange={(e) => setFilterLocation(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none text-gray-900"
-              >
-                {locations.map(loc => (
-                  <option key={loc} value={loc}>
-                    {loc === 'all' ? 'All Locations' : loc}
-                  </option>
-                ))}
-              </select>
+
+            {/* Autocomplete Location Input */}
+            <div className="relative md:w-64">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+              <input
+                type="text"
+                placeholder="Enter location..."
+                value={locationInput}
+                onChange={(e) => handleLocationInputChange(e.target.value)}
+                onFocus={() => locationInput.trim() !== '' && setShowLocationSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
+                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent outline-none text-gray-900"
+              />
+              {locationInput && (
+                <button
+                  onClick={handleClearLocation}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+
+              {/* Autocomplete Suggestions Dropdown */}
+              {showLocationSuggestions && locationSuggestions.length > 0 && (
+                <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                  {locationSuggestions.map((location, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleLocationSelect(location)}
+                      className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors flex items-center gap-2 border-b border-gray-100 last:border-b-0"
+                    >
+                      <MapPin className="w-4 h-4 text-[#003366]" />
+                      <span className="text-gray-900">{location}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
