@@ -1237,7 +1237,7 @@ const handleEditProperty = async () => {
         type: 'tenant', // Distinguish from team member invitations
         status: 'pending', // pending, accepted, expired
         createdAt: serverTimestamp(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+        expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days from now
       };
 
       await addDoc(collection(db, 'invitations'), invitationData);
@@ -2515,7 +2515,7 @@ const handleAddTeamMember = async () => {
       type: 'team_member', // Distinguish from tenant invitations
       status: 'pending',
       createdAt: serverTimestamp(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+      expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days from now
     };
 
     await addDoc(collection(db, 'invitations'), invitationData);

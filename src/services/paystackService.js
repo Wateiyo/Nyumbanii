@@ -16,11 +16,11 @@ export const SUBSCRIPTION_TIERS = {
       'Up to 5 Tenants',
       'Basic Payment Tracking',
       'Limited Support',
-      '7 Days Trial'
+      '14 Days Trial'
     ],
     propertyLimit: 1,
     tenantLimit: 5,
-    durationDays: 7
+    durationDays: 14
   },
   BASIC: {
     id: 'basic',
