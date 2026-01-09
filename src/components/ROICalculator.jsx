@@ -150,53 +150,53 @@ const ROICalculator = () => {
                 Your Potential Savings
               </h3>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Time Saved */}
-                <div className="bg-white/10 backdrop-blur rounded-xl p-4">
+                <div className="bg-white/10 backdrop-blur rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <Clock className="w-5 h-5" />
-                    <span className="text-sm text-blue-100">Time Saved Per Month</span>
+                    <Clock className="w-4 h-4" />
+                    <span className="text-xs text-blue-100">Time Saved Per Month</span>
                   </div>
-                  <p className="text-3xl font-bold">{hoursSaved.toFixed(0)} hours</p>
-                  <p className="text-xs text-blue-200 mt-1">
-                    That's {(hoursSaved / 8).toFixed(1)} work days back!
+                  <p className="text-2xl font-bold">{hoursSaved.toFixed(0)} hours</p>
+                  <p className="text-xs text-blue-200 mt-0.5">
+                    {(hoursSaved / 8).toFixed(1)} work days back!
                   </p>
                 </div>
 
                 {/* Money Saved */}
-                <div className="bg-white/10 backdrop-blur rounded-xl p-4">
+                <div className="bg-white/10 backdrop-blur rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <DollarSign className="w-5 h-5" />
-                    <span className="text-sm text-blue-100">Cost Savings Per Month</span>
+                    <DollarSign className="w-4 h-4" />
+                    <span className="text-xs text-blue-100">Cost Savings Per Month</span>
                   </div>
-                  <p className="text-3xl font-bold">KES {moneySaved.toLocaleString()}</p>
-                  <p className="text-xs text-blue-200 mt-1">
+                  <p className="text-2xl font-bold">KES {moneySaved.toLocaleString()}</p>
+                  <p className="text-xs text-blue-200 mt-0.5">
                     KES {yearlyMoneySaved.toLocaleString()} per year
                   </p>
                 </div>
 
                 {/* Net Savings */}
-                <div className="bg-white rounded-xl p-4 text-gray-900">
-                  <div className="flex justify-between items-start mb-3">
+                <div className="bg-white rounded-lg p-3 text-gray-900">
+                  <div className="flex justify-between items-start mb-2">
                     <div>
-                      <p className="text-xs text-gray-600 mb-1">Nyumbanii Cost</p>
-                      <p className="text-lg font-bold text-gray-700">
+                      <p className="text-xs text-gray-600 mb-0.5">Nyumbanii Cost</p>
+                      <p className="text-base font-bold text-gray-700">
                         KES {nyumbaaniMonthlyCost.toLocaleString()}/mo
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-600 mb-1">Net Monthly Savings</p>
-                      <p className="text-lg font-bold text-green-600">
+                      <p className="text-xs text-gray-600 mb-0.5">Net Monthly Savings</p>
+                      <p className="text-base font-bold text-green-600">
                         KES {netMonthlySavings.toLocaleString()}
                       </p>
                     </div>
                   </div>
-                  <div className="border-t pt-3">
-                    <p className="text-xs text-gray-600 mb-1">Total Net Savings (First Year)</p>
-                    <p className="text-2xl font-bold text-green-600">
+                  <div className="border-t pt-2">
+                    <p className="text-xs text-gray-600 mb-0.5">Total Net Savings (First Year)</p>
+                    <p className="text-xl font-bold text-green-600">
                       KES {netYearlySavings.toLocaleString()}
                     </p>
-                    <div className="mt-2 inline-flex items-center gap-2 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold">
+                    <div className="mt-1.5 inline-flex items-center gap-1 bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-semibold">
                       <TrendingUp className="w-3 h-3" />
                       {roi}% ROI
                     </div>
