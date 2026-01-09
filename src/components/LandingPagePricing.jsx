@@ -80,9 +80,10 @@ const LandingPagePricing = () => {
             return (
               <div
                 key={tier.id}
-                className={`relative bg-white rounded-2xl shadow-xl overflow-hidden transition-all hover:shadow-2xl ${
+                onClick={() => handleSelectPaidPlan(tier)}
+                className={`relative bg-white rounded-2xl shadow-xl overflow-hidden transition-all hover:shadow-2xl cursor-pointer ${
                   tier.popular ? 'ring-2 ring-[#003366] scale-105' : ''
-                }`}
+                } hover:scale-110`}
               >
                 {tier.popular && (
                   <div className="absolute top-0 right-0 bg-[#003366] text-white px-4 py-1 rounded-bl-lg font-semibold text-sm flex items-center gap-1">
