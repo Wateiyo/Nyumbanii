@@ -2458,16 +2458,18 @@ const PropertyManagerDashboard = () => {
             <EnhancedCalendar
               tenants={tenants}
               maintenanceRequests={maintenanceRequests}
+              viewings={viewingBookings}
               showRentDue={true}
               showMaintenance={true}
               showLeaseExpiry={true}
+              showViewings={true}
               onEventClick={(event) => {
                 if (event.type === 'maintenance' && event.request) {
-                  // Could open a modal or navigate to maintenance details
-                  console.log('Maintenance event clicked:', event.request);
+                  setCurrentView('maintenance');
                 } else if (event.type === 'rent' && event.tenant) {
-                  // Could navigate to tenant details
-                  console.log('Rent event clicked:', event.tenant);
+                  setCurrentView('tenants');
+                } else if (event.type === 'viewing' && event.viewing) {
+                  setCurrentView('viewings');
                 }
               }}
             />

@@ -270,6 +270,35 @@ export const maintenanceToCalendarEvent = (request) => {
 };
 
 /**
+ * Convert viewing to calendar event
+ * @param {Object} viewing - Viewing object
+ * @returns {Object} - Calendar event object
+ */
+export const viewingToCalendarEvent = (viewing) => {
+  const viewingDate = viewing.date?.toDate
+    ? viewing.date.toDate()
+    : new Date();
+
+  // Parse time if available, otherwise default to 10:00
+  const timeStr = viewing.time || '10:00';
+  const [hours, minutes] = timeStr.split(':').map(Number);
+
+  const startDate = new Date(viewingDate);
+  startDate.setHours(hours || 10, minutes || 0, 0, 0);
+
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour duration
+
+  return {
+    title: `Property Viewing - ${viewing.property}`,
+    description: `Property viewing at ${viewing.property}\nProspect: ${viewing.prospectName || viewing.name || 'N/A'}\nStatus: ${viewing.status || 'pending'}\nContact: ${viewing.prospectPhone || viewing.phone || 'N/A'}`,
+    startDate,
+    endDate,
+    location: viewing.property || '',
+    status: viewing.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE'
+  };
+};
+
+/**
  * Convert lease expiry to calendar event
  * @param {Object} tenant - Tenant object
  * @returns {Object} - Calendar event object
@@ -300,5 +329,6 @@ export default {
   generateOutlookCalendarUrl,
   rentDueToCalendarEvent,
   maintenanceToCalendarEvent,
+  viewingToCalendarEvent,
   leaseExpiryToCalendarEvent
 };

@@ -15,21 +15,24 @@ import {
   generateOutlookCalendarUrl,
   rentDueToCalendarEvent,
   maintenanceToCalendarEvent,
+  viewingToCalendarEvent,
   leaseExpiryToCalendarEvent
 } from '../utils/calendarUtils';
 
 const EnhancedCalendar = ({
   tenants = [],
   maintenanceRequests = [],
+  viewings = [],
   showRentDue = true,
   showMaintenance = true,
   showLeaseExpiry = true,
+  showViewings = true,
   onEventClick = null
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const [filterType, setFilterType] = useState('all'); // all, rent, maintenance, lease
+  const [filterType, setFilterType] = useState('all'); // all, rent, maintenance, lease, viewings
 
   // Get calendar data
   const getDaysInMonth = (date) => {
@@ -121,6 +124,31 @@ const EnhancedCalendar = ({
               tenant,
               color: 'bg-red-500',
               icon: '📋'
+            });
+          }
+        }
+      });
+    }
+
+    // Viewing events
+    if (showViewings && (filterType === 'all' || filterType === 'viewings')) {
+      viewings.forEach(viewing => {
+        if (viewing.date) {
+          const viewingDate = viewing.date.toDate
+            ? viewing.date.toDate()
+            : new Date(viewing.date);
+
+          if (
+            viewingDate.getDate() === day &&
+            viewingDate.getMonth() === currentDate.getMonth() &&
+            viewingDate.getFullYear() === currentDate.getFullYear()
+          ) {
+            events.push({
+              type: 'viewing',
+              title: `Viewing - ${viewing.property}`,
+              viewing,
+              color: viewing.status === 'confirmed' ? 'bg-purple-500' : 'bg-indigo-500',
+              icon: '👁️'
             });
           }
         }
@@ -301,6 +329,7 @@ const EnhancedCalendar = ({
                 <option value="all" className="text-gray-900">All Events</option>
                 <option value="rent" className="text-gray-900">Rent Only</option>
                 <option value="maintenance" className="text-gray-900">Maintenance Only</option>
+                <option value="viewings" className="text-gray-900">Viewings Only</option>
                 <option value="lease" className="text-gray-900">Lease Expiry</option>
               </select>
               <Filter className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
@@ -389,6 +418,14 @@ const EnhancedCalendar = ({
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <span className="text-gray-700">Completed</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+          <span className="text-gray-700">Viewings (Confirmed)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+          <span className="text-gray-700">Viewings (Pending)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500"></div>

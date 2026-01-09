@@ -1662,13 +1662,13 @@ const MaintenanceStaffDashboard = () => {
             <EnhancedCalendar
               tenants={[]}
               maintenanceRequests={maintenanceRequests}
+              viewings={[]}
               showRentDue={false}
               showMaintenance={true}
               showLeaseExpiry={false}
+              showViewings={false}
               onEventClick={(event) => {
                 if (event.type === 'maintenance' && event.request) {
-                  // Could navigate to request details or open modal
-                  console.log('Maintenance event clicked:', event.request);
                   setCurrentView('requests');
                 }
               }}

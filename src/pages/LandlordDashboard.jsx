@@ -4886,14 +4886,18 @@ const handleViewTenantDetails = (tenant) => {
           <EnhancedCalendar
             tenants={tenants}
             maintenanceRequests={maintenanceRequests}
+            viewings={viewings}
             showRentDue={true}
             showMaintenance={true}
             showLeaseExpiry={true}
+            showViewings={true}
             onEventClick={(event) => {
               if (event.type === 'maintenance' && event.request) {
                 setCurrentView('maintenance');
               } else if (event.type === 'rent' && event.tenant) {
                 setCurrentView('tenants');
+              } else if (event.type === 'viewing' && event.viewing) {
+                setCurrentView('viewings');
               }
             }}
           />
