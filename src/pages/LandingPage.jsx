@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import LandingPagePricing from '../components/LandingPagePricing';
 import Testimonials from '../components/Testimonials';
-import CaseStudies from '../components/CaseStudies';
 import ROICalculator from '../components/ROICalculator';
 import VideoDemo from '../components/VideoDemo';
 import LeadMagnets from '../components/LeadMagnets';
@@ -201,11 +200,11 @@ const LandingPage = () => {
             </div>
             <div className="relative flex items-center justify-center lg:justify-end">
               <div className="relative w-full max-w-2xl aspect-square">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500 rounded-full"></div>
+                <div className="absolute inset-0 bg-blue-400 rounded-full"></div>
                 <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12 lg:p-16">
-                  <img 
-                    src="/images/laptop.png" 
-                    alt="App Dashboard" 
+                  <img
+                    src="/images/laptop.png"
+                    alt="App Dashboard"
                     className="w-full h-auto object-contain drop-shadow-2xl"
                   />
                 </div>
@@ -288,47 +287,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section id="partners" className="py-20 px-4 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-gray-900 mb-12 text-center">Trusted Partners</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/Hexa Logo.png" alt="Partner 1" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/Tech Logo.png" alt="Partner 2" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/real.png" alt="Partner 3" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/real1.png" alt="Partner 4" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/real2.png" alt="Partner 5" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Video Demo Section */}
-      <VideoDemo />
-
-      {/* Testimonials Section */}
-      <Testimonials />
-
-      {/* Case Studies Section */}
-      <CaseStudies />
-
-      {/* ROI Calculator Section */}
-      <ROICalculator />
-
-      {/* Lead Magnets Section */}
-      <LeadMagnets />
-
-      {/* Pricing Section - Now using LandingPagePricing component with payment integration */}
-      <LandingPagePricing />
-
       <section id="how-it-works" className="py-20 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -358,6 +316,44 @@ const LandingPage = () => {
         </div>
       </section>
 
+      <section id="partners" className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl font-bold text-gray-900 mb-12 text-center">Trusted Partners</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
+              <img src="/images/Hexa Logo.png" alt="Partner 1" className="w-full h-auto max-h-16 object-contain" />
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
+              <img src="/images/Tech Logo.png" alt="Partner 2" className="w-full h-auto max-h-16 object-contain" />
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
+              <img src="/images/real.png" alt="Partner 3" className="w-full h-auto max-h-16 object-contain" />
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
+              <img src="/images/real1.png" alt="Partner 4" className="w-full h-auto max-h-16 object-contain" />
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
+              <img src="/images/real2.png" alt="Partner 5" className="w-full h-auto max-h-16 object-contain" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <LandingPagePricing />
+
+      {/* Video Demo Section */}
+      <VideoDemo />
+
+      {/* Testimonials Section */}
+      <Testimonials />
+
+      {/* ROI Calculator Section */}
+      <ROICalculator />
+
+      {/* Lead Magnets Section */}
+      <LeadMagnets />
+
       <section id="contact" className="py-20 px-4 bg-white">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
@@ -379,7 +375,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="py-20 px-4 bg-gradient-to-r from-blue-900 to-blue-900 text-white">
+      <section className="py-20 px-4 bg-blue-900 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Ready to Transform Your Property Management?
@@ -387,9 +383,9 @@ const LandingPage = () => {
           <p className="text-xl mb-8 text-blue-100">
             Join hundreds of landlords and tenants already using Nyumbanii
           </p>
-          <button 
+          <button
             onClick={() => navigate('/register')}
-            className="bg-white text-blue-900 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-semibold transition-all hover:shadow-xl hover:scale-105 inline-flex items-center gap-2"
+            className="bg-white text-blue-900 hover:bg-gray-100 px-8 py-4 rounded-lg text-lg font-semibold transition-all inline-flex items-center gap-2"
           >
             Get Started Free
             <ArrowRight className="w-5 h-5" />

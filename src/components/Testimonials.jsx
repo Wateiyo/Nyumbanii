@@ -29,33 +29,6 @@ const Testimonials = () => {
       rating: 5,
       text: "The tenant communication feature is incredible. No more endless phone calls. Tenants submit maintenance requests, I approve estimates, and everything is documented. Worth every shilling!",
       properties: "8 properties"
-    },
-    {
-      name: "James Kamau",
-      role: "Real Estate Investor",
-      location: "Nairobi",
-      image: "/images/testimonial-4.jpg",
-      rating: 5,
-      text: "I was skeptical at first, but after the free trial, I was sold. The analytics dashboard helps me make data-driven decisions. My tenant satisfaction rate has increased to 95%.",
-      properties: "25 properties"
-    },
-    {
-      name: "Mary Akinyi",
-      role: "Property Owner",
-      location: "Eldoret",
-      image: "/images/testimonial-5.jpg",
-      rating: 5,
-      text: "The property listing feature helped me fill 3 vacant units in just 2 weeks. Prospective tenants can book viewings directly, and the whole process is seamless.",
-      properties: "12 properties"
-    },
-    {
-      name: "Peter Mwangi",
-      role: "Landlord",
-      location: "Nakuru",
-      image: "/images/testimonial-6.jpg",
-      rating: 5,
-      text: "Budget tracking and expense management are excellent. I can see exactly where my money is going for each property. The Paystack integration makes payments effortless.",
-      properties: "6 properties"
     }
   ];
 

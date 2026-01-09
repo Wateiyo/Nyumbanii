@@ -27,7 +27,7 @@ const ROICalculator = () => {
   const roi = ((netYearlySavings / (nyumbaaniMonthlyCost * 12)) * 100).toFixed(0);
 
   return (
-    <section className="py-20 px-4 bg-gradient-to-br from-blue-50 to-white">
+    <section className="py-20 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-900 px-4 py-2 rounded-full font-semibold mb-4">
@@ -144,7 +144,7 @@ const ROICalculator = () => {
           {/* Right: Results Section */}
           <div className="space-y-6">
             {/* Main Results Card */}
-            <div className="bg-gradient-to-br from-blue-900 to-blue-800 text-white rounded-2xl shadow-2xl p-8">
+            <div className="bg-blue-900 text-white rounded-2xl shadow-2xl p-8">
               <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <TrendingUp className="w-7 h-7" />
                 Your Potential Savings
@@ -231,7 +231,7 @@ const ROICalculator = () => {
             {/* CTA */}
             <button
               onClick={() => window.location.href = '/register'}
-              className="w-full bg-blue-900 hover:bg-blue-800 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105"
+              className="w-full bg-blue-900 hover:bg-blue-800 text-white py-4 rounded-lg font-semibold text-lg transition-all"
             >
               Start Your 14-Day Free Trial
             </button>

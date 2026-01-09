@@ -102,7 +102,7 @@ const LeadMagnetModal = ({ isOpen, onClose, resourceType }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6 relative">
+        <div className="bg-blue-900 text-white p-6 relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"

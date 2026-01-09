@@ -42,7 +42,7 @@ const VideoDemo = () => {
                 // Thumbnail with Play Button
                 <div className="relative w-full h-full">
                   {/* You can replace this with an actual thumbnail image */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-700 to-purple-900 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-blue-900 flex items-center justify-center">
                     <img
                       src="/images/video-thumbnail.jpg"
                       alt="Video Demo Thumbnail"
@@ -126,14 +126,14 @@ const VideoDemo = () => {
               ))}
             </ul>
 
-            <div className="mt-8 p-6 bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl text-white">
+            <div className="mt-8 p-6 bg-blue-900 rounded-xl text-white">
               <h4 className="font-bold text-lg mb-2">Ready to Get Started?</h4>
               <p className="text-blue-100 text-sm mb-4">
                 Sign up today and get full access to all features during your 14-day free trial.
               </p>
               <button
                 onClick={() => window.location.href = '/register'}
-                className="w-full bg-white text-blue-900 hover:bg-gray-100 py-3 rounded-lg font-semibold transition-all hover:shadow-lg"
+                className="w-full bg-white text-blue-900 hover:bg-gray-100 py-3 rounded-lg font-semibold transition-all"
               >
                 Start Free Trial
               </button>
@@ -154,7 +154,7 @@ const VideoDemo = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={() => window.location.href = '#contact'}
-              className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-semibold transition-all hover:shadow-lg"
+              className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-semibold transition-all"
             >
               Book a Live Demo
             </button>
