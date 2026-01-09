@@ -20,9 +20,19 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
           {tiers.map((tier) => (
             <div
               key={tier.id}
-              className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all hover:shadow-xl ${
+              onClick={() => {
+                if (loading || currentPlan === tier.id) return;
+                if (tier.contactForPricing) {
+                  window.location.href = 'mailto:info@nyumbanii.org?subject=Custom Plan Inquiry&body=Hello, I am interested in learning more about the Custom plan for my property management needs.';
+                } else {
+                  onSelectPlan(tier);
+                }
+              }}
+              className={`relative bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all hover:shadow-xl cursor-pointer ${
                 tier.popular ? 'ring-2 ring-[#003366] dark:ring-blue-500' : ''
-              } ${currentPlan === tier.id ? 'ring-2 ring-green-500 dark:ring-green-400' : ''}`}
+              } ${currentPlan === tier.id ? 'ring-2 ring-green-500 dark:ring-green-400' : ''} ${
+                loading || currentPlan === tier.id ? 'cursor-not-allowed opacity-75' : 'hover:scale-105'
+              }`}
             >
               {tier.popular && (
                 <div className="absolute top-0 right-0 bg-[#003366] dark:bg-blue-600 text-white px-3 py-1 rounded-bl-lg font-semibold text-xs flex items-center gap-1">
@@ -43,14 +53,30 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
                 </h3>
 
                 <div className="mb-4">
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {formatPrice(tier.price)}
-                  </span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">/mo</span>
+                  {tier.contactForPricing ? (
+                    <div className="text-center">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        Contact for Pricing
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {formatPrice(tier.price)}
+                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">/mo</span>
+                    </>
+                  )}
                 </div>
 
                 <button
-                  onClick={() => onSelectPlan(tier)}
+                  onClick={() => {
+                    if (tier.contactForPricing) {
+                      window.location.href = 'mailto:info@nyumbanii.org?subject=Custom Plan Inquiry&body=Hello, I am interested in learning more about the Custom plan for my property management needs.';
+                    } else {
+                      onSelectPlan(tier);
+                    }
+                  }}
                   disabled={loading || currentPlan === tier.id}
                   className={`w-full py-2 px-4 rounded-lg font-semibold transition-colors mb-4 text-sm ${
                     tier.popular
@@ -66,6 +92,8 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
                     ? 'Processing...'
                     : currentPlan === tier.id
                     ? 'Current'
+                    : tier.contactForPricing
+                    ? 'Contact Us'
                     : 'Select'}
                 </button>
 
