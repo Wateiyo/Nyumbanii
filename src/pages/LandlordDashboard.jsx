@@ -95,6 +95,7 @@ import {
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
+import CalendarWidget from '../components/CalendarWidget';
 
 const LandlordDashboard = () => {
   const navigate = useNavigate();
@@ -4877,111 +4878,23 @@ const handleViewTenantDetails = (tenant) => {
     {/* ===== CONTENT SECTION ===== */}
     <div className="px-6 pb-8">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* ===== CALENDAR SECTION ===== */}
-        <div className="mb-8">
-          {/* Section Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 mt-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Schedule Calendar</h2>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-gray-700 dark:text-gray-300">Viewings</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                <span className="text-sm text-gray-700 dark:text-gray-300">Maintenance</span>
-              </div>
+        <div className="mb-8 mt-6">
+          {/* Legend */}
+          <div className="flex items-center gap-6 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-sm text-gray-700 dark:text-gray-300">Viewings</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+              <span className="text-sm text-gray-700 dark:text-gray-300">Maintenance</span>
             </div>
           </div>
 
-          {/* Calendar Grid */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
-            {/* Calendar Header - Days of Week */}
-            <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar Body */}
-            <div className="grid grid-cols-7 auto-rows-fr">
-              {/* Empty cells */}
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-700"></div>
-              
-              {/* Days 1-4 */}
-              {[1, 2, 3, 4].map(day => (
-                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${day !== 4 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
-                </div>
-              ))}
-
-              {/* Days 5-6 */}
-              {[5, 6].map(day => (
-                <div key={day} className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
-                </div>
-              ))}
-              
-              {/* Day 7 - With Events */}
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">7</div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                    <CalendarCheck className="w-3 h-3 flex-shrink-0" />
-                    <span>1</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
-                    <Wrench className="w-3 h-3 flex-shrink-0" />
-                    <span>1</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Day 8 - With Events */}
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">8</div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                    <CalendarCheck className="w-3 h-3 flex-shrink-0" />
-                    <span>1</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
-                    <Wrench className="w-3 h-3 flex-shrink-0" />
-                    <span>1</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Day 9 - With Event */}
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] border-r border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">9</div>
-                <div className="flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
-                  <Wrench className="w-3 h-3 flex-shrink-0" />
-                  <span>1</span>
-                </div>
-              </div>
-              
-              {/* Days 10-11 */}
-              {[10, 11].map(day => (
-                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${day === 10 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
-                </div>
-              ))}
-
-              {/* Weeks 3-5 */}
-              {[12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map((day, idx) => (
-                <div key={day} className={`aspect-square min-h-[80px] sm:min-h-[100px] border-b border-gray-200 dark:border-gray-700 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer ${(idx + 5) % 7 !== 6 ? 'border-r' : ''}`}>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{day}</div>
-                </div>
-              ))}
-              <div className="aspect-square min-h-[80px] sm:min-h-[100px] p-2 bg-gray-50"></div>
-            </div>
-          </div>
+          {/* Dynamic Calendar Widget */}
+          <CalendarWidget events={displayCalendarEvents} />
         </div>
 
         {/* ===== UPCOMING EVENTS WITH MOCK DATA ===== */}
