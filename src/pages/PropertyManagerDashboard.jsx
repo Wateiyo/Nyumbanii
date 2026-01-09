@@ -50,6 +50,7 @@ import MaintenanceCostEstimateModal from '../components/MaintenanceCostEstimateM
 import MaintenanceCompleteWorkModal from '../components/MaintenanceCompleteWorkModal';
 import MaintenanceQuoteModal from '../components/MaintenanceQuoteModal';
 import BudgetSummaryModal from '../components/BudgetSummaryModal';
+import EnhancedCalendar from '../components/EnhancedCalendar';
 import {
   canAddTenant,
   canEditRent,
@@ -2454,53 +2455,22 @@ const PropertyManagerDashboard = () => {
           )}
 
           {currentView === 'calendar' && (
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Schedule</h2>
-              <div className="space-y-4">
-                {viewingBookings.filter(v => v.status === 'confirmed').map(viewing => (
-                  <div key={viewing.id} className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
-                    <div className="w-16 h-16 bg-blue-100 rounded-lg flex flex-col items-center justify-center">
-                      <span className="text-xs text-blue-600 font-medium">
-                        {new Date(viewing.date).toLocaleDateString('en-US', { month: 'short' })}
-                      </span>
-                      <span className="text-2xl font-bold text-blue-900">
-                        {new Date(viewing.date).getDate()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">Property Viewing</h3>
-                      <p className="text-sm text-gray-600">{viewing.prospectName} - {viewing.property}</p>
-                      <p className="text-xs text-gray-500">{viewing.time}</p>
-                    </div>
-                    <CalendarCheck className="w-6 h-6 text-blue-600" />
-                  </div>
-                ))}
-                
-                {maintenanceRequests.filter(m => m.status !== 'completed').map(request => (
-                  <div key={request.id} className="flex items-center gap-4 p-4 bg-orange-50 rounded-lg">
-                    <div className="w-16 h-16 bg-orange-100 rounded-lg flex flex-col items-center justify-center">
-                      <span className="text-xs text-orange-600 font-medium">
-                        {new Date(request.date).toLocaleDateString('en-US', { month: 'short' })}
-                      </span>
-                      <span className="text-2xl font-bold text-orange-900">
-                        {new Date(request.date).getDate()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">Maintenance</h3>
-                      <p className="text-sm text-gray-600">{request.issue} - {request.property}</p>
-                      <p className="text-xs text-gray-500">{request.scheduledTime}</p>
-                    </div>
-                    <Wrench className="w-6 h-6 text-orange-600" />
-                  </div>
-                ))}
-
-                {viewingBookings.filter(v => v.status === 'confirmed').length === 0 && 
-                 maintenanceRequests.filter(m => m.status !== 'completed').length === 0 && (
-                  <p className="text-gray-500 text-center py-8">No upcoming events</p>
-                )}
-              </div>
-            </div>
+            <EnhancedCalendar
+              tenants={tenants}
+              maintenanceRequests={maintenanceRequests}
+              showRentDue={true}
+              showMaintenance={true}
+              showLeaseExpiry={true}
+              onEventClick={(event) => {
+                if (event.type === 'maintenance' && event.request) {
+                  // Could open a modal or navigate to maintenance details
+                  console.log('Maintenance event clicked:', event.request);
+                } else if (event.type === 'rent' && event.tenant) {
+                  // Could navigate to tenant details
+                  console.log('Rent event clicked:', event.tenant);
+                }
+              }}
+            />
           )}
         </div>
       </div>

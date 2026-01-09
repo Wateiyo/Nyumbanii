@@ -44,6 +44,7 @@ import {
 import MessageModal from '../components/MessageModal';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
+import EnhancedCalendar from '../components/EnhancedCalendar';
 import { canViewFinancials } from '../utils/formatters';
 
 const MaintenanceStaffDashboard = () => {
@@ -1658,44 +1659,20 @@ const MaintenanceStaffDashboard = () => {
           )}
 
           {currentView === 'calendar' && (
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Scheduled Maintenance</h2>
-              <div className="space-y-4">
-                {maintenanceRequests.filter(r => r.status?.toLowerCase() !== 'completed').length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No scheduled maintenance</p>
-                ) : (
-                  maintenanceRequests.filter(r => r.status?.toLowerCase() !== 'completed').map(request => (
-                    <div key={request.id} className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
-                      <div className="w-16 h-16 bg-blue-100 rounded-lg flex flex-col items-center justify-center">
-                        <span className="text-xs text-blue-600 font-medium">
-                          {new Date(request.date).toLocaleDateString('en-US', { month: 'short' })}
-                        </span>
-                        <span className="text-2xl font-bold text-blue-900">
-                          {new Date(request.date).getDate()}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{request.issue}</h3>
-                        <p className="text-sm text-gray-700 font-medium mt-1">
-                          <span className="text-gray-500">Tenant:</span> {request.tenant}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          <span className="text-gray-500">Location:</span> {request.property} - Unit {request.unit}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">{request.scheduledTime}</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        request.priority === 'high' ? 'bg-red-100 text-red-800' :
-                        request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {request.priority}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            <EnhancedCalendar
+              tenants={[]}
+              maintenanceRequests={maintenanceRequests}
+              showRentDue={false}
+              showMaintenance={true}
+              showLeaseExpiry={false}
+              onEventClick={(event) => {
+                if (event.type === 'maintenance' && event.request) {
+                  // Could navigate to request details or open modal
+                  console.log('Maintenance event clicked:', event.request);
+                  setCurrentView('requests');
+                }
+              }}
+            />
           )}
 
           {currentView === 'messages' && (
@@ -2283,7 +2260,7 @@ const MaintenanceStaffDashboard = () => {
           <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
             <div>
               <div className="mb-3 sm:mb-4">
-                <label className="block font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2 text-sm sm:text-base">
+                <label className="font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2 text-sm sm:text-base">
                   <span>💰</span> Actual Cost Breakdown
                 </label>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
