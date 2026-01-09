@@ -316,29 +316,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section id="partners" className="py-20 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-gray-900 mb-12 text-center">Trusted Partners</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/Hexa Logo.png" alt="Partner 1" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/Tech Logo.png" alt="Partner 2" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/real.png" alt="Partner 3" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/real1.png" alt="Partner 4" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow flex items-center justify-center">
-              <img src="/images/real2.png" alt="Partner 5" className="w-full h-auto max-h-16 object-contain" />
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Pricing Section */}
       <LandingPagePricing />
 

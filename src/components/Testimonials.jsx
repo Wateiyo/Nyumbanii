@@ -69,7 +69,7 @@ const Testimonials = () => {
 
               {/* User Info */}
               <div className="flex items-center gap-4 border-t pt-6">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-900 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                <div className="w-14 h-14 rounded-full bg-blue-900 flex items-center justify-center text-white font-bold text-xl">
                   {testimonial.name.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div>
@@ -89,7 +89,7 @@ const Testimonials = () => {
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-900 to-blue-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
+                  className="w-8 h-8 rounded-full bg-blue-900 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
                 >
                   {String.fromCharCode(64 + i)}
                 </div>

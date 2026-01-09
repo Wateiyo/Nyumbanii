@@ -68,40 +68,40 @@ const LeadMagnets = () => {
             {resources.map((resource) => (
               <div
                 key={resource.id}
-                className={`${resource.bgColor} border-2 ${resource.borderColor} rounded-2xl p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group`}
+                className={`${resource.bgColor} border-2 ${resource.borderColor} rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group`}
                 onClick={() => openModal(resource.id)}
               >
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full text-sm font-bold text-gray-900 mb-4 shadow-sm">
+                <div className="inline-flex items-center gap-2 bg-white px-2 py-1 rounded-full text-xs font-bold text-gray-900 mb-3 shadow-sm">
                   {resource.highlight}
                 </div>
 
                 {/* Icon */}
-                <div className={`w-16 h-16 ${resource.iconBg} text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                <div className={`w-12 h-12 ${resource.iconBg} text-white rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                   {resource.icon}
                 </div>
 
                 {/* Content */}
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
                   {resource.title}
                 </h3>
-                <p className="text-gray-700 mb-4 min-h-[3rem]">
+                <p className="text-sm text-gray-700 mb-4">
                   {resource.description}
                 </p>
 
                 {/* Meta */}
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-6">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-4">
                   <span className="font-medium">{resource.pages}</span>
                   <span className="flex items-center gap-1">
-                    <Download className="w-4 h-4" />
+                    <Download className="w-3 h-3" />
                     PDF
                   </span>
                 </div>
 
                 {/* Button */}
-                <button className="w-full bg-blue-900 hover:bg-blue-800 text-white py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2">
+                <button className="w-full bg-blue-900 hover:bg-blue-800 text-white py-2 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2">
                   Download Now
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             ))}
