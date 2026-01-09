@@ -96,6 +96,7 @@ import {
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
 import CalendarWidget from '../components/CalendarWidget';
+import EnhancedCalendar from '../components/EnhancedCalendar';
 
 const LandlordDashboard = () => {
   const navigate = useNavigate();
@@ -4881,126 +4882,194 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* ===== CALENDAR SECTION ===== */}
         <div className="mb-8 mt-6">
-          {/* Legend */}
-          <div className="flex items-center gap-6 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">Viewings</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">Maintenance</span>
-            </div>
-          </div>
-
-          {/* Dynamic Calendar Widget */}
-          <CalendarWidget events={displayCalendarEvents} />
+          {/* Enhanced Calendar with Blue Banner */}
+          <EnhancedCalendar
+            tenants={tenants}
+            maintenanceRequests={maintenanceRequests}
+            showRentDue={true}
+            showMaintenance={true}
+            showLeaseExpiry={true}
+            onEventClick={(event) => {
+              if (event.type === 'maintenance' && event.request) {
+                setCurrentView('maintenance');
+              } else if (event.type === 'rent' && event.tenant) {
+                setCurrentView('tenants');
+              }
+            }}
+          />
         </div>
 
-        {/* ===== UPCOMING EVENTS WITH MOCK DATA ===== */}
+        {/* ===== UPCOMING EVENTS - DYNAMIC ===== */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Upcoming Events</h2>
-          
+
           <div className="space-y-4">
-            {/* Mock Event 1 - Viewing */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex-shrink-0 text-center">
-                <div className="text-blue-600 dark:text-blue-400 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white">7</div>
-              </div>
+            {/* Upcoming Viewings */}
+            {viewings
+              .filter(v => {
+                const viewingDate = v.date?.toDate ? v.date.toDate() : new Date(v.date);
+                return viewingDate >= new Date() && v.status !== 'cancelled';
+              })
+              .sort((a, b) => {
+                const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+                const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+                return dateA - dateB;
+              })
+              .slice(0, 3)
+              .map(viewing => {
+                const viewingDate = viewing.date?.toDate ? viewing.date.toDate() : new Date(viewing.date);
+                return (
+                  <div key={viewing.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-gray-200 dark:border-gray-700">
+                    <div className="flex-shrink-0 text-center">
+                      <div className="text-blue-600 dark:text-blue-400 text-sm font-semibold">
+                        {viewingDate.toLocaleDateString('en-US', { month: 'short' })}
+                      </div>
+                      <div className="text-4xl font-bold text-gray-900 dark:text-white">
+                        {viewingDate.getDate()}
+                      </div>
+                    </div>
 
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Property Viewing</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Sarah Johnson - Sunset Apartments</p>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">10:00</p>
-              </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Property Viewing</h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">
+                        {viewing.prospectName || viewing.name} - {viewing.property}
+                      </p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{viewing.time}</p>
+                    </div>
 
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                  <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                        <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {/* Upcoming Maintenance */}
+            {maintenanceRequests
+              .filter(req => {
+                if (!req.scheduledDate) return false;
+                const scheduledDate = req.scheduledDate?.toDate ? req.scheduledDate.toDate() : new Date(req.scheduledDate);
+                return scheduledDate >= new Date() && req.status !== 'completed';
+              })
+              .sort((a, b) => {
+                const dateA = a.scheduledDate?.toDate ? a.scheduledDate.toDate() : new Date(a.scheduledDate);
+                const dateB = b.scheduledDate?.toDate ? b.scheduledDate.toDate() : new Date(b.scheduledDate);
+                return dateA - dateB;
+              })
+              .slice(0, 3)
+              .map(request => {
+                const scheduledDate = request.scheduledDate?.toDate ? request.scheduledDate.toDate() : new Date(request.scheduledDate);
+                return (
+                  <div key={request.id} className="bg-orange-50 dark:bg-orange-900/20 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-transparent dark:border-orange-800/30">
+                    <div className="flex-shrink-0 text-center">
+                      <div className="text-orange-600 dark:text-orange-400 text-sm font-semibold">
+                        {scheduledDate.toLocaleDateString('en-US', { month: 'short' })}
+                      </div>
+                      <div className="text-4xl font-bold text-gray-900 dark:text-orange-200">
+                        {scheduledDate.getDate()}
+                      </div>
+                    </div>
+
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-orange-200 mb-1">Maintenance</h3>
+                      <p className="text-gray-600 dark:text-orange-300/80 text-sm mb-1">
+                        {request.issue} - {request.property}
+                      </p>
+                      <p className="text-gray-500 dark:text-orange-300/70 text-xs">
+                        {request.scheduledTime || scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-orange-100 dark:bg-orange-800/40 rounded-full flex items-center justify-center">
+                        <Wrench className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {/* Upcoming Rent Due */}
+            {(() => {
+              const today = new Date();
+              const upcomingRentDue = tenants
+                .filter(tenant => tenant.rentDueDay)
+                .map(tenant => {
+                  const dueDay = tenant.rentDueDay || 5;
+                  let dueDate = new Date(today.getFullYear(), today.getMonth(), dueDay);
+
+                  // If due date has passed this month, use next month
+                  if (dueDate < today) {
+                    dueDate = new Date(today.getFullYear(), today.getMonth() + 1, dueDay);
+                  }
+
+                  return {
+                    ...tenant,
+                    dueDate,
+                    daysDiff: Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24))
+                  };
+                })
+                .filter(t => t.daysDiff <= 7 && t.daysDiff >= 0) // Only show rent due within next 7 days
+                .sort((a, b) => a.dueDate - b.dueDate)
+                .slice(0, 2);
+
+              return upcomingRentDue.map(tenant => (
+                <div key={tenant.id} className="bg-green-50 dark:bg-green-900/20 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-transparent dark:border-green-800/30">
+                  <div className="flex-shrink-0 text-center">
+                    <div className="text-green-600 dark:text-green-400 text-sm font-semibold">
+                      {tenant.dueDate.toLocaleDateString('en-US', { month: 'short' })}
+                    </div>
+                    <div className="text-4xl font-bold text-gray-900 dark:text-green-200">
+                      {tenant.dueDate.getDate()}
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-green-200 mb-1">Rent Due</h3>
+                    <p className="text-gray-600 dark:text-green-300/80 text-sm mb-1">
+                      {tenant.name} - {tenant.property || 'N/A'}
+                    </p>
+                    <p className="text-gray-500 dark:text-green-300/70 text-xs">
+                      KSH {tenant.rent?.toLocaleString() || 0}
+                    </p>
+                  </div>
+
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-green-100 dark:bg-green-800/40 rounded-full flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              ));
+            })()}
 
-            {/* Mock Event 2 - Viewing */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex-shrink-0 text-center">
-                <div className="text-blue-600 dark:text-blue-400 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900 dark:text-white">8</div>
+            {/* No Events Message */}
+            {viewings.filter(v => {
+              const viewingDate = v.date?.toDate ? v.date.toDate() : new Date(v.date);
+              return viewingDate >= new Date() && v.status !== 'cancelled';
+            }).length === 0 &&
+            maintenanceRequests.filter(req => {
+              if (!req.scheduledDate) return false;
+              const scheduledDate = req.scheduledDate?.toDate ? req.scheduledDate.toDate() : new Date(req.scheduledDate);
+              return scheduledDate >= new Date() && req.status !== 'completed';
+            }).length === 0 &&
+            tenants.filter(tenant => {
+              const today = new Date();
+              const dueDay = tenant.rentDueDay || 5;
+              let dueDate = new Date(today.getFullYear(), today.getMonth(), dueDay);
+              if (dueDate < today) {
+                dueDate = new Date(today.getFullYear(), today.getMonth() + 1, dueDay);
+              }
+              const daysDiff = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+              return daysDiff <= 7 && daysDiff >= 0;
+            }).length === 0 && (
+              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                <CalendarCheck className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No upcoming events in the next 7 days</p>
               </div>
-
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Property Viewing</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Michael Ochieng - Sunset Apartments</p>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">14:00</p>
-              </div>
-
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                  <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Mock Event 3 - Maintenance */}
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-transparent dark:border-orange-800/30">
-              <div className="flex-shrink-0 text-center">
-                <div className="text-orange-600 dark:text-orange-400 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900 dark:text-orange-200">7</div>
-              </div>
-
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-orange-200 mb-1">Maintenance</h3>
-                <p className="text-gray-600 dark:text-orange-300/80 text-sm mb-1">Leaking faucet - Sunset Apartments</p>
-                <p className="text-gray-500 dark:text-orange-300/70 text-xs">09:00</p>
-              </div>
-
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-800/40 rounded-full flex items-center justify-center">
-                  <Wrench className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Mock Event 4 - Maintenance */}
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-transparent dark:border-orange-800/30">
-              <div className="flex-shrink-0 text-center">
-                <div className="text-orange-600 dark:text-orange-400 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900 dark:text-orange-200">8</div>
-              </div>
-
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-orange-200 mb-1">Maintenance</h3>
-                <p className="text-gray-600 dark:text-orange-300/80 text-sm mb-1">Broken AC - Garden View</p>
-                <p className="text-gray-500 dark:text-orange-300/70 text-xs">14:00</p>
-              </div>
-
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-800/40 rounded-full flex items-center justify-center">
-                  <Wrench className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Mock Event 5 - Maintenance */}
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl shadow-md p-6 hover:shadow-xl transition flex items-center gap-6 border border-transparent dark:border-orange-800/30">
-              <div className="flex-shrink-0 text-center">
-                <div className="text-orange-600 dark:text-orange-400 text-sm font-semibold">Oct</div>
-                <div className="text-4xl font-bold text-gray-900 dark:text-orange-200">9</div>
-              </div>
-
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-orange-200 mb-1">Maintenance</h3>
-                <p className="text-gray-600 dark:text-orange-300/80 text-sm mb-1">Faulty door lock - Riverside Towers</p>
-                <p className="text-gray-500 dark:text-orange-300/70 text-xs">10:00</p>
-              </div>
-
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-800/40 rounded-full flex items-center justify-center">
-                  <Wrench className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
