@@ -16,6 +16,11 @@ import {
   Building
 } from 'lucide-react';
 import LandingPagePricing from '../components/LandingPagePricing';
+import Testimonials from '../components/Testimonials';
+import CaseStudies from '../components/CaseStudies';
+import ROICalculator from '../components/ROICalculator';
+import VideoDemo from '../components/VideoDemo';
+import LeadMagnets from '../components/LeadMagnets';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -305,6 +310,21 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Video Demo Section */}
+      <VideoDemo />
+
+      {/* Testimonials Section */}
+      <Testimonials />
+
+      {/* Case Studies Section */}
+      <CaseStudies />
+
+      {/* ROI Calculator Section */}
+      <ROICalculator />
+
+      {/* Lead Magnets Section */}
+      <LeadMagnets />
 
       {/* Pricing Section - Now using LandingPagePricing component with payment integration */}
       <LandingPagePricing />
