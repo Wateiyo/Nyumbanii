@@ -11,7 +11,7 @@ const LeadMagnets = () => {
       id: 'ebook',
       icon: <BookOpen className="w-8 h-8" />,
       title: 'Property Management eBook',
-      description: 'Complete 50-page guide to modern property management',
+      description: 'Complete guide to property management',
       iconBg: 'bg-blue-600',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200',

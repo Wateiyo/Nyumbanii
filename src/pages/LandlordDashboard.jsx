@@ -1089,15 +1089,8 @@ useEffect(() => {
   const handleAddProperty = async () => {
     if (newProperty.name && newProperty.location && newProperty.units) {
       try {
-        // Check property limit before adding
-        if (subscription && subscription.propertyLimit !== -1) {
-          if (properties.length >= subscription.propertyLimit) {
-            alert(`You've reached your plan's limit of ${subscription.propertyLimit} properties. Please upgrade your subscription to add more properties.`);
-            setShowPropertyModal(false);
-            setShowSubscriptionModal(true);
-            return;
-          }
-        }
+        // Note: Subscription limits will be enforced in future updates
+        // For now, all users can add unlimited properties
 
         await addDoc(collection(db, 'properties'), {
           name: newProperty.name,
@@ -6998,9 +6991,14 @@ const handleViewTenantDetails = (tenant) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Revenue</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={newProperty.revenue}
-                  onChange={(e) => setNewProperty({...newProperty, revenue: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                    setNewProperty({...newProperty, revenue: value});
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
                   placeholder="240000"
                 />
@@ -7136,9 +7134,14 @@ const handleViewTenantDetails = (tenant) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Revenue</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={editingProperty.revenue}
-            onChange={(e) => setEditingProperty({...editingProperty, revenue: e.target.value})}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+              setEditingProperty({...editingProperty, revenue: value});
+            }}
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#003366] focus:border-transparent"
             placeholder="240000"
           />
