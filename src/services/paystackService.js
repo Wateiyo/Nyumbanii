@@ -26,7 +26,7 @@ export const SUBSCRIPTION_TIERS = {
     id: 'basic',
     name: 'Basic',
     price: 299900, // KES 2,999 in kobo (Paystack uses smallest currency unit)
-    annualPrice: 2879040, // KES 28,790.40 (20% discount)
+    annualPrice: 2880000, // KES 28,800 (20% discount, rounded)
     currency: 'KES',
     interval: 'monthly',
     features: [
@@ -44,7 +44,7 @@ export const SUBSCRIPTION_TIERS = {
     id: 'professional',
     name: 'Professional',
     price: 499900, // KES 4,999 in kobo
-    annualPrice: 4799040, // KES 47,990.40 (20% discount)
+    annualPrice: 4800000, // KES 48,000 (20% discount, rounded)
     currency: 'KES',
     interval: 'monthly',
     features: [
@@ -65,7 +65,7 @@ export const SUBSCRIPTION_TIERS = {
     id: 'enterprise',
     name: 'Enterprise',
     price: 999900, // KES 9,999 in kobo
-    annualPrice: 9599040, // KES 95,990.40 (20% discount)
+    annualPrice: 9600000, // KES 96,000 (20% discount, rounded)
     currency: 'KES',
     interval: 'monthly',
     features: [
