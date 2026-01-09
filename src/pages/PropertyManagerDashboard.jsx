@@ -39,11 +39,17 @@ import {
   ChevronLeft,
   User,
   Check,
-  CheckCheck
+  CheckCheck,
+  AlertCircle,
+  Minus
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
+import MaintenanceCostEstimateModal from '../components/MaintenanceCostEstimateModal';
+import MaintenanceCompleteWorkModal from '../components/MaintenanceCompleteWorkModal';
+import MaintenanceQuoteModal from '../components/MaintenanceQuoteModal';
+import BudgetSummaryModal from '../components/BudgetSummaryModal';
 import {
   canAddTenant,
   canEditRent,
@@ -98,6 +104,43 @@ const PropertyManagerDashboard = () => {
     scheduledDate: '',
     scheduledTime: ''
   });
+
+  // Cost estimation states
+  const [showEstimateModal, setShowEstimateModal] = useState(false);
+  const [selectedRequestForEstimate, setSelectedRequestForEstimate] = useState(null);
+  const [estimateData, setEstimateData] = useState({
+    estimatedCost: '',
+    estimateNotes: '',
+    estimatedDuration: '',
+    costBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+  });
+
+  // Complete work states
+  const [showCompleteWorkModal, setShowCompleteWorkModal] = useState(false);
+  const [selectedRequestForCompletion, setSelectedRequestForCompletion] = useState(null);
+  const [completionData, setCompletionData] = useState({
+    actualCost: '',
+    completionNotes: '',
+    actualDuration: '',
+    actualCostBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+  });
+  const [budgetInfo, setBudgetInfo] = useState(null);
+  const [showBudgetSummary, setShowBudgetSummary] = useState(false);
+
+  // Quote submission states
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [selectedRequestForQuote, setSelectedRequestForQuote] = useState(null);
+  const [quoteData, setQuoteData] = useState({
+    vendorName: '',
+    vendorContact: '',
+    vendorEmail: '',
+    amount: '',
+    description: '',
+    itemizedCosts: [{ item: '', cost: '' }],
+    validUntil: '',
+    quoteNumber: ''
+  });
+  const [quotes, setQuotes] = useState({}); // Store quotes by requestId
 
   // Fetch team member data for the current user
   useEffect(() => {
@@ -449,6 +492,365 @@ const PropertyManagerDashboard = () => {
     } catch (error) {
       console.error('Error assigning maintenance request:', error);
       alert('Error assigning request. Please try again.');
+    }
+  };
+
+  // Cost estimation handlers
+  const handleOpenEstimateModal = (request) => {
+    setSelectedRequestForEstimate(request);
+    setShowEstimateModal(true);
+    setEstimateData({
+      estimatedCost: '',
+      estimateNotes: '',
+      estimatedDuration: '',
+      costBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+  };
+
+  const handleCloseEstimateModal = () => {
+    setShowEstimateModal(false);
+    setSelectedRequestForEstimate(null);
+  };
+
+  const handleAddBreakdownItem = () => {
+    setEstimateData({
+      ...estimateData,
+      costBreakdown: [...estimateData.costBreakdown, { item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+  };
+
+  const handleRemoveBreakdownItem = (index) => {
+    const newBreakdown = estimateData.costBreakdown.filter((_, i) => i !== index);
+    setEstimateData({ ...estimateData, costBreakdown: newBreakdown });
+  };
+
+  const handleBreakdownChange = (index, field, value) => {
+    const newBreakdown = [...estimateData.costBreakdown];
+    newBreakdown[index][field] = value;
+
+    if (field === 'quantity' || field === 'unitCost') {
+      const quantity = parseFloat(newBreakdown[index].quantity) || 0;
+      const unitCost = parseFloat(newBreakdown[index].unitCost) || 0;
+      newBreakdown[index].total = quantity * unitCost;
+    }
+
+    setEstimateData({ ...estimateData, costBreakdown: newBreakdown });
+
+    const totalCost = newBreakdown.reduce((sum, item) => sum + (item.total || 0), 0);
+    setEstimateData(prev => ({ ...prev, estimatedCost: totalCost.toString() }));
+  };
+
+  const handleSubmitEstimate = async () => {
+    if (!selectedRequestForEstimate) return;
+
+    const totalCost = estimateData.costBreakdown.reduce((sum, item) => sum + (item.total || 0), 0);
+
+    if (totalCost === 0) {
+      alert('Please add at least one cost item');
+      return;
+    }
+
+    try {
+      const estimateUpdate = {
+        estimatedCost: totalCost,
+        estimateNotes: estimateData.estimateNotes,
+        estimatedDuration: estimateData.estimatedDuration,
+        costBreakdown: estimateData.costBreakdown.filter(item => item.item && item.total > 0),
+        estimatedBy: teamMember?.name || currentUser.email,
+        estimatedById: currentUser.uid,
+        estimatedAt: serverTimestamp(),
+        status: 'estimated',
+        requiresApproval: true
+      };
+
+      await updateDoc(doc(db, 'maintenanceRequests', selectedRequestForEstimate.id), estimateUpdate);
+
+      if (teamMember?.landlordId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: teamMember.landlordId,
+          type: 'maintenance',
+          title: 'Cost Estimate Provided',
+          message: `${teamMember.name} provided an estimate of KSH ${totalCost.toLocaleString()} for: ${selectedRequestForEstimate.issue}`,
+          maintenanceRequestId: selectedRequestForEstimate.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      alert('Cost estimate submitted successfully!');
+      handleCloseEstimateModal();
+    } catch (error) {
+      console.error('Error submitting estimate:', error);
+      alert('Error submitting estimate. Please try again.');
+    }
+  };
+
+  // Complete work handlers
+  const handleOpenCompleteWorkModal = (request) => {
+    setSelectedRequestForCompletion(request);
+
+    setCompletionData({
+      actualCost: request.estimatedCost?.toString() || '',
+      completionNotes: '',
+      actualDuration: request.estimatedDuration || '',
+      actualCostBreakdown: request.costBreakdown || [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+
+    setShowCompleteWorkModal(true);
+
+    (async () => {
+      try {
+        const monthlyBudget = 50000;
+
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const completedRequestsQuery = query(
+          collection(db, 'maintenanceRequests'),
+          where('landlordId', '==', request.landlordId),
+          where('status', '==', 'completed')
+        );
+
+        const completedSnapshot = await getDocs(completedRequestsQuery);
+        const completedRequests = completedSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(r => {
+            const completedDate = r.completedAt?.toDate();
+            return completedDate && completedDate >= startOfMonth;
+          });
+
+        const totalSpentThisMonth = completedRequests.reduce((sum, r) => sum + (r.actualCost || 0), 0);
+
+        const staffSpending = completedRequests
+          .filter(r => r.completedBy === currentUser.uid)
+          .reduce((sum, r) => sum + (r.actualCost || 0), 0);
+
+        setBudgetInfo({
+          monthlyBudget,
+          totalSpentThisMonth,
+          staffSpending,
+          remainingBudget: monthlyBudget - totalSpentThisMonth,
+          utilizationPercent: (totalSpentThisMonth / monthlyBudget) * 100,
+          staffUtilizationPercent: (staffSpending / monthlyBudget) * 100,
+          completedCount: completedRequests.length,
+          staffCompletedCount: completedRequests.filter(r => r.completedBy === currentUser.uid).length
+        });
+      } catch (error) {
+        console.error('Error fetching budget info:', error);
+        setBudgetInfo(null);
+      }
+    })();
+  };
+
+  const handleCloseCompleteWorkModal = () => {
+    setShowCompleteWorkModal(false);
+    setSelectedRequestForCompletion(null);
+    setCompletionData({
+      actualCost: '',
+      completionNotes: '',
+      actualDuration: '',
+      actualCostBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+  };
+
+  const handleAddCompletionBreakdownItem = () => {
+    setCompletionData({
+      ...completionData,
+      actualCostBreakdown: [...completionData.actualCostBreakdown, { item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+  };
+
+  const handleRemoveCompletionBreakdownItem = (index) => {
+    const newBreakdown = completionData.actualCostBreakdown.filter((_, i) => i !== index);
+    setCompletionData({ ...completionData, actualCostBreakdown: newBreakdown });
+  };
+
+  const handleCompletionBreakdownChange = (index, field, value) => {
+    const newBreakdown = [...completionData.actualCostBreakdown];
+    newBreakdown[index][field] = value;
+
+    if (field === 'quantity' || field === 'unitCost') {
+      const quantity = parseFloat(newBreakdown[index].quantity) || 0;
+      const unitCost = parseFloat(newBreakdown[index].unitCost) || 0;
+      newBreakdown[index].total = quantity * unitCost;
+    }
+
+    setCompletionData({ ...completionData, actualCostBreakdown: newBreakdown });
+
+    const totalCost = newBreakdown.reduce((sum, item) => sum + (item.total || 0), 0);
+    setCompletionData(prev => ({ ...prev, actualCost: totalCost.toString() }));
+  };
+
+  const handleSubmitCompletion = async () => {
+    if (!selectedRequestForCompletion) return;
+
+    if (!completionData.actualCost) {
+      alert('Please enter the actual cost.');
+      return;
+    }
+
+    try {
+      const requestRef = doc(db, 'maintenanceRequests', selectedRequestForCompletion.id);
+
+      const updateData = {
+        status: 'completed',
+        actualCost: parseFloat(completionData.actualCost),
+        completionNotes: completionData.completionNotes,
+        actualDuration: completionData.actualDuration,
+        actualCostBreakdown: completionData.actualCostBreakdown,
+        completedAt: serverTimestamp(),
+        completedBy: currentUser.uid
+      };
+
+      await updateDoc(requestRef, updateData);
+
+      setShowCompleteWorkModal(false);
+      setShowBudgetSummary(true);
+
+      (async () => {
+        try {
+          if (selectedRequestForCompletion.tenantId) {
+            const maintenanceQuery = query(
+              collection(db, 'maintenance'),
+              where('tenantId', '==', selectedRequestForCompletion.tenantId),
+              where('issue', '==', selectedRequestForCompletion.issue),
+              where('createdAt', '==', selectedRequestForCompletion.createdAt)
+            );
+            const maintenanceSnapshot = await getDocs(maintenanceQuery);
+            const updatePromises = maintenanceSnapshot.docs.map(doc =>
+              updateDoc(doc.ref, updateData)
+            );
+            await Promise.all(updatePromises);
+          }
+
+          await addDoc(collection(db, 'notifications'), {
+            type: 'maintenance_completed',
+            userId: selectedRequestForCompletion.landlordId,
+            title: 'Maintenance Work Completed',
+            message: `Work completed for "${selectedRequestForCompletion.issue}" at ${selectedRequestForCompletion.property}, Unit ${selectedRequestForCompletion.unit}. Final cost: KSH ${parseFloat(completionData.actualCost).toLocaleString()}`,
+            read: false,
+            createdAt: serverTimestamp(),
+            maintenanceRequestId: selectedRequestForCompletion.id
+          });
+        } catch (bgError) {
+          console.error('Error in background operations:', bgError);
+        }
+      })();
+
+    } catch (error) {
+      console.error('Error completing work:', error);
+      alert('Error completing work. Please try again.');
+    }
+  };
+
+  const handleCloseBudgetSummary = () => {
+    setShowBudgetSummary(false);
+    setSelectedRequestForCompletion(null);
+    setCompletionData({
+      actualCost: '',
+      completionNotes: '',
+      actualDuration: '',
+      actualCostBreakdown: [{ item: '', quantity: 1, unitCost: '', total: 0 }]
+    });
+    setBudgetInfo(null);
+  };
+
+  // Quote submission handlers
+  const handleOpenQuoteModal = (request) => {
+    setSelectedRequestForQuote(request);
+    setQuoteData({
+      vendorName: '',
+      vendorContact: '',
+      vendorEmail: '',
+      amount: '',
+      description: '',
+      itemizedCosts: [{ item: '', cost: '' }],
+      validUntil: '',
+      quoteNumber: `Q-${Date.now()}`
+    });
+    setShowQuoteModal(true);
+  };
+
+  const handleCloseQuoteModal = () => {
+    setShowQuoteModal(false);
+    setSelectedRequestForQuote(null);
+    setQuoteData({
+      vendorName: '',
+      vendorContact: '',
+      vendorEmail: '',
+      amount: '',
+      description: '',
+      itemizedCosts: [{ item: '', cost: '' }],
+      validUntil: '',
+      quoteNumber: ''
+    });
+  };
+
+  const handleAddItemizedCost = () => {
+    setQuoteData({
+      ...quoteData,
+      itemizedCosts: [...quoteData.itemizedCosts, { item: '', cost: '' }]
+    });
+  };
+
+  const handleRemoveItemizedCost = (index) => {
+    const newCosts = quoteData.itemizedCosts.filter((_, i) => i !== index);
+    setQuoteData({ ...quoteData, itemizedCosts: newCosts });
+  };
+
+  const handleItemizedCostChange = (index, field, value) => {
+    const newCosts = [...quoteData.itemizedCosts];
+    newCosts[index][field] = value;
+    setQuoteData({ ...quoteData, itemizedCosts: newCosts });
+
+    const total = newCosts.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+    setQuoteData(prev => ({ ...prev, amount: total.toString() }));
+  };
+
+  const handleSubmitQuote = async () => {
+    if (!selectedRequestForQuote) return;
+
+    if (!quoteData.vendorName || !quoteData.vendorContact || !quoteData.amount) {
+      alert('Please fill in vendor name, contact, and amount.');
+      return;
+    }
+
+    try {
+      const quotesRef = collection(db, 'maintenanceRequests', selectedRequestForQuote.id, 'quotes');
+      await addDoc(quotesRef, {
+        ...quoteData,
+        amount: parseFloat(quoteData.amount),
+        itemizedCosts: quoteData.itemizedCosts.filter(item => item.item && item.cost),
+        submittedBy: currentUser.uid,
+        submittedByName: teamMember.name,
+        submittedAt: serverTimestamp(),
+        status: 'pending',
+        maintenanceRequestId: selectedRequestForQuote.id
+      });
+
+      const requestRef = doc(db, 'maintenanceRequests', selectedRequestForQuote.id);
+      const currentQuotesCount = selectedRequestForQuote.quotesSubmitted || 0;
+      await updateDoc(requestRef, {
+        requiresQuote: true,
+        quotesSubmitted: currentQuotesCount + 1,
+        status: 'quotes_submitted'
+      });
+
+      await addDoc(collection(db, 'notifications'), {
+        type: 'quote_submitted',
+        userId: selectedRequestForQuote.landlordId,
+        title: 'New Quote Submitted',
+        message: `${quoteData.vendorName} quote submitted for "${selectedRequestForQuote.issue}" at ${selectedRequestForQuote.property}, Unit ${selectedRequestForQuote.unit}. Amount: KSH ${parseFloat(quoteData.amount).toLocaleString()}`,
+        read: false,
+        createdAt: serverTimestamp(),
+        maintenanceRequestId: selectedRequestForQuote.id
+      });
+
+      alert('Quote submitted successfully!');
+      handleCloseQuoteModal();
+    } catch (error) {
+      console.error('Error submitting quote:', error);
+      alert('Error submitting quote. Please try again.');
     }
   };
 
@@ -1715,6 +2117,28 @@ const PropertyManagerDashboard = () => {
 
                       {/* Action Buttons */}
                       <div className="flex flex-col gap-2">
+                        {/* Add Cost Estimate - Show for pending/in-progress requests without estimate */}
+                        {!request.estimatedCost && request.status !== 'completed' && (
+                          <button
+                            onClick={() => handleOpenEstimateModal(request)}
+                            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm whitespace-nowrap flex items-center justify-center gap-2"
+                          >
+                            <DollarSign className="w-4 h-4" />
+                            Add Estimate
+                          </button>
+                        )}
+
+                        {/* Submit Quote - Show for requests with estimates */}
+                        {request.estimatedCost && request.status !== 'completed' && (
+                          <button
+                            onClick={() => handleOpenQuoteModal(request)}
+                            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-sm whitespace-nowrap"
+                          >
+                            Submit Quote
+                          </button>
+                        )}
+
+                        {/* Start Work - Show for pending assigned requests */}
                         {request.status === 'pending' && request.assignedTo && (
                           <button
                             onClick={() => handleStartWork(request.id, request)}
@@ -1723,6 +2147,19 @@ const PropertyManagerDashboard = () => {
                             Start Work
                           </button>
                         )}
+
+                        {/* Complete Work - Show for in-progress or approved requests */}
+                        {(request.status === 'in-progress' || request.status === 'approved') && (
+                          <button
+                            onClick={() => handleOpenCompleteWorkModal(request)}
+                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm whitespace-nowrap flex items-center justify-center gap-2"
+                          >
+                            <Check className="w-4 h-4" />
+                            Complete Work
+                          </button>
+                        )}
+
+                        {/* No Staff Available Message */}
                         {request.status === 'pending' && !request.assignedTo && maintenanceStaff.length === 0 && (
                           <span className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm text-center">
                             No staff available
@@ -2098,6 +2535,52 @@ const PropertyManagerDashboard = () => {
         </div>
       </div>
     )}
+
+    {/* Maintenance Cost Estimate Modal */}
+    <MaintenanceCostEstimateModal
+      isOpen={showEstimateModal}
+      request={selectedRequestForEstimate}
+      estimateData={estimateData}
+      onClose={handleCloseEstimateModal}
+      onEstimateDataChange={setEstimateData}
+      onAddBreakdownItem={handleAddBreakdownItem}
+      onRemoveBreakdownItem={handleRemoveBreakdownItem}
+      onBreakdownChange={handleBreakdownChange}
+      onSubmit={handleSubmitEstimate}
+    />
+
+    {/* Maintenance Complete Work Modal */}
+    <MaintenanceCompleteWorkModal
+      isOpen={showCompleteWorkModal}
+      request={selectedRequestForCompletion}
+      completionData={completionData}
+      onClose={handleCloseCompleteWorkModal}
+      onCompletionDataChange={setCompletionData}
+      onAddBreakdownItem={handleAddCompletionBreakdownItem}
+      onRemoveBreakdownItem={handleRemoveCompletionBreakdownItem}
+      onBreakdownChange={handleCompletionBreakdownChange}
+      onSubmit={handleSubmitCompletion}
+    />
+
+    {/* Maintenance Quote Modal */}
+    <MaintenanceQuoteModal
+      isOpen={showQuoteModal}
+      request={selectedRequestForQuote}
+      quoteData={quoteData}
+      onClose={handleCloseQuoteModal}
+      onQuoteDataChange={setQuoteData}
+      onAddItemizedCost={handleAddItemizedCost}
+      onRemoveItemizedCost={handleRemoveItemizedCost}
+      onItemizedCostChange={handleItemizedCostChange}
+      onSubmit={handleSubmitQuote}
+    />
+
+    {/* Budget Summary Modal */}
+    <BudgetSummaryModal
+      isOpen={showBudgetSummary}
+      budgetInfo={budgetInfo}
+      onClose={handleCloseBudgetSummary}
+    />
 
     {/* Message Modal */}
     <MessageModal
