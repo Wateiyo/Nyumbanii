@@ -26,5 +26,6 @@ dist-ssr
 # environment variables
 .env
 .env.local
+.env.production
 
 functions/.runtimeconfig.json
