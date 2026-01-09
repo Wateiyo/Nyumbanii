@@ -1375,7 +1375,7 @@ const handleEditProperty = async () => {
     }
 
     try {
-      await addDoc(collection(db, 'payments'), {
+      const paymentData = {
         tenant: newPayment.tenant,
         tenantId: newPayment.tenantId || null,
         property: newPayment.property,
@@ -1388,7 +1388,9 @@ const handleEditProperty = async () => {
         referenceNumber: newPayment.referenceNumber || null,
         landlordId: currentUser.uid,
         createdAt: serverTimestamp()
-      });
+      };
+      console.log('💰 Landlord creating payment with data:', paymentData);
+      await addDoc(collection(db, 'payments'), paymentData);
 
       setNewPayment({ tenant: '', tenantId: '', property: '', unit: '', amount: '', dueDate: '', method: '', referenceNumber: '' });
       setShowPaymentModal(false);

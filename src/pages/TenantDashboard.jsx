@@ -443,16 +443,19 @@ const TenantDashboard = () => {
   useEffect(() => {
     if (!tenantData?.id) return;
 
+    console.log('💵 Tenant querying payments with tenantId:', tenantData.id);
     const paymentsQuery = query(
       collection(db, 'payments'),
       where('tenantId', '==', tenantData.id)
     );
 
     const unsubscribe = onSnapshot(paymentsQuery, (snapshot) => {
+      console.log('💵 Tenant payments query returned:', snapshot.size, 'documents');
       const paymentsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      console.log('💵 Tenant payments data:', paymentsData);
       setPayments(paymentsData);
     }, (error) => {
       console.error('Error fetching payments:', error);
@@ -2641,12 +2644,68 @@ const TenantDashboard = () => {
                 </div>
               </div>
 
-              {/* KPLC Power Outages Section */}
-              <div className="mb-6">
-                <PowerOutagesList userAreas={profileSettings.preferredAreas || []} />
+              {/* Quick Actions */}
+              <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 lg:mb-4 text-sm lg:text-base">Quick Actions</h3>
+                <div className="grid grid-cols-2 gap-2 lg:gap-3">
+                  {canUseSelfService() ? (
+                    <button
+                      onClick={() => setShowMaintenanceModal(true)}
+                      className="p-3 lg:p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition text-center"
+                    >
+                      <Wrench className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600 dark:text-orange-400 mx-auto mb-1 lg:mb-2" />
+                      <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">Add Maintenance Request</span>
+                    </button>
+                  ) : (
+                    <div className="p-3 lg:p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-center opacity-50 cursor-not-allowed">
+                      <Wrench className="w-5 h-5 lg:w-6 lg:h-6 text-gray-500 dark:text-gray-400 mx-auto mb-1 lg:mb-2" />
+                      <span className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400 block">Disabled by Landlord</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => setCurrentView('documents')}
+                    className="p-3 lg:p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition text-center"
+                  >
+                    <FileText className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400 mx-auto mb-1 lg:mb-2" />
+                    <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">View Documents</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    className="p-3 lg:p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition text-center"
+                  >
+                    <DollarSign className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400 mx-auto mb-1 lg:mb-2" />
+                    <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">Pay Rent</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowMessageModal(true)}
+                    className="p-3 lg:p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-center"
+                  >
+                    <MessageSquare className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 mx-auto mb-1 lg:mb-2" />
+                    <span className="text-xs lg:text-sm font-medium text-gray-900 block">Message Landlord</span>
+                  </button>
+
+                  {propertyData?.whatsappGroupLink && (
+                    <a
+                      href={propertyData.whatsappGroupLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-3 lg:p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition text-center block"
+                    >
+                      <svg className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400 mx-auto mb-1 lg:mb-2" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                      <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">Join WhatsApp Group</span>
+                    </a>
+                  )}
+                </div>
               </div>
 
-              <div className="mb-6">
+              {/* KPLC Power Outages Section - Side by Side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <PowerOutagesList userAreas={profileSettings.preferredAreas || []} />
                 <LocationPreferences userId={currentUser?.uid} />
               </div>
 
@@ -2718,65 +2777,6 @@ const TenantDashboard = () => {
                   </div>
                 </div>
               )}
-
-              {/* Quick Actions */}
-              <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 lg:mb-4 text-sm lg:text-base">Quick Actions</h3>
-                <div className="grid grid-cols-2 gap-2 lg:gap-3">
-                  {canUseSelfService() ? (
-                    <button
-                      onClick={() => setShowMaintenanceModal(true)}
-                      className="p-3 lg:p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition text-center"
-                    >
-                      <Wrench className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600 dark:text-orange-400 mx-auto mb-1 lg:mb-2" />
-                      <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">Add Maintenance Request</span>
-                    </button>
-                  ) : (
-                    <div className="p-3 lg:p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-center opacity-50 cursor-not-allowed">
-                      <Wrench className="w-5 h-5 lg:w-6 lg:h-6 text-gray-500 dark:text-gray-400 mx-auto mb-1 lg:mb-2" />
-                      <span className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400 block">Disabled by Landlord</span>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => setCurrentView('documents')}
-                    className="p-3 lg:p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition text-center"
-                  >
-                    <FileText className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400 mx-auto mb-1 lg:mb-2" />
-                    <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">View Documents</span>
-                  </button>
-
-                  <button
-                    onClick={() => setShowPaymentModal(true)}
-                    className="p-3 lg:p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition text-center"
-                  >
-                    <DollarSign className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400 mx-auto mb-1 lg:mb-2" />
-                    <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">Pay Rent</span>
-                  </button>
-
-                  <button
-                    onClick={() => setShowMessageModal(true)}
-                    className="p-3 lg:p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-center"
-                  >
-                    <MessageSquare className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 mx-auto mb-1 lg:mb-2" />
-                    <span className="text-xs lg:text-sm font-medium text-gray-900 block">Message Landlord</span>
-                  </button>
-
-                  {propertyData?.whatsappGroupLink && (
-                    <a
-                      href={propertyData.whatsappGroupLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-3 lg:p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition text-center block"
-                    >
-                      <svg className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400 mx-auto mb-1 lg:mb-2" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                      </svg>
-                      <span className="text-xs lg:text-sm font-medium text-gray-900 dark:text-gray-100 block">Join WhatsApp Group</span>
-                    </a>
-                  )}
-                </div>
-              </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -3477,12 +3477,9 @@ const TenantDashboard = () => {
           {/* Updates & Memos View */}
           {currentView === 'updates' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
-              {/* KPLC Power Outages Section */}
-              <div className="mb-6">
+              {/* KPLC Power Outages Section - Side by Side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <PowerOutagesList userAreas={profileSettings.preferredAreas || []} />
-              </div>
-
-              <div className="mb-6">
                 <LocationPreferences userId={currentUser?.uid} />
               </div>
 

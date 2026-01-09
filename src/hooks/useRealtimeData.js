@@ -241,6 +241,8 @@ export const useViewings = (userId, userRole) => {
 
   useEffect(() => {
     if (!userId || !userRole) {
+      setViewings([]);
+      setError(null);
       setLoading(false);
       return;
     }

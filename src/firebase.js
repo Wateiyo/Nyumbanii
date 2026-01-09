@@ -31,12 +31,12 @@ export const requestNotificationPermission = async () => {
     }
 
     const permission = await Notification.requestPermission();
-    
+
     if (permission === 'granted') {
-      console.log('Notification permission granted');
+      console.log('✅ Notification permission granted');
       return true;
     } else {
-      console.log('Notification permission denied');
+      console.log('ℹ️ Notification permission declined by user (optional feature)');
       return false;
     }
   } catch (error) {
