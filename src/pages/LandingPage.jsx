@@ -146,10 +146,10 @@ const LandingPage = () => {
       </section>
 
       {/* Why Choose Nyumbanii Section */}
-      <section id="features" className="py-20 px-4 pb-4">
+      <section id="features" className="py-20 px-4 pb-0">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-4">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Why Choose Nyumbanii?</h2>
+          <div className="text-center mb-2">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">Why Choose Nyumbanii?</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               One platform for all your property operations.
             </p>
@@ -160,7 +160,7 @@ const LandingPage = () => {
       {/* ROI Calculator Section */}
       <ROICalculator />
 
-      <section id="how-it-works" className="py-20 px-4 bg-gray-50">
+      <section id="how-it-works" className="pt-8 pb-20 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">How It Works</h2>

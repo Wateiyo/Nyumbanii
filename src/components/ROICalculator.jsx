@@ -27,7 +27,7 @@ const ROICalculator = () => {
   const roi = ((netYearlySavings / (nyumbaaniMonthlyCost * 12)) * 100).toFixed(0);
 
   return (
-    <section className="py-20 px-4 bg-gray-50">
+    <section className="pt-8 pb-20 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-900 px-4 py-2 rounded-full font-semibold mb-4">
