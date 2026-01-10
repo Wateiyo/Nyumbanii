@@ -146,18 +146,12 @@ const LandingPage = () => {
       </section>
 
       {/* Why Choose Nyumbanii Section */}
-      <section id="features" className="py-20 px-4 pb-4">
+      <section id="features" className="py-20 px-4 pb-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-4">
+          <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Why Choose Nyumbanii?</h2>
-            <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4">All your property operations. One smart platform.</h3>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12">
-              Stop juggling spreadsheets, WhatsApp messages, and paper files. Nyumbanii centralizes everything—so you spend less time managing and more time growing.
-            </p>
-
-            <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4">Your Savings, Visualized</h3>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how automation transforms your property management costs and efficiency.
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              One platform for all your property operations.
             </p>
           </div>
         </div>
