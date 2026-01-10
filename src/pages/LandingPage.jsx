@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Home,
-  Shield,
-  Clock,
-  TrendingUp,
-  Users,
   CheckCircle,
   ArrowRight,
   Menu,
@@ -27,24 +22,19 @@ const LandingPage = () => {
 
   const features = [
     {
-      icon: <Clock className="w-6 h-6" />,
-      title: "Save Time",
-      description: "Automate rent collection, maintenance requests, and tenant communication"
+      image: "/images/revenue.png",
+      title: "Stats at Your Fingertips",
+      description: "All your most important reports all in one place. Track work requests across all locations, keep maintenance logs, and see work orders by technician, property, or location."
     },
     {
-      icon: <TrendingUp className="w-6 h-6" />,
-      title: "Reduce Costs",
-      description: "Cut administrative costs and streamline property management operations"
+      image: "/images/listing.png",
+      title: "List Properties and Set up Site Viewing Dates",
+      description: "List your properties, book site viewing dates for current and new tenants."
     },
     {
-      icon: <Shield className="w-6 h-6" />,
-      title: "Stay Organized",
-      description: "Keep all your property data, documents, and communications in one place"
-    },
-    {
-      icon: <Users className="w-6 h-6" />,
-      title: "Better Communication",
-      description: "Instant notifications and direct messaging between landlords and tenants"
+      image: "/images/calendar-tasks.png",
+      title: "Receive Alerts, Assign Work Orders",
+      description: "As soon as a request comes in, automatically create a Work Order and assign it to the right person on your team. Track work from the initial request to completion and have full visibility on what gets done."
     }
   ];
 
@@ -151,141 +141,21 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Why Choose Nyumbanii Section */}
       <section id="features" className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Why Choose Nyumbanii?</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Everything you need to manage your properties efficiently and professionally</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-900 mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
+            <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4">See Your Potential Savings</h3>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Calculate how much time and money you could save by automating your property management with Nyumbanii
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="py-20 px-4 bg-blue-900 text-white overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="z-10">
-              <h2 className="text-4xl md:text-5xl font-bold mb-8">
-                Take control of your operations with innovative, easy-to-use software.
-              </h2>
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-white flex items-center justify-center mt-1">
-                    <CheckCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
-                  </div>
-                  <p className="text-lg">Put your day-to-day management on autopilot</p>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-white flex items-center justify-center mt-1">
-                    <CheckCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
-                  </div>
-                  <p className="text-lg">Execute data-informed decisions and planning</p>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-white flex items-center justify-center mt-1">
-                    <CheckCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
-                  </div>
-                  <p className="text-lg">Say goodbye to emails, phone calls, and paper forms</p>
-                </div>
-              </div>
-            </div>
-            <div className="relative flex items-center justify-center lg:justify-end">
-              <div className="relative w-full max-w-2xl aspect-square">
-                <div className="absolute inset-0 bg-blue-400 rounded-full"></div>
-                <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12 lg:p-16">
-                  <img
-                    src="/images/laptop.png"
-                    alt="App Dashboard"
-                    className="w-full h-auto object-contain drop-shadow-2xl"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="bg-white p-8 rounded-xl shadow-lg">
-              <img src="/images/revenue.png" alt="Stats Dashboard" className="w-full h-auto rounded-lg shadow-lg" />
-            </div>
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Stats at Your Fingertips
-              </h2>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                All your most important reports all in one place. Track work requests across all locations, 
-                keep maintenance logs, and see work orders by technician, property, or location.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                List Properties and Set up Site Viewing Dates
-              </h2>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                List your properties, book site viewing dates for current and new tenants.
-              </p>
-            </div>
-            <div className="bg-white p-8 rounded-xl shadow-lg">
-              <img src="/images/listing.png" alt="Property Listings" className="w-full h-auto rounded-lg shadow-lg" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="bg-white p-8 rounded-xl shadow-lg">
-              <h3 className="text-3xl font-bold mb-6">27 May</h3>
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-900 pl-4 py-2">
-                  <p className="font-semibold">Maintenance: A7</p>
-                  <p className="text-sm text-gray-500">01:00 PM - 02:00 PM</p>
-                </div>
-                <div className="border-l-4 border-blue-900 pl-4 py-2">
-                  <p className="font-semibold">Maintenance: A15</p>
-                  <p className="text-sm text-gray-500">02:00 PM - 03:00 PM</p>
-                </div>
-                <div className="border-l-4 border-yellow-500 pl-4 py-2">
-                  <p className="font-semibold">Unpaid Rent: A6</p>
-                  <p className="text-sm text-gray-500">Reminder</p>
-                </div>
-              </div>
-              <button className="mt-6 text-blue-900 font-semibold flex items-center gap-2">
-                View all Tasks <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Receive Alerts, Assign Work Orders
-              </h2>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                As soon as a request comes in, automatically create a Work Order and assign it to the right person on your team. 
-                Track work from the initial request to completion and have full visibility on what gets done.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ROI Calculator Section */}
+      <ROICalculator />
 
       <section id="how-it-works" className="py-20 px-4 bg-gray-50">
         <div className="max-w-7xl mx-auto">
@@ -316,6 +186,23 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Feature Cards Section */}
+      <section className="py-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <div key={index} className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow">
+                <div className="mb-4 rounded-lg overflow-hidden">
+                  <img src={feature.image} alt={feature.title} className="w-full h-48 object-cover" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <LandingPagePricing />
 
@@ -324,9 +211,6 @@ const LandingPage = () => {
 
       {/* Testimonials Section */}
       <Testimonials />
-
-      {/* ROI Calculator Section */}
-      <ROICalculator />
 
       {/* Lead Magnets Section */}
       <LeadMagnets />
