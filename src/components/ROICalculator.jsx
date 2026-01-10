@@ -34,11 +34,9 @@ const ROICalculator = () => {
             <Calculator className="w-5 h-5" />
             ROI Calculator
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Calculate Your Savings with Nyumbanii
-          </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            See how much time and money you can save by automating your property management
+            Estimate your time saved. Measure your cost reduction.<br />
+            Decide with confidence.
           </p>
         </div>
 

@@ -25,17 +25,17 @@ const LandingPage = () => {
     {
       image: "/images/revenue.png",
       title: "Stats at Your Fingertips",
-      description: "All your most important reports all in one place. Track work requests across all locations, keep maintenance logs, and see work orders by technician, property, or location."
+      description: "Track maintenance, requests, and work orders across every property—clearly and in real time."
     },
     {
       image: "/images/listing.png",
       title: "List Properties and Set up Site Viewing Dates",
-      description: "List your properties, book site viewing dates for current and new tenants."
+      description: "Publish listings and schedule site visits for new and existing tenants with just a few clicks."
     },
     {
       image: "/images/maintenance.png",
       title: "Receive Alerts, Assign Work Orders",
-      description: "As soon as a request comes in, automatically create a Work Order and assign it to the right person on your team. Track work from the initial request to completion and have full visibility on what gets done."
+      description: "Follow every task from start to finish with automated alerts and easy work order assignments."
     }
   ];
 
@@ -150,9 +150,14 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-4">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Why Choose Nyumbanii?</h2>
-            <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4">See Your Potential Savings</h3>
+            <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4">All your property operations. One smart platform.</h3>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12">
+              Stop juggling spreadsheets, WhatsApp messages, and paper files. Nyumbanii centralizes everything—so you spend less time managing and more time growing.
+            </p>
+
+            <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4">Your Savings, Visualized</h3>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Calculate how much time and money you could save by automating your property management with Nyumbanii
+              See how automation transforms your property management costs and efficiency.
             </p>
           </div>
         </div>
