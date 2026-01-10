@@ -32,7 +32,7 @@ const LandingPage = () => {
       description: "List your properties, book site viewing dates for current and new tenants."
     },
     {
-      image: "/images/calendar-tasks.png",
+      image: "/images/maintenance.png",
       title: "Receive Alerts, Assign Work Orders",
       description: "As soon as a request comes in, automatically create a Work Order and assign it to the right person on your team. Track work from the initial request to completion and have full visibility on what gets done."
     }
@@ -142,9 +142,9 @@ const LandingPage = () => {
       </section>
 
       {/* Why Choose Nyumbanii Section */}
-      <section id="features" className="py-20 px-4">
+      <section id="features" className="py-20 px-4 pb-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-4">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Why Choose Nyumbanii?</h2>
             <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-4">See Your Potential Savings</h3>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
