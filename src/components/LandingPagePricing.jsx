@@ -71,27 +71,24 @@ const LandingPagePricing = () => {
           </div>
         </div>
 
-        {/* Free Trial Option - Featured */}
-        <div className="max-w-4xl mx-auto mb-12 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 shadow-2xl transform hover:scale-105 transition-all">
+        {/* Free Trial Option */}
+        <div className="max-w-4xl mx-auto mb-12 bg-blue-50 border-2 border-blue-200 rounded-2xl p-8">
           <div className="text-center">
-            <div className="inline-block bg-yellow-400 text-gray-900 px-4 py-1 rounded-full font-bold text-sm mb-4">
-              MOST POPULAR CHOICE
-            </div>
-            <h3 className="text-3xl font-bold text-white mb-4">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
               Start with a 14-Day Free Trial
             </h3>
-            <p className="text-blue-100 text-lg mb-6">
+            <p className="text-gray-700 mb-6">
               Try Nyumbanii free for 14 days. No credit card required. Cancel anytime.
             </p>
             <button
               onClick={handleFreeTrial}
-              className="px-10 py-4 bg-white text-[#003366] rounded-lg font-bold text-lg hover:bg-gray-100 transition-all inline-flex items-center gap-2 shadow-lg hover:shadow-xl"
+              className="px-8 py-4 bg-[#003366] text-white rounded-lg font-semibold hover:bg-[#002244] transition-colors inline-flex items-center gap-2"
             >
-              Start Free Trial Now
+              Start Free Trial
               <ArrowRight className="h-5 w-5" />
             </button>
-            <p className="text-sm text-blue-200 mt-4">
-              After trial, choose a plan that fits your needs • No commitment required
+            <p className="text-sm text-gray-600 mt-4">
+              After trial, choose a plan that fits your needs
             </p>
           </div>
         </div>
