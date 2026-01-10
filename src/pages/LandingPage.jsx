@@ -15,6 +15,7 @@ import Testimonials from '../components/Testimonials';
 import ROICalculator from '../components/ROICalculator';
 import VideoDemo from '../components/VideoDemo';
 import LeadMagnets from '../components/LeadMagnets';
+import InstallPrompt from '../components/InstallPrompt';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -47,6 +48,9 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
+
       <nav className="bg-white shadow-sm fixed w-full top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -189,6 +193,9 @@ const LandingPage = () => {
       {/* Feature Cards Section */}
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Features</h2>
+          </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <div key={index} className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow">
@@ -260,7 +267,7 @@ const LandingPage = () => {
             <div>
               <h3 className="font-bold text-lg mb-4"> <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
               <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
-            </div> Karibu Nyumbanii</h3>
+            </div> Nyumbanii</h3>
               <p className="text-gray-400">Bridging the gap between landlords and tenants.</p>
             </div>
             <div>
