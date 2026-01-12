@@ -8,7 +8,9 @@ import {
   ChevronDown,
   Building2,
   Landmark,
-  Building
+  Building,
+  Plus,
+  Minus
 } from 'lucide-react';
 import LandingPagePricing from '../components/LandingPagePricing';
 import Testimonials from '../components/Testimonials';
@@ -20,6 +22,54 @@ import InstallPrompt from '../components/InstallPrompt';
 const LandingPage = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
+
+  const toggleFaq = (index) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
+
+  const faqs = [
+    {
+      question: "Is my data safe with Nyumbanii?",
+      answer: "Absolutely. We use bank-level encryption to protect your data. Your information is never shared with third parties, and we comply with international data protection standards. All data is stored securely with automated backups."
+    },
+    {
+      question: "How much does Nyumbanii cost?",
+      answer: "We offer flexible pricing based on the number of properties you manage. Plans start at KES 2,999/month for up to 5 properties. We also offer a 14-day free trial with no credit card required, so you can try all features risk-free."
+    },
+    {
+      question: "Can I try Nyumbanii before committing?",
+      answer: "Yes! We offer a 14-day free trial with full access to all features. No credit card required to start, and you can cancel anytime during the trial period."
+    },
+    {
+      question: "How long does it take to set up?",
+      answer: "You can create your account in less than 2 minutes. Adding your first property takes about 5 minutes. Most landlords are fully operational within their first day on the platform."
+    },
+    {
+      question: "Do tenants need to create accounts?",
+      answer: "Yes, tenants create free accounts to access their portal. They can view payment history, submit maintenance requests, communicate with you, and access important documents—all in one place."
+    },
+    {
+      question: "What payment methods do you support?",
+      answer: "We support M-Pesa, bank transfers, and card payments. Tenants can pay rent directly through the platform, and you'll receive instant notifications when payments are made."
+    },
+    {
+      question: "Can I manage multiple properties?",
+      answer: "Yes! Nyumbanii is designed to handle multiple properties, units, and tenants from a single dashboard. You can manage everything from small apartments to large commercial buildings."
+    },
+    {
+      question: "What happens to my data if I cancel?",
+      answer: "You can export all your data at any time. If you cancel, your data remains accessible for 30 days, giving you plenty of time to download everything you need. After that, it's permanently deleted from our servers."
+    },
+    {
+      question: "Do you offer customer support?",
+      answer: "Yes! We provide email support to all users, with priority support for premium plans. Our team typically responds within 24 hours, and we also have comprehensive guides and video tutorials."
+    },
+    {
+      question: "Can I upgrade or downgrade my plan?",
+      answer: "Absolutely. You can upgrade or downgrade your plan at any time. Changes take effect immediately, and billing is prorated accordingly."
+    }
+  ];
 
   const features = [
     {
@@ -220,6 +270,39 @@ const LandingPage = () => {
 
       {/* Lead Magnets Section */}
       <LeadMagnets />
+
+      {/* FAQ Section */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
+            <p className="text-xl text-gray-600">Everything you need to know about Nyumbanii</p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                <button
+                  onClick={() => toggleFaq(index)}
+                  className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-100 transition-colors"
+                >
+                  <span className="font-semibold text-gray-900 pr-4">{faq.question}</span>
+                  {openFaqIndex === index ? (
+                    <Minus className="w-5 h-5 text-blue-900 flex-shrink-0" />
+                  ) : (
+                    <Plus className="w-5 h-5 text-blue-900 flex-shrink-0" />
+                  )}
+                </button>
+                {openFaqIndex === index && (
+                  <div className="px-6 pb-4 text-gray-600">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section id="contact" className="py-20 px-4 bg-white">
         <div className="max-w-2xl mx-auto">
