@@ -44,7 +44,8 @@ import {
   Moon,
   Sun,
   AlertTriangle,
-  FileSignature
+  FileSignature,
+  DoorOpen
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
@@ -185,6 +186,8 @@ const TenantDashboard = () => {
   ]);
 
   const [documents, setDocuments] = useState([]);
+
+  const [moveOutNotices, setMoveOutNotices] = useState([]);
 
   const [messages, setMessages] = useState([]);
 
@@ -601,6 +604,30 @@ const TenantDashboard = () => {
       setDocuments(documentsData);
     }, (error) => {
       console.error('Error fetching documents:', error);
+    });
+
+    return () => unsubscribe();
+  }, [tenantData]);
+
+  // Fetch move-out notices from Firebase
+  useEffect(() => {
+    if (!tenantData?.id) return;
+
+    const moveOutNoticesQuery = query(
+      collection(db, 'moveOutNotices'),
+      where('tenantId', '==', tenantData.id),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(moveOutNoticesQuery, (snapshot) => {
+      const noticesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMoveOutNotices(noticesData);
+      console.log('📋 Move-out notices loaded:', noticesData.length);
+    }, (error) => {
+      console.error('Error fetching move-out notices:', error);
     });
 
     return () => unsubscribe();
@@ -1345,9 +1372,26 @@ const TenantDashboard = () => {
   // ============ OTHER HANDLERS ============
   
   const handleAddPayment = async () => {
+    // Validate required fields
     if (!newPayment.amount || !newPayment.method) {
       alert('Please fill in all required fields');
       return;
+    }
+
+    // Validate amount is a positive number
+    const amount = parseInt(newPayment.amount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Amount must be a positive number');
+      return;
+    }
+
+    // Validate date if provided
+    if (newPayment.date) {
+      const paidDate = new Date(newPayment.date);
+      if (isNaN(paidDate.getTime())) {
+        alert('Invalid payment date');
+        return;
+      }
     }
 
     if (!tenantData) {
@@ -1356,12 +1400,35 @@ const TenantDashboard = () => {
     }
 
     try {
+      // Calculate the month for this payment
+      const paymentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      // Check for existing payments for this month
+      const existingPaymentsForMonth = payments.filter(p => p.month === paymentMonth);
+
+      // If there's already a payment for this month, show warning
+      if (existingPaymentsForMonth.length > 0) {
+        const existingStatus = existingPaymentsForMonth.map(p => p.status).join(', ');
+        const confirmSubmit = window.confirm(
+          `⚠️ WARNING: A payment for ${paymentMonth} already exists (Status: ${existingStatus}).\n\n` +
+          `This could be:\n` +
+          `• A payment you already submitted\n` +
+          `• A payment record created by your landlord\n\n` +
+          `Are you sure you want to submit another payment for the same month?`
+        );
+
+        if (!confirmSubmit) {
+          console.log('Payment submission cancelled by user (duplicate detected)');
+          return;
+        }
+      }
+
       const paymentData = {
-        month: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        month: paymentMonth,
         amount: parseInt(newPayment.amount),
         paidDate: newPayment.date,
         dueDate: newPayment.dueDate,
-        status: 'Pending Verification',
+        status: 'pending',
         method: newPayment.method,
         referenceNumber: newPayment.reference || '',
         createdAt: serverTimestamp(),
@@ -2570,6 +2637,7 @@ const TenantDashboard = () => {
             { name: 'Documents', icon: FileText, view: 'documents' },
             { name: 'Messages', icon: MessageSquare, view: 'messages' },
             { name: 'Lease Agreement', icon: FileSignature, view: 'leases' },
+            { name: 'Move-Out Notice', icon: DoorOpen, view: 'move-out' },
             { name: 'Updates & Memos', icon: Megaphone, view: 'updates' },
             { name: 'Available Listings', icon: Search, view: 'listings' },
             { name: 'Settings', icon: Settings, view: 'settings' }
@@ -3165,14 +3233,17 @@ const TenantDashboard = () => {
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500 dark:text-gray-400">{payment.method || '-'}</td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              payment.status === 'Paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
+                              payment.status === 'paid' || payment.status === 'verified' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                              payment.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
+                              payment.status === 'overdue' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' :
+                              'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-400'
                             }`}>
-                              {payment.status}
+                              {payment.status === 'paid' ? 'Paid' : payment.status === 'verified' ? 'Verified' : payment.status === 'pending' ? 'Pending' : payment.status === 'overdue' ? 'Overdue' : payment.status}
                             </span>
                           </td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              {payment.status === 'Paid' && (
+                              {(payment.status === 'paid' || payment.status === 'verified') && (
                                 <button
                                   onClick={() => handleDownloadReceipt(payment.id)}
                                   className="text-[#003366] dark:text-blue-400 hover:text-[#002244] dark:hover:text-blue-300 flex items-center gap-1 text-xs lg:text-sm"
@@ -3181,7 +3252,7 @@ const TenantDashboard = () => {
                                   Receipt
                                 </button>
                               )}
-                              {payment.status === 'Pending Verification' && (
+                              {payment.status === 'pending' && (
                                 <button
                                   onClick={() => handleDeletePayment(payment.id)}
                                   className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 flex items-center gap-1 text-xs lg:text-sm"
@@ -3344,6 +3415,173 @@ const TenantDashboard = () => {
                         <Eye className="w-4 h-4" />
                         View Document
                       </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Move-Out Notice View */}
+          {currentView === 'move-out' && (
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
+              {/* Blue Banner */}
+              <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                    <DoorOpen className="w-5 h-5 text-orange-600" />
+                    Move-Out Notices
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Submit and track your move-out notices (30-day legal requirement)</p>
+                </div>
+                <button
+                  onClick={() => setShowMoveOutModal(true)}
+                  className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold whitespace-nowrap flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Submit Notice
+                </button>
+              </div>
+
+              {/* Legal Notice Banner */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-1">Legal Requirements</h4>
+                  <p className="text-xs text-blue-800 dark:text-blue-400">
+                    Under Kenyan law, you must provide a minimum of 30 days written notice before vacating a rental property. This notice is legally binding once submitted.
+                  </p>
+                </div>
+              </div>
+
+              {moveOutNotices.length === 0 ? (
+                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <DoorOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Move-Out Notices</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">You haven't submitted any move-out notices yet</p>
+                  <button
+                    onClick={() => setShowMoveOutModal(true)}
+                    className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold inline-flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Submit Move-Out Notice
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {moveOutNotices.map((notice) => (
+                    <div key={notice.id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition">
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            notice.status === 'submitted' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                            notice.status === 'acknowledged' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                            notice.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30' :
+                            'bg-red-100 dark:bg-red-900/30'
+                          }`}>
+                            <DoorOpen className={`w-6 h-6 ${
+                              notice.status === 'submitted' ? 'text-yellow-600 dark:text-yellow-400' :
+                              notice.status === 'acknowledged' ? 'text-blue-600 dark:text-blue-400' :
+                              notice.status === 'approved' ? 'text-green-600 dark:text-green-400' :
+                              'text-red-600 dark:text-red-400'
+                            }`} />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-lg text-gray-900 dark:text-white">
+                              Move-Out Notice
+                            </h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Reference: {notice.referenceNumber}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          notice.status === 'submitted' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                          notice.status === 'acknowledged' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                          notice.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                          'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                        }`}>
+                          {notice.status === 'submitted' ? 'Pending' :
+                           notice.status === 'acknowledged' ? 'Acknowledged' :
+                           notice.status === 'approved' ? 'Approved' :
+                           notice.status}
+                        </span>
+                      </div>
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Property</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.propertyName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Unit</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.unit}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Move-Out Date</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {notice.intendedMoveOutDate?.toDate ?
+                              notice.intendedMoveOutDate.toDate().toLocaleDateString() :
+                              new Date(notice.intendedMoveOutDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notice Submitted</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {notice.noticeSubmittedDate?.toDate ?
+                              notice.noticeSubmittedDate.toDate().toLocaleDateString() :
+                              new Date(notice.noticeSubmittedDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Reason</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.reason}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notice Period</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.noticePeriod} days</p>
+                        </div>
+                      </div>
+
+                      {/* Additional Notes */}
+                      {notice.additionalNotes && (
+                        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Additional Notes</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{notice.additionalNotes}</p>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        {notice.legalNoticeURL && (
+                          <a
+                            href={notice.legalNoticeURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 border border-orange-600 dark:border-orange-400 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition text-sm font-medium"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download Legal Notice
+                          </a>
+                        )}
+                        {notice.status === 'submitted' && (
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <Clock className="w-4 h-4" />
+                            <span>Awaiting landlord acknowledgment</span>
+                          </div>
+                        )}
+                        {notice.status === 'acknowledged' && (
+                          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Acknowledged by landlord on {notice.acknowledgedAt?.toDate ?
+                              notice.acknowledgedAt.toDate().toLocaleDateString() :
+                              new Date(notice.acknowledgedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

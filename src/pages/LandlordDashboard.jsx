@@ -134,6 +134,8 @@ const LandlordDashboard = () => {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [viewingFilter, setViewingFilter] = useState('all');
   const [maintenanceViewMode, setMaintenanceViewMode] = useState('requests'); // 'requests' or 'analytics'
+  const [documentsTab, setDocumentsTab] = useState('leases'); // 'leases' or 'move-out'
+  const [paymentsTab, setPaymentsTab] = useState('payments'); // 'payments' or 'mpesa'
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showAssignTeamModal, setShowAssignTeamModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -1646,7 +1648,24 @@ const handleEditProperty = async () => {
       return;
     }
 
+    // Validate amount is a positive number
+    const amount = parseInt(newPayment.amount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Amount must be a positive number');
+      return;
+    }
+
+    // Validate dueDate is a valid date
+    const dueDate = new Date(newPayment.dueDate);
+    if (isNaN(dueDate.getTime())) {
+      alert('Invalid due date');
+      return;
+    }
+
     try {
+      // Calculate month from dueDate
+      const month = dueDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
       const paymentData = {
         tenant: newPayment.tenant,
         tenantId: newPayment.tenantId || null,
@@ -1654,6 +1673,7 @@ const handleEditProperty = async () => {
         unit: newPayment.unit,
         amount: parseInt(newPayment.amount),
         dueDate: newPayment.dueDate,
+        month: month,
         paidDate: null,
         status: 'pending',
         method: newPayment.method || 'Cash',
@@ -1708,7 +1728,8 @@ const handleEditProperty = async () => {
       await updateDoc(paymentRef, {
         status: 'paid',
         paidDate: today.toISOString().split('T')[0],
-        method: 'M-Pesa',
+        // Preserve original payment method from the payment record
+        method: payment.method || 'Cash',
         originalAmount: payment.amount,
         lateFee: lateFeeResult.lateFee,
         totalAmount: lateFeeResult.totalAmount,
@@ -1756,6 +1777,7 @@ const handleEditProperty = async () => {
       await updateDoc(paymentRef, {
         status: 'paid',
         paidDate: today.toISOString().split('T')[0],
+        method: payment.method || 'Cash',
         originalAmount: payment.amount,
         lateFee: lateFeeResult.lateFee,
         totalAmount: lateFeeResult.totalAmount,
@@ -3049,7 +3071,7 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'properties', 'listings', 'viewings', 'applications', 'calendar', 'maintenance', 'tenants', 'payments', 'leases', 'mpesa-reconciliation', 'move-out-notices', 'reminders', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'messages', 'team', 'memos', 'subscription', 'settings'].map((view) => {
+          {['dashboard', 'properties', 'listings', 'viewings', 'applications', 'calendar', 'maintenance', 'tenants', 'payments', 'documents', 'reminders', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'messages', 'team', 'memos', 'subscription', 'settings'].map((view) => {
             const icons = {
               dashboard: Home,
               properties: Building,
@@ -3060,9 +3082,7 @@ const handleViewTenantDetails = (tenant) => {
               maintenance: Wrench,
               tenants: Users,
               payments: Banknote,
-              leases: FileSignature,
-              'mpesa-reconciliation': Receipt,
-              'move-out-notices': FileText,
+              documents: FileText,
               reminders: Bell,
               'tax-reports': Calculator,
               messages: MessageSquare,
@@ -3078,9 +3098,7 @@ const handleViewTenantDetails = (tenant) => {
               memos: 'Updates & Memos',
               team: 'Team Management',
               'tax-reports': 'Tax Reports',
-              leases: 'Lease Agreements',
-              'mpesa-reconciliation': 'M-Pesa Reconciliation',
-              'move-out-notices': 'Move-Out Notices',
+              documents: 'Documents',
               reminders: 'Rent Reminders',
               subscription: 'Subscription'
             };
@@ -4814,6 +4832,33 @@ const handleViewTenantDetails = (tenant) => {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 mb-6">
+          <button
+            onClick={() => setPaymentsTab('payments')}
+            className={`px-6 py-3 font-semibold transition ${
+              paymentsTab === 'payments'
+                ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            Payments
+          </button>
+          <button
+            onClick={() => setPaymentsTab('mpesa')}
+            className={`px-6 py-3 font-semibold transition ${
+              paymentsTab === 'mpesa'
+                ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            M-Pesa Reconciliation
+          </button>
+        </div>
+
+        {/* Payments Tab Content */}
+        {paymentsTab === 'payments' && (
+        <>
         {/* Payment Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Expected */}
@@ -5037,7 +5082,114 @@ const handleViewTenantDetails = (tenant) => {
             </div>
           </div>
         )}
+        </>
+        )}
 
+        {/* M-Pesa Reconciliation Tab Content */}
+        {paymentsTab === 'mpesa' && (
+          <MpesaReconciliation
+            landlordId={user.uid}
+            properties={properties}
+            tenants={tenants}
+          />
+        )}
+
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Documents View */}
+{currentView === 'documents' && (
+  <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 pb-8 pt-6">
+      <div className="max-w-7xl mx-auto">
+
+        {/* Header */}
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Documents</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Manage lease agreements and move-out notices</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 mb-6">
+          <button
+            onClick={() => setDocumentsTab('leases')}
+            className={`px-6 py-3 font-semibold transition ${
+              documentsTab === 'leases'
+                ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            Lease Agreements
+          </button>
+          <button
+            onClick={() => setDocumentsTab('move-out')}
+            className={`px-6 py-3 font-semibold transition ${
+              documentsTab === 'move-out'
+                ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            Move-Out Notices
+          </button>
+        </div>
+
+        {/* Leases Tab Content */}
+        {documentsTab === 'leases' && (
+          <LeaseManagement
+            landlordId={user.uid}
+            properties={properties}
+            tenants={tenants}
+          />
+        )}
+
+        {/* Move-Out Notices Tab Content */}
+        {documentsTab === 'move-out' && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Move-Out Notices</h3>
+            <p className="text-gray-600 dark:text-gray-400">Move-out notices feature will be available here.</p>
+          </div>
+        )}
+
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Leases View - DEPRECATED (Now in Documents) */}
+{currentView === 'leases' && (
+  <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 pb-8 pt-6">
+      <LeaseManagement
+        landlordId={user.uid}
+        properties={properties}
+        tenants={tenants}
+      />
+    </div>
+  </div>
+)}
+
+{/* M-Pesa Reconciliation View - DEPRECATED (Now in Payments) */}
+{currentView === 'mpesa-reconciliation' && (
+  <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 pb-8 pt-6">
+      <MpesaReconciliation
+        landlordId={user.uid}
+        properties={properties}
+        tenants={tenants}
+      />
+    </div>
+  </div>
+)}
+
+{/* Move-Out Notices View - DEPRECATED (Now in Documents) */}
+{currentView === 'move-out-notices' && (
+  <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 pb-8 pt-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Move-Out Notices</h3>
+        <p className="text-gray-600 dark:text-gray-400">Move-out notices feature will be available here.</p>
       </div>
     </div>
   </div>
