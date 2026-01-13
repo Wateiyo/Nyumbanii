@@ -94,8 +94,7 @@ import {
   Sun,
   AlertTriangle,
   FileSignature,
-  Receipt,
-  FileContract
+  Receipt
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
@@ -3061,9 +3060,9 @@ const handleViewTenantDetails = (tenant) => {
               maintenance: Wrench,
               tenants: Users,
               payments: Banknote,
-              leases: FileContract,
+              leases: FileSignature,
               'mpesa-reconciliation': Receipt,
-              'move-out-notices': FileSignature,
+              'move-out-notices': FileText,
               reminders: Bell,
               'tax-reports': Calculator,
               messages: MessageSquare,
