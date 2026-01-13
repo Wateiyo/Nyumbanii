@@ -1,5 +1,6 @@
 const {setGlobalOptions} = require("firebase-functions/v2");
 const {onDocumentCreated} = require("firebase-functions/v2/firestore");
+const {onDocumentUpdated} = require("firebase-functions/v2/firestore");
 const {onCall} = require("firebase-functions/v2/https");
 const {onRequest} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
@@ -10,6 +11,7 @@ const { Resend } = require("resend");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const pdf = require("pdf-parse");
+const AfricasTalking = require("africastalking");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -1607,3 +1609,770 @@ exports.checkSubscriptionStatus = onCall(
     }
   }
 );
+
+// ==========================================
+// TENANT APPLICATION EMAIL NOTIFICATIONS
+// ==========================================
+
+/**
+ * Send email notification when tenant application status changes
+ * Triggers when tenantApplications document is updated
+ */
+exports.sendApplicationStatusEmail = onDocumentUpdated(
+  {
+    document: "tenantApplications/{applicationId}",
+    region: "us-central1"
+  },
+  async (event) => {
+    try {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+
+      // Only send if status changed
+      if (before.status === after.status) {
+        logger.info("Status unchanged, skipping email");
+        return;
+      }
+
+      const applicationId = event.params.applicationId;
+      logger.info(`📧 Application status changed: ${before.status} → ${after.status}`);
+
+      // Prepare email content based on status
+      let subject, htmlContent;
+
+      if (after.status === 'approved') {
+        subject = `✅ Application Approved - ${after.propertyName}`;
+        htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #16a34a; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }
+              .success-box { background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #16a34a; }
+              .button { display: inline-block; background-color: #16a34a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🎉 Congratulations!</h1>
+              </div>
+              <div class="content">
+                <h2 style="color: #16a34a;">Your Application Has Been Approved</h2>
+
+                <p>Dear ${after.fullName},</p>
+
+                <p>Great news! Your tenant application for <strong>${after.propertyName}</strong> has been <strong>approved</strong>.</p>
+
+                <div class="success-box">
+                  <h3 style="margin-top: 0;">Application Details</h3>
+                  <p><strong>Property:</strong> ${after.propertyName}</p>
+                  <p><strong>Application ID:</strong> ${after.applicationId}</p>
+                  <p><strong>Date Submitted:</strong> ${after.createdAt?.toDate ? new Date(after.createdAt.toDate()).toLocaleDateString() : 'N/A'}</p>
+                </div>
+
+                <h3>Next Steps:</h3>
+                <ol>
+                  <li>The landlord will contact you within 24-48 hours to discuss lease terms</li>
+                  <li>Prepare necessary documents for lease signing</li>
+                  <li>Arrange for security deposit and first month's rent payment</li>
+                  <li>Schedule move-in date and property inspection</li>
+                </ol>
+
+                <p>If you have any questions, please contact the landlord directly.</p>
+
+                <p>Best regards,<br>The Nyumbanii Team</p>
+              </div>
+              <div class="footer">
+                <p>© 2025 Nyumbanii Property Management. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+      } else if (after.status === 'rejected') {
+        subject = `Application Update - ${after.propertyName}`;
+        htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #dc2626; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }
+              .info-box { background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Application Update</h1>
+              </div>
+              <div class="content">
+                <h2>Application Status Update</h2>
+
+                <p>Dear ${after.fullName},</p>
+
+                <p>Thank you for your interest in <strong>${after.propertyName}</strong> and for taking the time to submit your application.</p>
+
+                <div class="info-box">
+                  <p>After careful review, we regret to inform you that we are unable to move forward with your application at this time.</p>
+                  ${after.reviewNotes ? `<p><strong>Additional Information:</strong> ${after.reviewNotes}</p>` : ''}
+                </div>
+
+                <p>We encourage you to continue your search and wish you the best in finding your ideal home.</p>
+
+                <p>If you have any questions about this decision, please feel free to contact us.</p>
+
+                <p>Best regards,<br>The Nyumbanii Team</p>
+              </div>
+              <div class="footer">
+                <p>© 2025 Nyumbanii Property Management. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+      } else if (after.status === 'under_review') {
+        subject = `Application Under Review - ${after.propertyName}`;
+        htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #2563eb; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }
+              .info-box { background-color: #eff6ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔍 Application Under Review</h1>
+              </div>
+              <div class="content">
+                <h2>Your Application is Being Reviewed</h2>
+
+                <p>Dear ${after.fullName},</p>
+
+                <p>Your tenant application for <strong>${after.propertyName}</strong> is now under review by the landlord.</p>
+
+                <div class="info-box">
+                  <h3 style="margin-top: 0;">What Happens Next?</h3>
+                  <ul>
+                    <li>The landlord is reviewing your application and documents</li>
+                    <li>Background and credit checks may be conducted (if applicable)</li>
+                    <li>You will be notified of the decision within 3-5 business days</li>
+                  </ul>
+                </div>
+
+                <p><strong>Application ID:</strong> ${after.applicationId}</p>
+
+                <p>If additional information is needed, the landlord will contact you directly using the information provided in your application.</p>
+
+                <p>Thank you for your patience!</p>
+
+                <p>Best regards,<br>The Nyumbanii Team</p>
+              </div>
+              <div class="footer">
+                <p>© 2025 Nyumbanii Property Management. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+      } else {
+        // Skip email for other status changes
+        logger.info(`No email template for status: ${after.status}`);
+        return;
+      }
+
+      // Send email
+      const { data, error } = await resend.emails.send({
+        from: 'Nyumbanii <noreply@nyumbanii.org>',
+        to: [after.email],
+        subject: subject,
+        html: htmlContent,
+      });
+
+      if (error) {
+        logger.error('Error sending application status email:', {
+          error: error,
+          message: error.message,
+          applicationId: applicationId
+        });
+        return;
+      }
+
+      logger.info(`✅ Application status email sent to ${after.email}: ${data.id}`);
+
+      // Update application with email sent timestamp
+      await event.data.after.ref.update({
+        statusEmailSent: true,
+        statusEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastEmailSentFor: after.status
+      });
+
+      return { success: true, emailId: data.id };
+    } catch (error) {
+      logger.error('Error in sendApplicationStatusEmail function:', error);
+      return null;
+    }
+  }
+);
+
+// ==========================================
+// SMS/WHATSAPP REMINDERS - AFRICA'S TALKING
+// ==========================================
+
+// Get Africa's Talking credentials
+const AFRICASTALKING_API_KEY = process.env.AFRICASTALKING_API_KEY || "placeholder";
+const AFRICASTALKING_USERNAME = process.env.AFRICASTALKING_USERNAME || "sandbox";
+
+// Initialize Africa's Talking SDK (lazy initialization)
+function getAfricasTalking() {
+  const config = functions.config();
+  const credentials = {
+    apiKey: config.africastalking?.api_key || AFRICASTALKING_API_KEY,
+    username: config.africastalking?.username || AFRICASTALKING_USERNAME
+  };
+  return AfricasTalking(credentials);
+}
+
+/**
+ * Scheduled function to send rent reminders
+ * Runs daily at 9:00 AM EAT
+ *
+ * ⚠️ DISABLED: SMS reminders have been disabled to reduce costs.
+ * Use WhatsApp reminders instead via sendWhatsAppMessage function.
+ */
+/* DISABLED - SMS TOO EXPENSIVE
+exports.sendRentReminders = onSchedule(
+  {
+    schedule: "0 9 * * *",
+    timeZone: "Africa/Nairobi",
+    region: "us-central1"
+  },
+  async (event) => {
+    try {
+      const db = admin.firestore();
+      const now = new Date();
+      const currentDay = now.getDate();
+
+      logger.info(`🔔 Running rent reminders job at ${now.toISOString()}`);
+
+      // Get all active tenants
+      const tenantsSnapshot = await db.collection('tenants')
+        .where('status', '==', 'active')
+        .get();
+
+      const remindersToSend = [];
+
+      for (const tenantDoc of tenantsSnapshot.docs) {
+        const tenant = tenantDoc.data();
+        const tenantId = tenantDoc.id;
+
+        // Skip if tenant has no phone number
+        if (!tenant.phone) {
+          logger.info(`⏭️ Skipping tenant ${tenantId}: No phone number`);
+          continue;
+        }
+
+        // Get landlord's reminder settings
+        const landlordDoc = await db.collection('landlordSettings').doc(tenant.landlordId).get();
+        const landlord = landlordDoc.exists ? landlordDoc.data() : null;
+
+        if (!landlord || !landlord.reminderSettings?.enabled) {
+          logger.info(`⏭️ Skipping tenant ${tenantId}: Landlord reminders disabled`);
+          continue;
+        }
+
+        const settings = landlord.reminderSettings;
+        const rentDueDay = parseInt(tenant.rentDueDay || settings.defaultRentDueDay || 5);
+        const reminderDays = settings.reminderDays || [7, 3, 1]; // Days before rent is due
+
+        // Calculate if today is a reminder day
+        let daysUntilDue = rentDueDay - currentDay;
+        if (daysUntilDue < 0) {
+          // Handle month rollover
+          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+          daysUntilDue = daysInMonth - currentDay + rentDueDay;
+        }
+
+        // Check if today is a reminder day
+        if (reminderDays.includes(daysUntilDue)) {
+          const landlordUserDoc = await db.collection('users').doc(tenant.landlordId).get();
+          const landlordUserData = landlordUserDoc.data();
+
+          const message = generateReminderMessage(tenant, landlordUserData, daysUntilDue, settings.messageType);
+
+          remindersToSend.push({
+            tenantId,
+            tenantName: tenant.name,
+            phone: formatPhoneNumber(tenant.phone),
+            message,
+            daysUntilDue,
+            landlordId: tenant.landlordId
+          });
+        }
+
+        // Check for overdue reminders (after due date)
+        const overdueInterval = settings.overdueReminderInterval || 3;
+        if (daysUntilDue < 0 && Math.abs(daysUntilDue) % overdueInterval === 0) {
+          const landlordUserDoc = await db.collection('users').doc(tenant.landlordId).get();
+          const landlordUserData = landlordUserDoc.data();
+
+          const overdueMessage = generateOverdueMessage(tenant, landlordUserData, Math.abs(daysUntilDue));
+
+          remindersToSend.push({
+            tenantId,
+            tenantName: tenant.name,
+            phone: formatPhoneNumber(tenant.phone),
+            message: overdueMessage,
+            daysOverdue: Math.abs(daysUntilDue),
+            landlordId: tenant.landlordId,
+            isOverdue: true
+          });
+        }
+      }
+
+      logger.info(`📊 Found ${remindersToSend.length} reminders to send`);
+
+      if (remindersToSend.length === 0) {
+        return { success: true, sent: 0 };
+      }
+
+      // Send SMS in batches
+      const results = await sendSMSBatch(remindersToSend);
+
+      // Log results to Firestore
+      const batch = db.batch();
+      results.forEach(result => {
+        const logRef = db.collection('smsLog').doc();
+        batch.set(logRef, {
+          ...result,
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          type: result.isOverdue ? 'overdue_reminder' : 'rent_reminder'
+        });
+      });
+      await batch.commit();
+
+      logger.info(`✅ Sent ${results.filter(r => r.success).length} reminders successfully`);
+      return { success: true, sent: results.length };
+
+    } catch (error) {
+      logger.error("❌ Error in sendRentReminders:", error);
+      throw error;
+    }
+  }
+);
+*/ // END DISABLED sendRentReminders
+
+/**
+ * HTTP callable function to manually send a reminder to a specific tenant
+ *
+ * ⚠️ DISABLED: SMS reminders have been disabled to reduce costs.
+ * Use WhatsApp reminders instead via sendWhatsAppMessage function.
+ */
+/* DISABLED - SMS TOO EXPENSIVE
+exports.sendManualReminder = onCall(
+  {
+    region: "us-central1"
+  },
+  async (request) => {
+    try {
+      const userId = request.auth?.uid;
+      if (!userId) {
+        throw new Error("User must be authenticated");
+      }
+
+      const { tenantId, message } = request.data;
+
+      if (!tenantId || !message) {
+        throw new Error("tenantId and message are required");
+      }
+
+      const db = admin.firestore();
+      const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+
+      if (!tenantDoc.exists) {
+        throw new Error("Tenant not found");
+      }
+
+      const tenant = tenantDoc.data();
+
+      // Verify the caller is the landlord
+      if (tenant.landlordId !== userId) {
+        throw new Error("Not authorized to send reminder to this tenant");
+      }
+
+      if (!tenant.phone) {
+        throw new Error("Tenant has no phone number");
+      }
+
+      const phone = formatPhoneNumber(tenant.phone);
+      const result = await sendSMS(phone, message);
+
+      // Log to Firestore
+      await db.collection('smsLog').add({
+        tenantId,
+        tenantName: tenant.name,
+        phone,
+        message,
+        success: result.success,
+        response: result.response,
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        sentBy: userId,
+        type: 'manual'
+      });
+
+      logger.info(`✅ Manual reminder sent to ${tenant.name}`);
+      return { success: true, result };
+
+    } catch (error) {
+      logger.error("❌ Error in sendManualReminder:", error);
+      throw new Error(error.message);
+    }
+  }
+);
+*/ // END DISABLED sendManualReminder
+
+/**
+ * HTTP callable function to send WhatsApp message
+ */
+exports.sendWhatsAppMessage = onCall(
+  {
+    region: "us-central1"
+  },
+  async (request) => {
+    try {
+      const userId = request.auth?.uid;
+      if (!userId) {
+        throw new Error("User must be authenticated");
+      }
+
+      const { tenantId, message } = request.data;
+
+      if (!tenantId || !message) {
+        throw new Error("tenantId and message are required");
+      }
+
+      const db = admin.firestore();
+      const tenantDoc = await db.collection('tenants').doc(tenantId).get();
+
+      if (!tenantDoc.exists) {
+        throw new Error("Tenant not found");
+      }
+
+      const tenant = tenantDoc.data();
+
+      if (tenant.landlordId !== userId) {
+        throw new Error("Not authorized");
+      }
+
+      if (!tenant.phone) {
+        throw new Error("Tenant has no phone number");
+      }
+
+      // Send WhatsApp via Africa's Talking
+      const phone = formatPhoneNumber(tenant.phone);
+      const result = await sendWhatsApp(phone, message);
+
+      // Log to Firestore
+      await db.collection('whatsappLog').add({
+        tenantId,
+        tenantName: tenant.name,
+        phone,
+        message,
+        success: result.success,
+        response: result.response,
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        sentBy: userId,
+        type: 'manual'
+      });
+
+      logger.info(`✅ WhatsApp message sent to ${tenant.name}`);
+      return { success: true, result };
+
+    } catch (error) {
+      logger.error("❌ Error in sendWhatsAppMessage:", error);
+      throw new Error(error.message);
+    }
+  }
+);
+
+/**
+ * Firestore trigger: Send payment confirmation when payment is verified
+ *
+ * ⚠️ DISABLED: SMS notifications have been disabled to reduce costs.
+ * Email notifications are still sent for payment confirmations.
+ */
+/* DISABLED - SMS TOO EXPENSIVE
+exports.sendPaymentConfirmation = onDocumentUpdated(
+  {
+    document: "payments/{paymentId}",
+    region: "us-central1"
+  },
+  async (event) => {
+    try {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+
+      // Only send if payment was just verified
+      if (before.status !== 'verified' && after.status === 'verified') {
+        const db = admin.firestore();
+        const tenantDoc = await db.collection('tenants').doc(after.tenantId).get();
+
+        if (!tenantDoc.exists || !tenantDoc.data().phone) {
+          logger.info("⏭️ Skipping payment confirmation: No tenant or phone");
+          return;
+        }
+
+        const tenant = tenantDoc.data();
+        const landlordDoc = await db.collection('users').doc(tenant.landlordId).get();
+        const landlord = landlordDoc.data();
+
+        const message = `Dear ${tenant.name}, your payment of KES ${after.amount.toLocaleString()} for ${after.month} has been confirmed. Thank you! - ${landlord?.businessName || landlord?.displayName || 'Your Landlord'}`;
+
+        const phone = formatPhoneNumber(tenant.phone);
+        const result = await sendSMS(phone, message);
+
+        // Log
+        await db.collection('smsLog').add({
+          tenantId: after.tenantId,
+          tenantName: tenant.name,
+          phone,
+          message,
+          success: result.success,
+          response: result.response,
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          type: 'payment_confirmation',
+          paymentId: event.params.paymentId
+        });
+
+        logger.info(`✅ Payment confirmation sent to ${tenant.name}`);
+      }
+    } catch (error) {
+      logger.error("❌ Error sending payment confirmation:", error);
+    }
+  }
+);
+*/ // END DISABLED sendPaymentConfirmation
+
+/**
+ * Firestore trigger: Send notification when maintenance request is updated
+ *
+ * ⚠️ DISABLED: SMS notifications have been disabled to reduce costs.
+ * In-app notifications are still sent for maintenance updates.
+ */
+/* DISABLED - SMS TOO EXPENSIVE
+exports.sendMaintenanceUpdate = onDocumentUpdated(
+  {
+    document: "maintenance/{requestId}",
+    region: "us-central1"
+  },
+  async (event) => {
+    try {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+
+      // Only send if status changed
+      if (before.status !== after.status) {
+        const db = admin.firestore();
+        const tenantDoc = await db.collection('tenants').doc(after.tenantId).get();
+
+        if (!tenantDoc.exists || !tenantDoc.data().phone) {
+          logger.info("⏭️ Skipping maintenance update: No tenant or phone");
+          return;
+        }
+
+        const tenant = tenantDoc.data();
+        const statusMessages = {
+          'in-progress': `Your maintenance request for "${after.issue}" is now being worked on.`,
+          'completed': `Your maintenance request for "${after.issue}" has been completed.`,
+          'rejected': `Your maintenance request for "${after.issue}" could not be processed.${after.rejectionReason ? ' Reason: ' + after.rejectionReason : ''}`
+        };
+
+        const message = statusMessages[after.status];
+        if (!message) {
+          return;
+        }
+
+        const phone = formatPhoneNumber(tenant.phone);
+        const result = await sendSMS(phone, message);
+
+        // Log
+        await db.collection('smsLog').add({
+          tenantId: after.tenantId,
+          tenantName: tenant.name,
+          phone,
+          message,
+          success: result.success,
+          response: result.response,
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          type: 'maintenance_update',
+          requestId: event.params.requestId
+        });
+
+        logger.info(`✅ Maintenance update sent to ${tenant.name}`);
+      }
+    } catch (error) {
+      logger.error("❌ Error sending maintenance update:", error);
+    }
+  }
+);
+*/ // END DISABLED sendMaintenanceUpdate
+
+// ==========================================
+// HELPER FUNCTIONS FOR SMS/WHATSAPP
+// ⚠️ These SMS-related functions are disabled to reduce costs
+// ==========================================
+
+/* DISABLED - SMS TOO EXPENSIVE
+function generateReminderMessage(tenant, landlord, daysUntilDue, messageType = 'friendly') {
+  const propertyName = tenant.propertyName || 'your property';
+  const landlordName = landlord?.businessName || landlord?.displayName || 'Your Landlord';
+  const amount = tenant.rentAmount ? `KES ${tenant.rentAmount.toLocaleString()}` : 'rent';
+
+  if (messageType === 'formal') {
+    return `Dear ${tenant.name}, this is a reminder that your rent of ${amount} for ${propertyName} is due in ${daysUntilDue} day(s). Please ensure timely payment. - ${landlordName}`;
+  } else {
+    return `Hi ${tenant.name}! Just a friendly reminder that your rent of ${amount} is due in ${daysUntilDue} day(s). Thank you! - ${landlordName}`;
+  }
+}
+
+function generateOverdueMessage(tenant, landlord, daysOverdue) {
+  const propertyName = tenant.propertyName || 'your property';
+  const landlordName = landlord?.businessName || landlord?.displayName || 'Your Landlord';
+  const amount = tenant.rentAmount ? `KES ${tenant.rentAmount.toLocaleString()}` : 'rent';
+
+  return `URGENT: Dear ${tenant.name}, your rent of ${amount} for ${propertyName} is ${daysOverdue} day(s) overdue. Please contact us immediately to avoid penalties. - ${landlordName}`;
+}
+
+function formatPhoneNumber(phone) {
+  // Remove spaces, dashes, and ensure Kenya format (+254)
+  let cleaned = phone.replace(/[\s\-\(\)]/g, '');
+
+  // If starts with 0, replace with +254
+  if (cleaned.startsWith('0')) {
+    cleaned = '+254' + cleaned.substring(1);
+  }
+
+  // If doesn't start with +, add +254
+  if (!cleaned.startsWith('+')) {
+    cleaned = '+254' + cleaned;
+  }
+
+  return cleaned;
+}
+
+async function sendSMS(phone, message) {
+  try {
+    const africastalking = getAfricasTalking();
+    const sms = africastalking.SMS;
+
+    const result = await sms.send({
+      to: [phone],
+      message: message,
+      from: null // Africa's Talking will use default shortcode
+    });
+
+    logger.info("📱 SMS sent:", result);
+
+    const recipient = result.SMSMessageData.Recipients[0];
+    return {
+      success: recipient.status === 'Success',
+      response: recipient
+    };
+
+  } catch (error) {
+    logger.error("❌ Error sending SMS:", error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+async function sendSMSBatch(reminders) {
+  const results = [];
+
+  // Send in batches of 10 to avoid rate limits
+  const batchSize = 10;
+  for (let i = 0; i < reminders.length; i += batchSize) {
+    const batch = reminders.slice(i, i + batchSize);
+
+    const batchResults = await Promise.all(
+      batch.map(async (reminder) => {
+        const result = await sendSMS(reminder.phone, reminder.message);
+        return {
+          ...reminder,
+          success: result.success,
+          response: result.response || result.error
+        };
+      })
+    );
+
+    results.push(...batchResults);
+
+    // Wait 1 second between batches
+    if (i + batchSize < reminders.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  return results;
+}
+*/ // END DISABLED SMS helper functions
+
+// Keep sendWhatsApp active since WhatsApp is being used instead of SMS
+async function sendWhatsApp(phone, message) {
+  try {
+    const africastalking = getAfricasTalking();
+
+    // Africa's Talking WhatsApp Business API
+    // Note: Requires WhatsApp Business API setup and approved templates
+    logger.info("📲 Sending WhatsApp message to:", phone);
+
+    // TODO: Implement proper WhatsApp API integration
+    // For now, this is a placeholder that needs Africa's Talking WhatsApp Business API credentials
+    // Reference: https://africastalking.com/whatsapp
+
+    // Example implementation (uncomment when WhatsApp is configured):
+    /*
+    const result = await africastalking.WHATSAPP.send({
+      phoneNumber: phone,
+      message: message
+    });
+
+    logger.info("✅ WhatsApp sent:", result);
+    return {
+      success: true,
+      response: result
+    };
+    */
+
+    // Temporary: Log only (no actual sending until WhatsApp is configured)
+    logger.warn("⚠️ WhatsApp not yet configured. Message logged but not sent.");
+    return {
+      success: false,
+      error: "WhatsApp API not yet configured. Please set up Africa's Talking WhatsApp Business API."
+    };
+
+  } catch (error) {
+    logger.error("❌ Error sending WhatsApp:", error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}

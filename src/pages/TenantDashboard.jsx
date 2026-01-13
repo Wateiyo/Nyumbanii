@@ -42,10 +42,15 @@ import {
   Megaphone,
   Clipboard,
   Moon,
-  Sun
+  Sun,
+  AlertTriangle,
+  FileSignature
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
+import SignaturePad from '../components/SignaturePad';
+import jsPDF from 'jspdf';
+import { generatePaymentReceiptPDF, generateLegalNoticePDF, downloadPDF, pdfToBlob } from '../utils/pdfGenerator';
 
 // Initialize Firebase services
 const functions = getFunctions();
@@ -69,6 +74,8 @@ const TenantDashboard = () => {
   const [showDocumentUploadModal, setShowDocumentUploadModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [showMoveOutModal, setShowMoveOutModal] = useState(false);
+  const [submittingMoveOutNotice, setSubmittingMoveOutNotice] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
@@ -227,6 +234,20 @@ const TenantDashboard = () => {
     file: null
   });
 
+  // Move-out notice data
+  const [moveOutData, setMoveOutData] = useState({
+    moveOutDate: '',
+    reason: 'Relocation',
+    additionalNotes: '',
+    agreedToTerms: false
+  });
+
+  // Lease management states
+  const [leases, setLeases] = useState([]);
+  const [loadingLeases, setLoadingLeases] = useState(true);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [currentSigningLease, setCurrentSigningLease] = useState(null);
+
   // Updates and Memos data
   const [updates, setUpdates] = useState([]);
   const [memos, setMemos] = useState([]);
@@ -303,6 +324,37 @@ const TenantDashboard = () => {
       }));
     }
   }, [tenantData]);
+
+  // Fetch leases for the current tenant
+  useEffect(() => {
+    if (!tenantData?.id) {
+      setLoadingLeases(false);
+      return;
+    }
+
+    console.log('Fetching leases for tenant:', tenantData.id);
+    setLoadingLeases(true);
+
+    const leasesQuery = query(
+      collection(db, 'leases'),
+      where('tenantId', '==', tenantData.id)
+    );
+
+    const unsubscribe = onSnapshot(leasesQuery, (snapshot) => {
+      console.log('Leases query returned:', snapshot.size, 'documents');
+      const leasesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setLeases(leasesData);
+      setLoadingLeases(false);
+    }, (error) => {
+      console.error('Error fetching leases:', error);
+      setLoadingLeases(false);
+    });
+
+    return () => unsubscribe();
+  }, [tenantData?.id]);
 
   // Permission check helpers
   const canAccessPortal = () => {
@@ -1343,138 +1395,31 @@ const TenantDashboard = () => {
         return;
       }
 
-      // Dynamically import jsPDF
-      const { default: jsPDF } = await import('jspdf');
+      // Prepare payment data with additional details
+      const paymentData = {
+        ...payment,
+        id: paymentId
+      };
 
-      // Create new PDF document
-      const doc = new jsPDF();
+      // Prepare tenant data
+      const tenant = {
+        name: tenantData?.name || payment.tenantName || 'Tenant',
+        idNumber: tenantData?.idNumber || null
+      };
 
-      // Set font
-      doc.setFont('helvetica');
+      // Prepare landlord data
+      const landlord = {
+        name: tenantData?.landlordName || 'Landlord',
+        email: tenantData?.landlordEmail || null,
+        phone: tenantData?.landlordPhone || null
+      };
 
-      // Company Header
-      doc.setFontSize(24);
-      doc.setTextColor(0, 51, 102); // #003366
-      doc.text(tenantData?.landlordName || 'Property Management', 105, 20, { align: 'center' });
+      // Generate PDF using utility function
+      const doc = generatePaymentReceiptPDF(paymentData, tenant, landlord);
 
-      doc.setFontSize(18);
-      doc.setTextColor(100, 100, 100);
-      doc.text('PAYMENT RECEIPT', 105, 30, { align: 'center' });
-
-      // Line separator
-      doc.setDrawColor(0, 51, 102);
-      doc.setLineWidth(1);
-      doc.line(20, 35, 190, 35);
-
-      // Receipt Info - Left Side
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text('RECEIPT NUMBER', 20, 45);
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text('#' + payment.id.substring(0, 8).toUpperCase(), 20, 50);
-
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text('ISSUE DATE', 20, 58);
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(payment.paidDate || payment.date || new Date().toISOString().split('T')[0], 20, 63);
-
-      // Receipt Info - Right Side
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text('TENANT', 140, 45);
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(payment.tenantName || tenantData?.name || 'Tenant', 140, 50);
-
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text('STATUS', 140, 58);
-      doc.setFontSize(12);
-
-      // Status badge color
-      if (payment.status === 'Paid') {
-        doc.setTextColor(34, 197, 94); // green
-      } else {
-        doc.setTextColor(234, 179, 8); // yellow
-      }
-      doc.text(payment.status.toUpperCase(), 140, 63);
-
-      // Payment Details Box
-      doc.setFillColor(245, 245, 245);
-      doc.rect(20, 75, 170, 80, 'F');
-
-      // Details
-      let yPos = 85;
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-
-      const details = [
-        { label: 'Property', value: payment.propertyName || payment.property || 'N/A' },
-        { label: 'Unit', value: payment.unitNumber || payment.unit || 'N/A' },
-        { label: 'Period', value: payment.month || 'N/A' },
-        { label: 'Due Date', value: payment.dueDate || 'N/A' }
-      ];
-
-      if (payment.paidDate) {
-        details.push({ label: 'Paid Date', value: payment.paidDate });
-      }
-
-      if (payment.method) {
-        details.push({ label: 'Payment Method', value: payment.method });
-      }
-
-      if (payment.referenceNumber) {
-        details.push({ label: 'Reference', value: payment.referenceNumber });
-      }
-
-      // Draw detail rows
-      details.forEach((detail, index) => {
-        doc.setTextColor(100, 100, 100);
-        doc.text(detail.label, 25, yPos);
-        doc.setTextColor(0, 0, 0);
-        doc.text(detail.value, 185, yPos, { align: 'right' });
-
-        // Draw line separator
-        if (index < details.length - 1) {
-          doc.setDrawColor(220, 220, 220);
-          doc.setLineWidth(0.5);
-          doc.line(25, yPos + 3, 185, yPos + 3);
-        }
-
-        yPos += 10;
-      });
-
-      // Total box
-      doc.setFillColor(0, 51, 102);
-      doc.rect(20, yPos + 5, 170, 15, 'F');
-
-      doc.setFontSize(14);
-      doc.setTextColor(255, 255, 255);
-      doc.text('TOTAL AMOUNT', 25, yPos + 14);
-      doc.setFontSize(16);
-      doc.text(`KES ${payment.amount.toLocaleString()}`, 185, yPos + 14, { align: 'right' });
-
-      // Footer
-      yPos += 30;
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-
-      const footerLines = [
-        tenantData?.landlordName || 'Property Management',
-        '',
-        'This is an automatically generated receipt.',
-        'For any queries, please contact your landlord.'
-      ];
-
-      footerLines.forEach((line, index) => {
-        doc.text(line, 105, yPos + (index * 5), { align: 'center' });
-      });
-
-      // Save PDF
-      doc.save(`Receipt_${payment.month || 'Payment'}_${payment.id.substring(0, 8)}.pdf`);
+      // Download PDF
+      const filename = `Receipt_${payment.month || 'Payment'}_${paymentId.substring(0, 8)}.pdf`;
+      downloadPDF(doc, filename);
 
     } catch (error) {
       console.error('Error downloading receipt:', error);
@@ -1493,6 +1438,348 @@ const TenantDashboard = () => {
     } catch (error) {
       console.error('Error deleting payment:', error);
       alert('Failed to delete payment. Please try again.');
+    }
+  };
+
+  // Move-out notice handler
+  const handleSubmitMoveOutNotice = async () => {
+    // Validation
+    if (!moveOutData.moveOutDate) {
+      alert('Please select a move-out date');
+      return;
+    }
+
+    if (!moveOutData.agreedToTerms) {
+      alert('Please confirm that you understand this notice is binding');
+      return;
+    }
+
+    if (!tenantData) {
+      alert('Unable to submit notice. Please try logging in again.');
+      return;
+    }
+
+    // Check 30-day minimum notice
+    const selectedDate = new Date(moveOutData.moveOutDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysDifference = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
+
+    if (daysDifference < 30) {
+      alert('Move-out notice must be at least 30 days in advance as per Kenyan law.');
+      return;
+    }
+
+    setSubmittingMoveOutNotice(true);
+
+    try {
+      // Generate unique reference number
+      const timestamp = Date.now();
+      const referenceNumber = `MVN-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${timestamp.toString().slice(-5)}`;
+
+      // Prepare notice data
+      const noticeData = {
+        initiatedBy: 'tenant',
+        tenantId: tenantData.id || currentUser.uid,
+        tenantName: tenantData.name || currentUser.displayName,
+        tenantEmail: tenantData.email || currentUser.email,
+        tenantPhone: tenantData.phone || '',
+        tenantIdNumber: tenantData.idNumber || '',
+        propertyId: tenantData.propertyId || '',
+        propertyName: tenantData.property || tenantData.propertyName || '',
+        unit: tenantData.unit || '',
+        landlordId: tenantData.landlordId || '',
+        landlordName: tenantData.landlordName || '',
+        landlordEmail: tenantData.landlordEmail || '',
+        intendedMoveOutDate: new Date(moveOutData.moveOutDate),
+        noticeSubmittedDate: new Date(),
+        noticePeriod: 30,
+        reason: moveOutData.reason,
+        additionalNotes: moveOutData.additionalNotes || '',
+        status: 'submitted',
+        legalNoticeGenerated: false,
+        legalNoticeURL: '',
+        referenceNumber: referenceNumber,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      // Generate legal notice PDF
+      const pdfDoc = generateLegalNoticePDF({
+        ...noticeData,
+        id: referenceNumber
+      });
+
+      // Convert PDF to blob
+      const pdfBlob = pdfToBlob(pdfDoc);
+
+      // Upload PDF to Firebase Storage
+      const storageRef = ref(storage, `legal-notices/${referenceNumber}.pdf`);
+      await uploadBytes(storageRef, pdfBlob);
+
+      // Get download URL
+      const pdfURL = await getDownloadURL(storageRef);
+
+      // Update notice data with PDF info
+      noticeData.legalNoticeGenerated = true;
+      noticeData.legalNoticeURL = pdfURL;
+
+      // Save to Firestore with timestamp fields
+      const firestoreNoticeData = {
+        ...noticeData,
+        intendedMoveOutDate: serverTimestamp(),
+        noticeSubmittedDate: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, 'moveOutNotices'), firestoreNoticeData);
+
+      // Send notification to landlord
+      if (tenantData.landlordId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: tenantData.landlordId,
+          title: 'Move-Out Notice Submitted',
+          message: `${tenantData.name} has submitted a move-out notice for ${tenantData.unit} on ${moveOutData.moveOutDate}`,
+          type: 'move_out_notice',
+          relatedId: docRef.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      // Log activity
+      await addDoc(collection(db, 'activityLog'), {
+        userId: tenantData.id || currentUser.uid,
+        userName: tenantData.name || currentUser.displayName,
+        userRole: 'tenant',
+        propertyId: tenantData.propertyId || '',
+        unit: tenantData.unit || '',
+        landlordId: tenantData.landlordId || '',
+        actionType: 'move_out_notice',
+        actionDescription: `Move-out notice submitted for ${moveOutData.moveOutDate}`,
+        metadata: {
+          noticeId: docRef.id,
+          moveOutDate: moveOutData.moveOutDate,
+          noticePeriod: 30,
+          reason: moveOutData.reason
+        },
+        relatedDocumentId: docRef.id,
+        createdAt: serverTimestamp()
+      });
+
+      // Reset form and close modal
+      setMoveOutData({
+        moveOutDate: '',
+        reason: 'Relocation',
+        additionalNotes: '',
+        agreedToTerms: false
+      });
+      setShowMoveOutModal(false);
+
+      alert(`Move-out notice submitted successfully!\n\nReference Number: ${referenceNumber}\n\nYour landlord has been notified and will acknowledge your notice soon.\n\nA legal notice PDF has been generated and is available in your dashboard.`);
+    } catch (error) {
+      console.error('Error submitting move-out notice:', error);
+      alert('Failed to submit move-out notice. Please try again.');
+    } finally {
+      setSubmittingMoveOutNotice(false);
+    }
+  };
+
+  // Lease management handlers
+  const handleSignLease = (lease) => {
+    setCurrentSigningLease(lease);
+    setShowSignaturePad(true);
+  };
+
+  const handleSaveSignature = async (signatureData) => {
+    try {
+      const leaseRef = doc(db, 'leases', currentSigningLease.id);
+
+      const updateData = {
+        tenantSignature: signatureData,
+        tenantSignedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      // Check if landlord has already signed
+      if (currentSigningLease.landlordSignature) {
+        // Both signatures now present - activate lease
+        updateData.status = 'active';
+      } else {
+        // Only tenant signature - mark as pending
+        updateData.status = 'pending_signature';
+      }
+
+      await updateDoc(leaseRef, updateData);
+
+      // Create notification for landlord
+      await addDoc(collection(db, 'notifications'), {
+        type: 'lease_signed',
+        recipientId: currentSigningLease.landlordId,
+        recipientRole: 'landlord',
+        title: 'Tenant Signed Lease Agreement',
+        message: `${tenantData.name} has signed the lease agreement for ${currentSigningLease.propertyName} - ${currentSigningLease.unit}`,
+        leaseId: currentSigningLease.id,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+
+      setShowSignaturePad(false);
+      setCurrentSigningLease(null);
+
+      alert('Lease signed successfully! Your landlord has been notified.');
+    } catch (error) {
+      console.error('Error saving signature:', error);
+      alert('Failed to save signature. Please try again.');
+    }
+  };
+
+  const handleDownloadLeasePDF = (lease) => {
+    try {
+      const doc = new jsPDF();
+
+      // Title
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RESIDENTIAL LEASE AGREEMENT', 105, 20, { align: 'center' });
+
+      // Line separator
+      doc.setLineWidth(0.5);
+      doc.line(20, 25, 190, 25);
+
+      let yPos = 35;
+
+      // Property Details Section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PROPERTY DETAILS', 20, yPos);
+      yPos += 8;
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Property: ${lease.propertyName}`, 20, yPos);
+      yPos += 6;
+      doc.text(`Unit: ${lease.unit}`, 20, yPos);
+      yPos += 6;
+      doc.text(`Address: ${lease.propertyAddress || 'N/A'}`, 20, yPos);
+      yPos += 10;
+
+      // Parties Section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PARTIES', 20, yPos);
+      yPos += 8;
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Landlord: ${lease.landlordName}`, 20, yPos);
+      yPos += 6;
+      doc.text(`Tenant: ${lease.tenantName}`, 20, yPos);
+      yPos += 10;
+
+      // Lease Terms Section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('LEASE TERMS', 20, yPos);
+      yPos += 8;
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Start Date: ${new Date(lease.startDate).toLocaleDateString()}`, 20, yPos);
+      yPos += 6;
+      doc.text(`End Date: ${new Date(lease.endDate).toLocaleDateString()}`, 20, yPos);
+      yPos += 6;
+      doc.text(`Monthly Rent: KES ${Number(lease.monthlyRent).toLocaleString()}`, 20, yPos);
+      yPos += 6;
+      doc.text(`Security Deposit: KES ${Number(lease.securityDeposit).toLocaleString()}`, 20, yPos);
+      yPos += 6;
+      doc.text(`Late Fee: ${lease.lateFeePercentage}% after ${lease.lateFeeDays} days`, 20, yPos);
+      yPos += 10;
+
+      // Utilities Section
+      if (lease.utilitiesIncluded && lease.utilitiesIncluded.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('UTILITIES INCLUDED', 20, yPos);
+        yPos += 8;
+
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        lease.utilitiesIncluded.forEach(utility => {
+          doc.text(`• ${utility}`, 20, yPos);
+          yPos += 6;
+        });
+        yPos += 4;
+      }
+
+      // Special Terms Section
+      if (lease.specialTerms) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('SPECIAL TERMS', 20, yPos);
+        yPos += 8;
+
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        const splitText = doc.splitTextToSize(lease.specialTerms, 170);
+        doc.text(splitText, 20, yPos);
+        yPos += splitText.length * 6 + 10;
+      }
+
+      // Signatures Section
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SIGNATURES', 20, yPos);
+      yPos += 10;
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+
+      // Landlord Signature
+      if (lease.landlordSignature) {
+        doc.text('Landlord Signature:', 20, yPos);
+        yPos += 6;
+        doc.addImage(lease.landlordSignature, 'PNG', 20, yPos, 60, 20);
+        yPos += 22;
+        if (lease.landlordSignedAt) {
+          doc.text(`Signed: ${new Date(lease.landlordSignedAt.seconds * 1000).toLocaleDateString()}`, 20, yPos);
+        }
+        yPos += 10;
+      } else {
+        doc.text('Landlord Signature: ____________________', 20, yPos);
+        yPos += 10;
+      }
+
+      // Tenant Signature
+      if (lease.tenantSignature) {
+        doc.text('Tenant Signature:', 20, yPos);
+        yPos += 6;
+        doc.addImage(lease.tenantSignature, 'PNG', 20, yPos, 60, 20);
+        yPos += 22;
+        if (lease.tenantSignedAt) {
+          doc.text(`Signed: ${new Date(lease.tenantSignedAt.seconds * 1000).toLocaleDateString()}`, 20, yPos);
+        }
+      } else {
+        doc.text('Tenant Signature: ____________________', 20, yPos);
+      }
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Generated via Nyumbanii Property Management', 105, 285, { align: 'center' });
+      doc.text('www.nyumbanii.co.ke', 105, 290, { align: 'center' });
+
+      // Download
+      const filename = `Lease_${lease.propertyName}_${lease.unit}_${lease.id.substring(0, 8)}.pdf`;
+      doc.save(filename);
+
+    } catch (error) {
+      console.error('Error generating lease PDF:', error);
+      alert('Error generating lease PDF. Please try again.');
     }
   };
 
@@ -2282,6 +2569,7 @@ const TenantDashboard = () => {
             { name: 'Maintenance', icon: Wrench, view: 'maintenance' },
             { name: 'Documents', icon: FileText, view: 'documents' },
             { name: 'Messages', icon: MessageSquare, view: 'messages' },
+            { name: 'Lease Agreement', icon: FileSignature, view: 'leases' },
             { name: 'Updates & Memos', icon: Megaphone, view: 'updates' },
             { name: 'Available Listings', icon: Search, view: 'listings' },
             { name: 'Settings', icon: Settings, view: 'settings' }
@@ -3676,6 +3964,245 @@ const TenantDashboard = () => {
             </div>
           )}
 
+          {/* Leases View */}
+          {currentView === 'leases' && (
+            <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
+              {/* Header */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Lease Agreement</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">View and sign your lease agreement</p>
+                  </div>
+                  <FileSignature className="w-12 h-12 text-[#003366]" />
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {loadingLeases && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-200 dark:border-gray-700">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto"></div>
+                  <p className="text-gray-600 dark:text-gray-400 mt-4">Loading lease agreements...</p>
+                </div>
+              )}
+
+              {/* No Leases State */}
+              {!loadingLeases && leases.length === 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-200 dark:border-gray-700">
+                  <FileSignature className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Lease Agreement Yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Your landlord hasn't created a lease agreement for you yet. <br />
+                    Contact your landlord if you need a lease agreement.
+                  </p>
+                </div>
+              )}
+
+              {/* Leases List */}
+              {!loadingLeases && leases.length > 0 && (
+                <div className="space-y-6">
+                  {leases.map((lease) => (
+                    <div
+                      key={lease.id}
+                      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+                    >
+                      {/* Lease Header */}
+                      <div className="bg-gradient-to-r from-[#003366] to-[#004488] p-6 text-white">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-2xl font-bold">{lease.propertyName}</h3>
+                            <p className="text-blue-100 mt-1">Unit: {lease.unit}</p>
+                          </div>
+                          <div className="text-right">
+                            {lease.status === 'active' && (
+                              <span className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                <CheckCircle className="w-4 h-4" />
+                                Active
+                              </span>
+                            )}
+                            {lease.status === 'pending_signature' && (
+                              <span className="inline-flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                <Clock className="w-4 h-4" />
+                                Pending Signature
+                              </span>
+                            )}
+                            {lease.status === 'draft' && (
+                              <span className="inline-flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                <FileText className="w-4 h-4" />
+                                Draft
+                              </span>
+                            )}
+                            {lease.status === 'expired' && (
+                              <span className="inline-flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                <AlertCircle className="w-4 h-4" />
+                                Expired
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Lease Details */}
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                          {/* Lease Period */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Lease Period</h4>
+                            <div className="flex items-center gap-2 text-gray-900 dark:text-white">
+                              <Calendar className="w-5 h-5 text-[#003366]" />
+                              <span className="font-semibold">
+                                {new Date(lease.startDate).toLocaleDateString()} - {new Date(lease.endDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Monthly Rent */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Monthly Rent</h4>
+                            <div className="flex items-center gap-2 text-gray-900 dark:text-white">
+                              <DollarSign className="w-5 h-5 text-[#003366]" />
+                              <span className="text-2xl font-bold">KES {Number(lease.monthlyRent).toLocaleString()}</span>
+                            </div>
+                          </div>
+
+                          {/* Security Deposit */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Security Deposit</h4>
+                            <div className="flex items-center gap-2 text-gray-900 dark:text-white">
+                              <DollarSign className="w-5 h-5 text-[#003366]" />
+                              <span className="font-semibold">KES {Number(lease.securityDeposit).toLocaleString()}</span>
+                            </div>
+                          </div>
+
+                          {/* Late Fee */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Late Fee Policy</h4>
+                            <p className="text-gray-900 dark:text-white font-medium">
+                              {lease.lateFeePercentage}% after {lease.lateFeeDays} days
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Utilities Included */}
+                        {lease.utilitiesIncluded && lease.utilitiesIncluded.length > 0 && (
+                          <div className="mb-6">
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Utilities Included</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {lease.utilitiesIncluded.map((utility, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-sm"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  {utility}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Special Terms */}
+                        {lease.specialTerms && (
+                          <div className="mb-6">
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Special Terms</h4>
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                              <p className="text-gray-900 dark:text-white whitespace-pre-wrap">{lease.specialTerms}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Signatures Section */}
+                        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Signatures</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Landlord Signature */}
+                            <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                              <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Landlord</h5>
+                              <p className="font-semibold text-gray-900 dark:text-white mb-3">{lease.landlordName}</p>
+                              {lease.landlordSignature ? (
+                                <div>
+                                  <img
+                                    src={lease.landlordSignature}
+                                    alt="Landlord Signature"
+                                    className="h-20 border border-gray-200 dark:border-gray-600 rounded bg-white p-2"
+                                  />
+                                  {lease.landlordSignedAt && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                      Signed: {new Date(lease.landlordSignedAt.seconds * 1000).toLocaleDateString()}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="bg-gray-100 dark:bg-gray-700 rounded p-4 text-center">
+                                  <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">Awaiting landlord signature</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Tenant Signature */}
+                            <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                              <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Tenant</h5>
+                              <p className="font-semibold text-gray-900 dark:text-white mb-3">{lease.tenantName}</p>
+                              {lease.tenantSignature ? (
+                                <div>
+                                  <img
+                                    src={lease.tenantSignature}
+                                    alt="Tenant Signature"
+                                    className="h-20 border border-gray-200 dark:border-gray-600 rounded bg-white p-2"
+                                  />
+                                  {lease.tenantSignedAt && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                      Signed: {new Date(lease.tenantSignedAt.seconds * 1000).toLocaleDateString()}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded p-4 text-center">
+                                  <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
+                                  <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium mb-2">
+                                    Signature Required
+                                  </p>
+                                  <button
+                                    onClick={() => handleSignLease(lease)}
+                                    className="inline-flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+                                  >
+                                    <FileSignature className="w-4 h-4" />
+                                    Sign Lease
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6 flex gap-3">
+                          <button
+                            onClick={() => handleDownloadLeasePDF(lease)}
+                            className="flex items-center gap-2 px-6 py-3 bg-[#003366] hover:bg-[#002244] text-white rounded-lg font-medium transition"
+                          >
+                            <Download className="w-5 h-5" />
+                            Download PDF
+                          </button>
+                          {!lease.tenantSignature && (
+                            <button
+                              onClick={() => handleSignLease(lease)}
+                              className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+                            >
+                              <FileSignature className="w-5 h-5" />
+                              Sign Lease
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Settings View */}
 
 {currentView === 'settings' && (
@@ -4097,6 +4624,48 @@ const TenantDashboard = () => {
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium text-sm"
               >
                 Request Data Export
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Move-Out Notice Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-orange-200 dark:border-orange-900">
+          <div className="p-4 sm:p-6 border-b border-orange-200 dark:border-orange-900">
+            <h2 className="text-xl font-bold text-orange-600 dark:text-orange-400 flex items-center gap-2">
+              <FileSignature className="w-6 h-6" />
+              Move-Out Notice
+            </h2>
+          </div>
+
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Submit Move-Out Notice</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Planning to move out? Submit your notice here (minimum 30 days required by law).
+                </p>
+                <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                  <li className="flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-green-600" />
+                    <span>30-day minimum notice period</span>
+                  </li>
+                  <li className="flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-green-600" />
+                    <span>Legal notice will be generated automatically</span>
+                  </li>
+                  <li className="flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-green-600" />
+                    <span>Landlord will be notified immediately</span>
+                  </li>
+                </ul>
+              </div>
+              <button
+                onClick={() => setShowMoveOutModal(true)}
+                className="px-4 py-2 sm:px-6 sm:py-2.5 bg-orange-600 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-800 transition font-medium whitespace-nowrap text-sm sm:text-base flex items-center gap-2"
+              >
+                <AlertTriangle className="w-5 h-5" />
+                Submit Notice
               </button>
             </div>
           </div>
@@ -4571,6 +5140,149 @@ const TenantDashboard = () => {
         </div>
       )}
 
+      {/* Move-Out Notice Modal */}
+      {showMoveOutModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <FileSignature className="w-6 h-6 text-orange-600" />
+                Submit Move-Out Notice
+              </h3>
+              <button onClick={() => setShowMoveOutModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-300">
+                <X className="w-5 h-5 lg:w-6 lg:h-6" />
+              </button>
+            </div>
+
+            <div className="p-4 lg:p-6 space-y-4">
+              {/* Warning Banner */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-orange-900 dark:text-orange-300 text-sm mb-1">Important Notice</h4>
+                  <p className="text-xs text-orange-800 dark:text-orange-400">
+                    Kenyan law requires a minimum 30-day notice period. This notice is legally binding once submitted.
+                  </p>
+                </div>
+              </div>
+
+              {/* Move-Out Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Intended Move-Out Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={moveOutData.moveOutDate}
+                  min={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                  onChange={(e) => setMoveOutData({...moveOutData, moveOutDate: e.target.value})}
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Minimum 30 days from today
+                </p>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Reason for Moving <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={moveOutData.reason}
+                  onChange={(e) => setMoveOutData({...moveOutData, reason: e.target.value})}
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
+                >
+                  <option value="Relocation">Relocation</option>
+                  <option value="Financial">Financial Reasons</option>
+                  <option value="Property Issues">Property Issues</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {/* Additional Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  value={moveOutData.additionalNotes}
+                  onChange={(e) => setMoveOutData({...moveOutData, additionalNotes: e.target.value})}
+                  rows={3}
+                  placeholder="Any additional information..."
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm lg:text-base"
+                ></textarea>
+              </div>
+
+              {/* Terms Agreement */}
+              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="agreeTerms"
+                  checked={moveOutData.agreedToTerms}
+                  onChange={(e) => setMoveOutData({...moveOutData, agreedToTerms: e.target.checked})}
+                  className="mt-1 w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <label htmlFor="agreeTerms" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                  I understand that this notice is binding and follows the 30-day legal requirement. My landlord will be notified immediately, and I agree to vacate the premises by the specified date.
+                </label>
+              </div>
+
+              {/* What Happens Next */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-2">What happens next?</h4>
+                <ul className="text-xs text-blue-800 dark:text-blue-400 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">1.</span>
+                    <span>Your landlord will be notified immediately via email and in-app notification</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">2.</span>
+                    <span>A legal notice will be generated with a unique reference number</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">3.</span>
+                    <span>Your landlord will acknowledge the notice within 7 days</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">4.</span>
+                    <span>Property inspection will be scheduled before your move-out date</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowMoveOutModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm lg:text-base"
+                  disabled={submittingMoveOutNotice}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitMoveOutNotice}
+                  disabled={submittingMoveOutNotice}
+                  className="flex-1 px-4 py-2 bg-orange-600 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-800 transition text-sm lg:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {submittingMoveOutNotice ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Submit Notice
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Property Detail View Modal */}
       {selectedListing && !showBookingModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -4921,6 +5633,19 @@ const TenantDashboard = () => {
             Delete {contextMenu.itemType === 'memo' ? 'Memo' : 'Update'}
           </button>
         </div>
+      )}
+
+      {/* Signature Pad Modal */}
+      {showSignaturePad && currentSigningLease && (
+        <SignaturePad
+          onSave={handleSaveSignature}
+          onCancel={() => {
+            setShowSignaturePad(false);
+            setCurrentSigningLease(null);
+          }}
+          signerName={tenantData?.name || 'Tenant'}
+          title="Tenant Signature"
+        />
       )}
 
     </div>

@@ -9,7 +9,7 @@ const Testimonials = () => {
       location: "Nairobi",
       image: "/images/testimonial-1.jpg",
       rating: 5,
-      text: "Nyumbanii has transformed how I manage my 15 properties. Rent collection is automated, and I can track maintenance requests in real-time. I've saved at least 20 hours per month!",
+      text: "Nyumbanii has transformed how I manage my 15 properties. Rent tracking is centralized, and I can track maintenance requests in real-time. I've saved at least 20 hours per month!",
       properties: "15 properties"
     },
     {

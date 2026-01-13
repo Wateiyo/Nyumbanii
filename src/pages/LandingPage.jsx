@@ -50,8 +50,8 @@ const LandingPage = () => {
       answer: "Yes, tenants create free accounts to access their portal. They can view payment history, submit maintenance requests, communicate with you, and access important documents—all in one place."
     },
     {
-      question: "What payment methods do you support?",
-      answer: "We support M-Pesa, bank transfers, and card payments. Tenants can pay rent directly through the platform, and you'll receive instant notifications when payments are made."
+      question: "How does rent tracking work?",
+      answer: "Nyumbanii helps you track and record rent payments for your records. Tenants and landlords handle payments outside the platform (via M-Pesa, bank transfer, cash, etc.), then record the transaction in Nyumbanii for tracking and reporting purposes."
     },
     {
       question: "Can I manage multiple properties?",
@@ -233,7 +233,7 @@ const LandingPage = () => {
             <div className="bg-white p-8 rounded-xl shadow-md text-center">
               <div className="w-16 h-16 bg-blue-900 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">3</div>
               <h3 className="text-2xl font-semibold text-gray-900 mb-4">Relax & Manage</h3>
-              <p className="text-gray-600">Sit back and let Nyumbanii handle rent collection, maintenance, and more.</p>
+              <p className="text-gray-600">Sit back and let Nyumbanii handle rent tracking, maintenance, and more.</p>
             </div>
           </div>
         </div>

@@ -91,12 +91,21 @@ import {
   Share2,
   Crown,
   Moon,
-  Sun
+  Sun,
+  AlertTriangle,
+  FileSignature,
+  Receipt,
+  FileContract
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
 import CalendarWidget from '../components/CalendarWidget';
 import EnhancedCalendar from '../components/EnhancedCalendar';
+import ReminderSettings from '../components/ReminderSettings';
+import ApplicationsManager from '../components/ApplicationsManager';
+import MpesaReconciliation from '../components/MpesaReconciliation';
+import LeaseManagement from '../components/LeaseManagement';
+import { generatePaymentReceiptPDF, generateLegalNoticePDF, downloadPDF, pdfToBlob } from '../utils/pdfGenerator';
 
 const LandlordDashboard = () => {
   const navigate = useNavigate();
@@ -184,6 +193,17 @@ const LandlordDashboard = () => {
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [selectedQuoteForApproval, setSelectedQuoteForApproval] = useState(null);
   const [quoteApprovalNotes, setQuoteApprovalNotes] = useState('');
+
+  // Move-out notice state (landlord-initiated)
+  const [showMoveOutNoticeModal, setShowMoveOutNoticeModal] = useState(false);
+  const [selectedTenantForNotice, setSelectedTenantForNotice] = useState(null);
+  const [submittingMoveOutNotice, setSubmittingMoveOutNotice] = useState(false);
+  const [landlordMoveOutData, setLandlordMoveOutData] = useState({
+    noticePeriod: 30,
+    reason: 'Breach of Contract',
+    legalGrounds: '',
+    additionalTerms: ''
+  });
 
   // User role for permissions (default to landlord, will be updated from user data)
   const [userRole, setUserRole] = useState('landlord');
@@ -277,7 +297,11 @@ const { memos, loading: loadingMemos } = useMemos(currentUser?.uid, 'landlord');
 const { teamMembers, loading: loadingTeam } = useTeamMembers(currentUser?.uid);
 // Disabled old hook - now using conversation-based messaging
 // const { messages, loading: loadingMessages } = useAllMessages(currentUser?.uid, 'landlord');
-  
+
+  // Move-out notices state
+  const [moveOutNotices, setMoveOutNotices] = useState([]);
+  const [loadingMoveOutNotices, setLoadingMoveOutNotices] = useState(true);
+
   // Mock maintenance data for display
   const mockMaintenanceRequests = [
     {
@@ -885,6 +909,31 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     return () => unsubscribe();
   }, [selectedConversation, currentUser]);
 
+  // Fetch move-out notices
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const q = query(
+      collection(db, 'moveOutNotices'),
+      where('landlordId', '==', currentUser.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notices = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMoveOutNotices(notices);
+      setLoadingMoveOutNotices(false);
+    }, (error) => {
+      console.error('Error fetching move-out notices:', error);
+      setLoadingMoveOutNotices(false);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
   // Send message in conversation
   const handleSendConversationMessage = async () => {
     if (!newConversationMessage.trim() || sendingMessage || !selectedConversation) return;
@@ -1355,6 +1404,230 @@ const handleEditProperty = async () => {
     } catch (error) {
       console.error('Error deleting tenant:', error);
       alert('Error deleting tenant. Please try again.');
+    }
+  };
+
+  // ISSUE MOVE-OUT NOTICE (Landlord to Tenant)
+  const handleIssueMoveOutNotice = async () => {
+    // Validation
+    if (!landlordMoveOutData.legalGrounds || landlordMoveOutData.legalGrounds.trim() === '') {
+      alert('Please provide legal grounds for issuing this notice. This is required for the legal document.');
+      return;
+    }
+
+    if (!selectedTenantForNotice) {
+      alert('Please select a tenant first.');
+      return;
+    }
+
+    setSubmittingMoveOutNotice(true);
+
+    try {
+      // Calculate move-out date based on notice period
+      const today = new Date();
+      const moveOutDate = new Date(today);
+      moveOutDate.setDate(moveOutDate.getDate() + landlordMoveOutData.noticePeriod);
+      const formattedMoveOutDate = moveOutDate.toISOString().split('T')[0];
+
+      // Generate unique reference number
+      const timestamp = Date.now();
+      const referenceNumber = `MVN-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${timestamp.toString().slice(-5)}`;
+
+      // Prepare notice data
+      const noticeData = {
+        initiatedBy: 'landlord',
+        tenantId: selectedTenantForNotice.id,
+        tenantName: selectedTenantForNotice.name,
+        tenantEmail: selectedTenantForNotice.email || '',
+        tenantPhone: selectedTenantForNotice.phone || '',
+        tenantIdNumber: selectedTenantForNotice.idNumber || '',
+        propertyId: selectedTenantForNotice.propertyId || '',
+        propertyName: selectedTenantForNotice.property || '',
+        unit: selectedTenantForNotice.unit || '',
+        landlordId: currentUser.uid,
+        landlordName: landlordData?.name || currentUser.displayName || '',
+        landlordEmail: landlordData?.email || currentUser.email || '',
+        intendedMoveOutDate: moveOutDate,
+        noticeSubmittedDate: new Date(),
+        noticePeriod: landlordMoveOutData.noticePeriod,
+        reason: landlordMoveOutData.reason,
+        legalGrounds: landlordMoveOutData.legalGrounds,
+        additionalNotes: landlordMoveOutData.additionalTerms || '',
+        status: 'submitted',
+        legalNoticeGenerated: false,
+        legalNoticeURL: '',
+        referenceNumber: referenceNumber,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      // Generate legal notice PDF
+      const pdfDoc = generateLegalNoticePDF({
+        ...noticeData,
+        id: referenceNumber
+      });
+
+      // Convert PDF to blob
+      const pdfBlob = pdfToBlob(pdfDoc);
+
+      // Upload PDF to Firebase Storage
+      const storageRef = ref(storage, `legal-notices/${referenceNumber}.pdf`);
+      await uploadBytes(storageRef, pdfBlob);
+
+      // Get download URL
+      const pdfURL = await getDownloadURL(storageRef);
+
+      // Update notice data with PDF info
+      noticeData.legalNoticeGenerated = true;
+      noticeData.legalNoticeURL = pdfURL;
+
+      // Save to Firestore with timestamp fields
+      const firestoreNoticeData = {
+        ...noticeData,
+        intendedMoveOutDate: serverTimestamp(),
+        noticeSubmittedDate: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, 'moveOutNotices'), firestoreNoticeData);
+
+      // Send notification to tenant
+      if (selectedTenantForNotice.userId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: selectedTenantForNotice.userId,
+          title: `${landlordMoveOutData.noticePeriod}-Day Move-Out Notice Issued`,
+          message: `Your landlord has issued a ${landlordMoveOutData.noticePeriod}-day move-out notice for ${selectedTenantForNotice.unit}. Move-out date: ${formattedMoveOutDate}. Please check your dashboard for details.`,
+          type: 'move_out_notice',
+          relatedId: docRef.id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      // Log activity
+      await addDoc(collection(db, 'activityLog'), {
+        userId: currentUser.uid,
+        userName: landlordData?.name || currentUser.displayName || '',
+        userRole: 'landlord',
+        propertyId: selectedTenantForNotice.propertyId || '',
+        unit: selectedTenantForNotice.unit || '',
+        landlordId: currentUser.uid,
+        actionType: 'move_out_notice_issued',
+        actionDescription: `Move-out notice issued to ${selectedTenantForNotice.name} - ${landlordMoveOutData.noticePeriod} days`,
+        metadata: {
+          noticeId: docRef.id,
+          moveOutDate: formattedMoveOutDate,
+          noticePeriod: landlordMoveOutData.noticePeriod,
+          reason: landlordMoveOutData.reason,
+          tenantId: selectedTenantForNotice.id,
+          tenantName: selectedTenantForNotice.name
+        },
+        relatedDocumentId: docRef.id,
+        createdAt: serverTimestamp()
+      });
+
+      // Reset form and close modal
+      setLandlordMoveOutData({
+        noticePeriod: 30,
+        reason: 'Breach of Contract',
+        legalGrounds: '',
+        additionalTerms: ''
+      });
+      setSelectedTenantForNotice(null);
+      setShowMoveOutNoticeModal(false);
+
+      alert(`Move-out notice issued successfully!\n\nReference Number: ${referenceNumber}\n\nThe tenant has been notified and must vacate by ${formattedMoveOutDate}.\n\nA legal notice PDF has been generated and sent to the tenant.`);
+    } catch (error) {
+      console.error('Error issuing move-out notice:', error);
+      alert('Failed to issue move-out notice. Please try again.');
+    } finally {
+      setSubmittingMoveOutNotice(false);
+    }
+  };
+
+  // ACKNOWLEDGE MOVE-OUT NOTICE
+  const handleAcknowledgeNotice = async (noticeId, tenantName) => {
+    if (!window.confirm(`Acknowledge move-out notice from ${tenantName}?`)) {
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, 'moveOutNotices', noticeId), {
+        status: 'acknowledged',
+        acknowledgedBy: currentUser.uid,
+        acknowledgedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      alert('Move-out notice acknowledged successfully!');
+    } catch (error) {
+      console.error('Error acknowledging notice:', error);
+      alert('Failed to acknowledge notice. Please try again.');
+    }
+  };
+
+  // APPROVE MOVE-OUT NOTICE
+  const handleApproveNotice = async (noticeId, tenantId, tenantName) => {
+    if (!window.confirm(`Approve move-out notice from ${tenantName}? This confirms the tenant can move out on the specified date.`)) {
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, 'moveOutNotices', noticeId), {
+        status: 'approved',
+        approvedBy: currentUser.uid,
+        approvedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      // Send notification to tenant
+      if (tenantId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: tenantId,
+          title: 'Move-Out Notice Approved',
+          message: `Your move-out notice has been approved. You may proceed with moving out on the specified date.`,
+          type: 'move_out_notice',
+          relatedId: noticeId,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      alert('Move-out notice approved successfully!');
+    } catch (error) {
+      console.error('Error approving notice:', error);
+      alert('Failed to approve notice. Please try again.');
+    }
+  };
+
+  // REJECT MOVE-OUT NOTICE
+  const handleRejectNotice = async (noticeId, tenantId, tenantName) => {
+    const rejectionReason = prompt(`Why are you rejecting ${tenantName}'s move-out notice?`);
+    if (!rejectionReason) return;
+
+    try {
+      await updateDoc(doc(db, 'moveOutNotices', noticeId), {
+        status: 'rejected',
+        rejectionReason: rejectionReason,
+        updatedAt: serverTimestamp()
+      });
+
+      // Send notification to tenant
+      if (tenantId) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: tenantId,
+          title: 'Move-Out Notice Rejected',
+          message: `Your move-out notice has been rejected. Reason: ${rejectionReason}`,
+          type: 'move_out_notice',
+          relatedId: noticeId,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      alert('Move-out notice rejected.');
+    } catch (error) {
+      console.error('Error rejecting notice:', error);
+      alert('Failed to reject notice. Please try again.');
     }
   };
 
@@ -2777,16 +3050,21 @@ const handleViewTenantDetails = (tenant) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'properties', 'listings', 'viewings', 'calendar', 'maintenance', 'tenants', 'payments', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'messages', 'team', 'memos', 'subscription', 'settings'].map((view) => {
+          {['dashboard', 'properties', 'listings', 'viewings', 'applications', 'calendar', 'maintenance', 'tenants', 'payments', 'leases', 'mpesa-reconciliation', 'move-out-notices', 'reminders', ...(taxTrackingEnabled ? ['tax-reports'] : []), 'messages', 'team', 'memos', 'subscription', 'settings'].map((view) => {
             const icons = {
               dashboard: Home,
               properties: Building,
               listings: Eye,
               viewings: CalendarCheck,
+              applications: FileText,
               calendar: Calendar,
               maintenance: Wrench,
               tenants: Users,
               payments: Banknote,
+              leases: FileContract,
+              'mpesa-reconciliation': Receipt,
+              'move-out-notices': FileSignature,
+              reminders: Bell,
               'tax-reports': Calculator,
               messages: MessageSquare,
               team: Users,
@@ -2797,9 +3075,14 @@ const handleViewTenantDetails = (tenant) => {
             const Icon = icons[view];
             const labels = {
               listings: 'Browse Listings',
+              applications: 'Applications',
               memos: 'Updates & Memos',
               team: 'Team Management',
               'tax-reports': 'Tax Reports',
+              leases: 'Lease Agreements',
+              'mpesa-reconciliation': 'M-Pesa Reconciliation',
+              'move-out-notices': 'Move-Out Notices',
+              reminders: 'Rent Reminders',
               subscription: 'Subscription'
             };
             return (
@@ -4413,6 +4696,14 @@ const handleViewTenantDetails = (tenant) => {
                                     )}
                                 </button>
                                 <button
+                                  onClick={() => {
+                                    setSelectedTenantForNotice(tenant);
+                                    setShowMoveOutNoticeModal(true);
+                                  }}
+                                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition text-sm flex items-center gap-2">
+                                  <FileSignature className="w-4 h-4" />
+                                </button>
+                                <button
                                   onClick={() => handleDeleteTenant(tenant.id, tenant.name)}
                                   className="px-4 py-2 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center gap-2">
                                   <Trash2 className="w-4 h-4" />
@@ -4753,6 +5044,32 @@ const handleViewTenantDetails = (tenant) => {
   </div>
 )}
 
+{/* Leases View */}
+{currentView === 'leases' && (
+  <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 pb-8 pt-6">
+      <LeaseManagement
+        landlordId={user.uid}
+        properties={properties}
+        tenants={tenants}
+      />
+    </div>
+  </div>
+)}
+
+{/* M-Pesa Reconciliation View */}
+{currentView === 'mpesa-reconciliation' && (
+  <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 pb-8 pt-6">
+      <MpesaReconciliation
+        landlordId={user.uid}
+        properties={properties}
+        tenants={tenants}
+      />
+    </div>
+  </div>
+)}
+
 {/* Memos View */}
 {currentView === 'memos' && (
   <div className="flex-1 overflow-auto">
@@ -4862,6 +5179,201 @@ const handleViewTenantDetails = (tenant) => {
           )}
         </div>
 
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Move-Out Notices View */}
+{currentView === 'move-out-notices' && (
+  <div className="flex-1 overflow-auto">
+    <div className="px-6 pb-8">
+      <div className="max-w-7xl mx-auto">
+
+        {/* Header Banner */}
+        <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-xl p-4 mb-6 mt-6">
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+              <FileSignature className="w-5 h-5 text-orange-600" />
+              Move-Out Notices
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Manage tenant and landlord-initiated move-out notices
+            </p>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Notices</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{moveOutNotices.length}</div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Pending</div>
+            <div className="text-2xl font-bold text-orange-600">{moveOutNotices.filter(n => n.status === 'submitted').length}</div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Acknowledged</div>
+            <div className="text-2xl font-bold text-blue-600">{moveOutNotices.filter(n => n.status === 'acknowledged').length}</div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Approved</div>
+            <div className="text-2xl font-bold text-green-600">{moveOutNotices.filter(n => n.status === 'approved').length}</div>
+          </div>
+        </div>
+
+        {/* Notices List */}
+        {loadingMoveOutNotices ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading move-out notices...</p>
+          </div>
+        ) : moveOutNotices.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+            <FileSignature className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Move-Out Notices</h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              When tenants submit move-out notices or you issue notices to tenants, they'll appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {moveOutNotices.map((notice) => {
+              const statusColors = {
+                submitted: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+                acknowledged: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                approved: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800',
+                rejected: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
+              };
+
+              const isFromTenant = notice.initiatedBy === 'tenant';
+              const moveOutDate = notice.intendedMoveOutDate;
+              const daysUntilMoveOut = moveOutDate ? Math.ceil((new Date(moveOutDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+
+              return (
+                <div key={notice.id} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {notice.tenantName} - {notice.unit}
+                          </h3>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[notice.status] || statusColors.submitted}`}>
+                            {notice.status.charAt(0).toUpperCase() + notice.status.slice(1)}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${isFromTenant ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
+                            {isFromTenant ? 'From Tenant' : 'Issued by You'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{notice.propertyName}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">Move-Out Date</div>
+                        <div className="text-lg font-bold text-gray-900 dark:text-white">{new Date(moveOutDate).toLocaleDateString()}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {daysUntilMoveOut > 0 ? `${daysUntilMoveOut} days remaining` : daysUntilMoveOut === 0 ? 'Today' : 'Past due'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 text-sm">
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Notice Period:</span>
+                        <p className="font-medium text-gray-900 dark:text-white">{notice.noticePeriod} days</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Submitted:</span>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {notice.noticeSubmittedDate?.toDate?.() ? new Date(notice.noticeSubmittedDate.toDate()).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Reference:</span>
+                        <p className="font-mono text-xs text-gray-900 dark:text-white">{notice.referenceNumber}</p>
+                      </div>
+                    </div>
+
+                    {notice.reason && (
+                      <div className="mb-4">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Reason:</span>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{notice.reason}</p>
+                      </div>
+                    )}
+
+                    {notice.legalGrounds && (
+                      <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Legal Grounds:</span>
+                        <p className="text-sm text-gray-900 dark:text-white mt-1">{notice.legalGrounds}</p>
+                      </div>
+                    )}
+
+                    {notice.additionalNotes && (
+                      <div className="mb-4">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Notes:</span>
+                        <p className="text-sm text-gray-900 dark:text-white mt-1">{notice.additionalNotes}</p>
+                      </div>
+                    )}
+
+                    {notice.rejectionReason && (
+                      <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                        <span className="text-sm font-medium text-red-700 dark:text-red-300">Rejection Reason:</span>
+                        <p className="text-sm text-red-900 dark:text-red-200 mt-1">{notice.rejectionReason}</p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    {isFromTenant && notice.status === 'submitted' && (
+                      <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={() => handleAcknowledgeNotice(notice.id, notice.tenantName)}
+                          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <Check className="w-4 h-4" />
+                          Acknowledge
+                        </button>
+                        <button
+                          onClick={() => handleApproveNotice(notice.id, notice.tenantId, notice.tenantName)}
+                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleRejectNotice(notice.id, notice.tenantId, notice.tenantName)}
+                          className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <X className="w-4 h-4" />
+                          Reject
+                        </button>
+                      </div>
+                    )}
+
+                    {isFromTenant && notice.status === 'acknowledged' && (
+                      <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={() => handleApproveNotice(notice.id, notice.tenantId, notice.tenantName)}
+                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleRejectNotice(notice.id, notice.tenantId, notice.tenantName)}
+                          className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <X className="w-4 h-4" />
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   </div>
@@ -5600,6 +6112,28 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* Subscription Settings Component */}
         <SubscriptionSettings />
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Reminders View */}
+{currentView === 'reminders' && (
+  <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 pb-8 pt-6">
+      <div className="max-w-7xl mx-auto">
+        <ReminderSettings landlordId={currentUser?.uid} />
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Applications View */}
+{currentView === 'applications' && (
+  <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+    <div className="px-6 pb-8 pt-6">
+      <div className="max-w-7xl mx-auto">
+        <ApplicationsManager landlordId={currentUser?.uid} />
       </div>
     </div>
   </div>
@@ -9335,6 +9869,219 @@ const handleViewTenantDetails = (tenant) => {
     </div>
   </div>
 )}
+
+      {/* Move-Out Notice Modal (Landlord to Tenant) */}
+      {showMoveOutNoticeModal && selectedTenantForNotice && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <FileSignature className="w-6 h-6 text-orange-600" />
+                Issue Move-Out Notice
+              </h3>
+              <button
+                onClick={() => {
+                  setShowMoveOutNoticeModal(false);
+                  setSelectedTenantForNotice(null);
+                  setLandlordMoveOutData({
+                    noticePeriod: 30,
+                    reason: 'Breach of Contract',
+                    legalGrounds: '',
+                    additionalTerms: ''
+                  });
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Warning Banner */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-orange-900 dark:text-orange-300 text-sm mb-1">Legal Notice</h4>
+                  <p className="text-xs text-orange-800 dark:text-orange-400">
+                    This is a legally binding notice. A formal legal document will be generated and sent to the tenant. Ensure all details are accurate and legal grounds are properly documented.
+                  </p>
+                </div>
+              </div>
+
+              {/* Tenant Information */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-3">Issuing Notice To:</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Tenant:</span>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedTenantForNotice.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Property:</span>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedTenantForNotice.property}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Unit:</span>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedTenantForNotice.unit}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Email:</span>
+                    <p className="font-medium text-gray-900 dark:text-white truncate">{selectedTenantForNotice.email || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notice Period */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Notice Period <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="noticePeriod"
+                      value={30}
+                      checked={landlordMoveOutData.noticePeriod === 30}
+                      onChange={(e) => setLandlordMoveOutData({...landlordMoveOutData, noticePeriod: 30})}
+                      className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+                    />
+                    <span className="text-gray-900 dark:text-white">30 Days</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="noticePeriod"
+                      value={60}
+                      checked={landlordMoveOutData.noticePeriod === 60}
+                      onChange={(e) => setLandlordMoveOutData({...landlordMoveOutData, noticePeriod: 60})}
+                      className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+                    />
+                    <span className="text-gray-900 dark:text-white">60 Days</span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Calculated move-out date: {new Date(Date.now() + landlordMoveOutData.noticePeriod * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                </p>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Reason for Notice <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={landlordMoveOutData.reason}
+                  onChange={(e) => setLandlordMoveOutData({...landlordMoveOutData, reason: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="Breach of Contract">Breach of Contract</option>
+                  <option value="Non-Payment">Non-Payment of Rent</option>
+                  <option value="Property Sale">Property Sale</option>
+                  <option value="Renovation">Major Renovation</option>
+                  <option value="Owner Occupancy">Owner/Family Occupancy</option>
+                  <option value="Other">Other Legal Grounds</option>
+                </select>
+              </div>
+
+              {/* Legal Grounds (Required) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Legal Grounds <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={landlordMoveOutData.legalGrounds}
+                  onChange={(e) => setLandlordMoveOutData({...landlordMoveOutData, legalGrounds: e.target.value})}
+                  rows={4}
+                  placeholder="Provide specific legal grounds and details for issuing this notice. This will be included in the legal document..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                ></textarea>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Be specific and factual. This information will be used in the official legal notice.
+                </p>
+              </div>
+
+              {/* Additional Terms/Conditions */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Additional Terms & Conditions (Optional)
+                </label>
+                <textarea
+                  value={landlordMoveOutData.additionalTerms}
+                  onChange={(e) => setLandlordMoveOutData({...landlordMoveOutData, additionalTerms: e.target.value})}
+                  rows={3}
+                  placeholder="Any additional terms, requirements, or conditions..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                ></textarea>
+              </div>
+
+              {/* What Happens Next */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-2">What happens next?</h4>
+                <ul className="text-xs text-blue-800 dark:text-blue-400 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">1.</span>
+                    <span>A legal notice will be generated in the prescribed format with all required details</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">2.</span>
+                    <span>The tenant will be notified immediately via email and in-app notification</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">3.</span>
+                    <span>Tenant must acknowledge receipt within 7 days</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">4.</span>
+                    <span>Property inspection will be scheduled before the move-out date</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">5.</span>
+                    <span>All actions will be logged for legal compliance and audit trail</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowMoveOutNoticeModal(false);
+                    setSelectedTenantForNotice(null);
+                    setLandlordMoveOutData({
+                      noticePeriod: 30,
+                      reason: 'Breach of Contract',
+                      legalGrounds: '',
+                      additionalTerms: ''
+                    });
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  disabled={submittingMoveOutNotice}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleIssueMoveOutNotice}
+                  disabled={submittingMoveOutNotice}
+                  className="flex-1 px-6 py-3 bg-orange-600 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {submittingMoveOutNotice ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Issuing Notice...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      Issue Notice
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

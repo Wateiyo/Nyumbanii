@@ -10,8 +10,8 @@ const CaseStudies = () => {
       company: "Riverside Property Management",
       location: "Nairobi, Kenya",
       properties: "30 units",
-      challenge: "Managing 30 units across 3 buildings was overwhelming. Rent collection was manual, maintenance requests came via phone calls, and tracking expenses was a nightmare. The property manager spent 40+ hours per month on administrative tasks.",
-      solution: "Implemented Nyumbanii in January 2025. All tenants were onboarded within 2 weeks. Automated rent collection, digital maintenance requests, and centralized communication transformed operations.",
+      challenge: "Managing 30 units across 3 buildings was overwhelming. Rent tracking was manual, maintenance requests came via phone calls, and tracking expenses was a nightmare. The property manager spent 40+ hours per month on administrative tasks.",
+      solution: "Implemented Nyumbanii in January 2025. All tenants were onboarded within 2 weeks. Digital rent tracking, maintenance requests, and centralized communication transformed operations.",
       results: [
         {
           icon: <Clock className="w-6 h-6" />,
@@ -34,8 +34,8 @@ const CaseStudies = () => {
         {
           icon: <Users className="w-6 h-6" />,
           metric: "100%",
-          description: "On-time rent collection",
-          detail: "Automated reminders and payments"
+          description: "On-time rent tracking",
+          detail: "Digital reminders and record keeping"
         }
       ],
       quote: "Nyumbanii gave us back our time. We're now focused on growth instead of drowning in paperwork.",

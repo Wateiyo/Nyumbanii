@@ -113,11 +113,11 @@ const ROICalculator = () => {
 
             {/* What gets automated */}
             <div className="mt-8 p-6 bg-blue-50 rounded-xl">
-              <h4 className="font-semibold text-gray-900 mb-3">Tasks Nyumbanii Automates:</h4>
+              <h4 className="font-semibold text-gray-900 mb-3">Tasks Nyumbanii Streamlines:</h4>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Rent collection & payment tracking</span>
+                  <span>Rent payment tracking & record keeping</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />

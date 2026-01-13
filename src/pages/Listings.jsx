@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import TenantApplicationForm from '../components/TenantApplicationForm';
 import {
   Home,
   MapPin,
@@ -19,7 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  User
+  User,
+  FileText
 } from 'lucide-react';
 
 const ImageCarousel = ({ images, alt }) => {
@@ -92,6 +94,7 @@ const Listings = () => {
   const [locationInput, setLocationInput] = useState('');
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [bookingData, setBookingData] = useState({
     name: '',
     email: '',
@@ -557,22 +560,34 @@ const Listings = () => {
                     )}
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedProperty(listing);
+                          setShowBookingModal(true);
+                        }}
+                        className="flex-1 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Book Viewing
+                      </button>
+                      <button
+                        onClick={() => setSelectedProperty(listing)}
+                        className="px-4 py-2 border-2 border-[#003366] text-[#003366] hover:bg-blue-50 rounded-lg font-semibold transition"
+                      >
+                        Details
+                      </button>
+                    </div>
                     <button
                       onClick={() => {
                         setSelectedProperty(listing);
-                        setShowBookingModal(true);
+                        setShowApplicationModal(true);
                       }}
-                      className="flex-1 bg-[#003366] hover:bg-[#002244] text-white px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
                     >
-                      <Calendar className="w-4 h-4" />
-                      Book Viewing
-                    </button>
-                    <button
-                      onClick={() => setSelectedProperty(listing)}
-                      className="px-4 py-2 border-2 border-[#003366] text-[#003366] hover:bg-blue-50 rounded-lg font-semibold transition"
-                    >
-                      Details
+                      <FileText className="w-4 h-4" />
+                      Apply for Tenancy
                     </button>
                   </div>
                 </div>
@@ -671,13 +686,25 @@ const Listings = () => {
                 </div>
               )}
 
-              <button
-                onClick={() => setShowBookingModal(true)}
-                className="w-full bg-[#003366] hover:bg-[#002244] text-white px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
-              >
-                <Calendar className="w-5 h-5" />
-                Book a Viewing
-              </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  onClick={() => setShowBookingModal(true)}
+                  className="bg-[#003366] hover:bg-[#002244] text-white px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-5 h-5" />
+                  Book to View
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedProperty(null);
+                    setShowApplicationModal(true);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                >
+                  <FileText className="w-5 h-5" />
+                  Apply for Tenancy
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -909,6 +936,22 @@ const Listings = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Tenant Application Modal */}
+      {showApplicationModal && selectedProperty && (
+        <TenantApplicationForm
+          propertyId={selectedProperty.id}
+          propertyName={selectedProperty.propertyName}
+          landlordId={selectedProperty.landlordId}
+          onClose={() => {
+            setShowApplicationModal(false);
+            setSelectedProperty(null);
+          }}
+          onSuccess={(applicationId) => {
+            alert(`Application submitted successfully! Reference: ${applicationId}`);
+          }}
+        />
       )}
     </div>
   );

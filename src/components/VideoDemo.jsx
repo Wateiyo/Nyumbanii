@@ -11,7 +11,7 @@ const VideoDemo = () => {
 
   const features = [
     'Property & Tenant Management',
-    'Automated Rent Collection',
+    'Rent Tracking & Record Keeping',
     'Maintenance Request Workflow',
     'Real-time Analytics Dashboard',
     'Multi-user Collaboration',
