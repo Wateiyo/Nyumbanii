@@ -1158,6 +1158,39 @@ exports.scrapeKenyaPowerInterruptions = onSchedule(
 
       logger.info(`📊 Found ${interruptions.length} interruption notices from PDFs`);
 
+      // Write to powerOutages collection for the PowerOutagesList component
+      for (const interruption of interruptions) {
+        try {
+          // Check if this outage already exists (avoid duplicates)
+          const existingOutage = await db.collection('powerOutages')
+            .where('sourceUrl', '==', interruption.sourceUrl)
+            .where('location', '==', interruption.location)
+            .limit(1)
+            .get();
+
+          if (existingOutage.empty) {
+            await db.collection('powerOutages').add({
+              status: 'scheduled', // Default to scheduled, can be updated to 'active' manually
+              affectedAreas: [interruption.location], // Array format expected by frontend
+              scheduledDate: interruption.dateText || '',
+              startTime: '', // Extract from PDF if available
+              endTime: '', // Extract from PDF if available
+              description: interruption.content,
+              tweetUrl: interruption.sourceUrl, // Using sourceUrl as the reference link
+              source: 'Kenya Power',
+              pdfTitle: interruption.pdfTitle,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              scrapedAt: interruption.scrapedAt
+            });
+            logger.info(`✅ Added power outage for ${interruption.location}`);
+          } else {
+            logger.info(`⏭️  Skipping duplicate outage for ${interruption.location}`);
+          }
+        } catch (outageError) {
+          logger.error(`Error writing to powerOutages collection:`, outageError);
+        }
+      }
+
       // Get all landlord settings to distribute updates
       const settingsSnapshot = await db.collection('landlordSettings').get();
       let updateCount = 0;

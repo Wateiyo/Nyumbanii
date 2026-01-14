@@ -484,7 +484,8 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
   // Preferences state for dark mode and other UI preferences
   const [preferences, setPreferences] = useState({
     darkMode: false,
-    autoRefresh: true
+    autoRefresh: true,
+    autoDeleteOldViewings: false
   });
 
   // Business Preferences
@@ -720,6 +721,49 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
     securitySettings,
     integrationSettings
   ]);
+
+  // Auto-delete old viewings (older than 30 days)
+  useEffect(() => {
+    const autoDeleteOldViewings = async () => {
+      if (!currentUser || !preferences.autoDeleteOldViewings) return;
+
+      try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        // Query viewings older than 30 days
+        const viewingsQuery = query(
+          collection(db, 'viewings'),
+          where('landlordId', '==', currentUser.uid),
+          where('createdAt', '<', thirtyDaysAgo)
+        );
+
+        const snapshot = await getDocs(viewingsQuery);
+
+        // Delete old viewings
+        const deletePromises = snapshot.docs.map(docSnap =>
+          deleteDoc(doc(db, 'viewings', docSnap.id))
+        );
+
+        if (deletePromises.length > 0) {
+          await Promise.all(deletePromises);
+          console.log(`Auto-deleted ${deletePromises.length} old viewing(s)`);
+        }
+      } catch (error) {
+        console.error('Error auto-deleting old viewings:', error);
+      }
+    };
+
+    // Run auto-delete on mount and when setting is enabled
+    if (preferences.autoDeleteOldViewings) {
+      autoDeleteOldViewings();
+    }
+
+    // Set up interval to run daily (24 hours)
+    const intervalId = setInterval(autoDeleteOldViewings, 24 * 60 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [currentUser, preferences.autoDeleteOldViewings]);
 
   // Update profileSettings when userProfile changes
   useEffect(() => {
@@ -2691,6 +2735,20 @@ const handleEditProperty = async () => {
     }
   };
 
+  const handleDeleteViewing = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this viewing request?')) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'viewings', id));
+      alert('Viewing request deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting viewing:', error);
+      alert('Error deleting viewing. Please try again.');
+    }
+  };
+
   const handleUpdateProfile = () => {
     setEditingProfile(false);
     alert('Profile updated successfully!');
@@ -3931,23 +3989,32 @@ const handleViewTenantDetails = (tenant) => {
             
             {/* Action Buttons - Mobile Optimized */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-              <button
-                onClick={() => setSelectedViewing(viewing)}
-                className="text-[#003366] dark:text-blue-400 hover:text-[#002244] dark:hover:text-blue-300 text-xs lg:text-sm font-medium text-center sm:text-left"
-              >
-                View Full Details →
-              </button>
-              
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  onClick={() => setSelectedViewing(viewing)}
+                  className="text-[#003366] dark:text-blue-400 hover:text-[#002244] dark:hover:text-blue-300 text-xs lg:text-sm font-medium text-center sm:text-left"
+                >
+                  View Full Details →
+                </button>
+                <button
+                  onClick={() => handleDeleteViewing(viewing.id)}
+                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition"
+                  title="Delete viewing"
+                >
+                  <Trash2 className="w-4 h-4 lg:w-5 lg:h-5" />
+                </button>
+              </div>
+
               {viewing.status === 'pending' && (
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => handleUpdateViewingStatus(viewing.id, 'confirmed')}
                     className="flex-1 sm:flex-none px-3 lg:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center justify-center gap-2 text-xs lg:text-sm"
                   >
                     <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4" />
                     <span>Approve</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleUpdateViewingStatus(viewing.id, 'declined')}
                     className="flex-1 sm:flex-none px-3 lg:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs lg:text-sm"
                   >
@@ -6726,6 +6793,33 @@ const handleViewTenantDetails = (tenant) => {
                   type="checkbox"
                   checked={preferences.autoRefresh}
                   onChange={(e) => setPreferences({...preferences, autoRefresh: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Data Management Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Data Management</h2>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-start justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Auto-Delete Old Viewings</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Automatically delete viewing requests older than 30 days to keep your dashboard clean
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer ml-4">
+                <input
+                  type="checkbox"
+                  checked={preferences.autoDeleteOldViewings}
+                  onChange={(e) => setPreferences({...preferences, autoDeleteOldViewings: e.target.checked})}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>

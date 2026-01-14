@@ -60,13 +60,13 @@ const PowerOutagesList = ({ userAreas = [] }) => {
 
     try {
       const functions = getFunctions();
-      const manualMonitorKPLCTwitter = httpsCallable(functions, 'manualMonitorKPLCTwitter');
+      const manualScrapeKenyaPower = httpsCallable(functions, 'manualScrapeKenyaPower');
 
-      await manualMonitorKPLCTwitter();
+      await manualScrapeKenyaPower();
 
       setRefreshMessage({
         type: 'success',
-        text: 'Successfully fetched latest updates from Kenya Power Twitter!'
+        text: 'Successfully fetched latest updates from Kenya Power website!'
       });
 
       setTimeout(() => setRefreshMessage({ type: '', text: '' }), 5000);
@@ -302,7 +302,7 @@ const PowerOutagesList = ({ userAreas = [] }) => {
       {filteredOutages.length > 0 && (
         <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-            Data from Kenya Power Twitter (@KenyaPower_Care) • Updated in real-time
+            Data from Kenya Power (KPLC) Official Website • Updated every 6 hours
           </p>
         </div>
       )}
