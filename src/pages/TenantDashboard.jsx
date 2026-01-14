@@ -240,6 +240,7 @@ const TenantDashboard = () => {
   // Move-out notice data
   const [moveOutData, setMoveOutData] = useState({
     moveOutDate: '',
+    noticePeriod: 60, // Default to 60 days
     reason: 'Relocation',
     additionalNotes: '',
     agreedToTerms: false
@@ -1535,8 +1536,9 @@ const TenantDashboard = () => {
     today.setHours(0, 0, 0, 0);
     const daysDifference = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
 
-    if (daysDifference < 30) {
-      alert('Move-out notice must be at least 30 days in advance as per Kenyan law.');
+    const minimumDays = moveOutData.noticePeriod || 60;
+    if (daysDifference < minimumDays) {
+      alert(`Move-out notice must be at least ${minimumDays} days in advance as per your tenancy agreement.`);
       return;
     }
 
@@ -1563,7 +1565,7 @@ const TenantDashboard = () => {
         landlordEmail: tenantData.landlordEmail || '',
         intendedMoveOutDate: new Date(moveOutData.moveOutDate),
         noticeSubmittedDate: new Date(),
-        noticePeriod: 30,
+        noticePeriod: moveOutData.noticePeriod || 60,
         reason: moveOutData.reason,
         additionalNotes: moveOutData.additionalNotes || '',
         status: 'submitted',
@@ -1629,7 +1631,7 @@ const TenantDashboard = () => {
         metadata: {
           noticeId: docRef.id,
           moveOutDate: moveOutData.moveOutDate,
-          noticePeriod: 30,
+          noticePeriod: moveOutData.noticePeriod || 60,
           reason: moveOutData.reason
         },
         relatedDocumentId: docRef.id,
@@ -1639,6 +1641,7 @@ const TenantDashboard = () => {
       // Reset form and close modal
       setMoveOutData({
         moveOutDate: '',
+        noticePeriod: 60,
         reason: 'Relocation',
         additionalNotes: '',
         agreedToTerms: false
@@ -3364,44 +3367,44 @@ const TenantDashboard = () => {
               </div>
 
               {/* Tabs */}
-              <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
                 <button
                   onClick={() => setDocumentsTab('uploaded')}
-                  className={`px-6 py-3 font-semibold transition ${
+                  className={`px-3 sm:px-6 py-3 font-semibold transition whitespace-nowrap text-sm sm:text-base ${
                     documentsTab === 'uploaded'
                       ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Upload className="w-4 h-4" />
-                    Uploaded Documents
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden xs:inline">Uploaded</span> Documents
                   </div>
                 </button>
                 <button
                   onClick={() => setDocumentsTab('leases')}
-                  className={`px-6 py-3 font-semibold transition ${
+                  className={`px-3 sm:px-6 py-3 font-semibold transition whitespace-nowrap text-sm sm:text-base ${
                     documentsTab === 'leases'
                       ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <FileSignature className="w-4 h-4" />
-                    Lease Agreements
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <FileSignature className="w-3 h-3 sm:w-4 sm:h-4" />
+                    Lease<span className="hidden xs:inline"> Agreements</span>
                   </div>
                 </button>
                 <button
                   onClick={() => setDocumentsTab('move-out')}
-                  className={`px-6 py-3 font-semibold transition ${
+                  className={`px-3 sm:px-6 py-3 font-semibold transition whitespace-nowrap text-sm sm:text-base ${
                     documentsTab === 'move-out'
                       ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <DoorOpen className="w-4 h-4" />
-                    Move-Out Notices
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <DoorOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+                    Move-Out<span className="hidden xs:inline"> Notices</span>
                   </div>
                 </button>
               </div>
@@ -3515,7 +3518,7 @@ const TenantDashboard = () => {
                       <div>
                         <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-1">Legal Requirements</h4>
                         <p className="text-xs text-blue-800 dark:text-blue-400">
-                          Under Kenyan law, you must provide a minimum of 30 days written notice before vacating a rental property.
+                          Under Kenyan law, you must provide written notice: 30 days for standard/uncontrolled tenancies, or 60 days (2 months) for controlled areas.
                         </p>
                       </div>
                     </div>
@@ -3692,7 +3695,7 @@ const TenantDashboard = () => {
                 <div>
                   <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-1">Legal Requirements</h4>
                   <p className="text-xs text-blue-800 dark:text-blue-400">
-                    Under Kenyan law, you must provide a minimum of 30 days written notice before vacating a rental property. This notice is legally binding once submitted.
+                    Under Kenyan law, you must provide written notice: 30 days for rent under KES 2,500/month, or 60 days (2 months) for standard tenancies. This notice is legally binding once submitted.
                   </p>
                 </div>
               </div>
@@ -5124,12 +5127,12 @@ const TenantDashboard = () => {
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Submit Move-Out Notice</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Planning to move out? Submit your notice here (minimum 30 days required by law).
+                  Planning to move out? Submit your notice here (30 or 60 days required).
                 </p>
                 <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                   <li className="flex items-center gap-1">
                     <CheckCircle className="w-3 h-3 text-green-600" />
-                    <span>30-day minimum notice period</span>
+                    <span>30 days (standard tenancies) or 60 days (controlled areas)</span>
                   </li>
                   <li className="flex items-center gap-1">
                     <CheckCircle className="w-3 h-3 text-green-600" />
@@ -5642,9 +5645,27 @@ const TenantDashboard = () => {
                 <div>
                   <h4 className="font-semibold text-orange-900 dark:text-orange-300 text-sm mb-1">Important Notice</h4>
                   <p className="text-xs text-orange-800 dark:text-orange-400">
-                    Kenyan law requires a minimum 30-day notice period. This notice is legally binding once submitted.
+                    Kenyan law requires a minimum notice period: 30 days for standard/uncontrolled tenancies, or 60 days (2 months) for controlled areas. This notice is legally binding once submitted.
                   </p>
                 </div>
+              </div>
+
+              {/* Notice Period Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Notice Period <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={moveOutData.noticePeriod}
+                  onChange={(e) => setMoveOutData({...moveOutData, noticePeriod: parseInt(e.target.value)})}
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
+                >
+                  <option value={30}>30 Days (1 Month) - Standard/uncontrolled tenancies</option>
+                  <option value={60}>60 Days (2 Months) - Controlled areas</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Select based on your tenancy type and agreement
+                </p>
               </div>
 
               {/* Move-Out Date */}
@@ -5655,12 +5676,12 @@ const TenantDashboard = () => {
                 <input
                   type="date"
                   value={moveOutData.moveOutDate}
-                  min={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                  min={new Date(Date.now() + (moveOutData.noticePeriod || 60) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                   onChange={(e) => setMoveOutData({...moveOutData, moveOutDate: e.target.value})}
                   className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm lg:text-base"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Minimum 30 days from today
+                  Minimum {moveOutData.noticePeriod || 60} days from today
                 </p>
               </div>
 
@@ -5705,7 +5726,7 @@ const TenantDashboard = () => {
                   className="mt-1 w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                 />
                 <label htmlFor="agreeTerms" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                  I understand that this notice is binding and follows the 30-day legal requirement. My landlord will be notified immediately, and I agree to vacate the premises by the specified date.
+                  I understand that this notice is binding and follows the {moveOutData.noticePeriod || 60}-day legal requirement. My landlord will be notified immediately, and I agree to vacate the premises by the specified date.
                 </label>
               </div>
 
