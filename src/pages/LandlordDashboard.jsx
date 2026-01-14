@@ -5146,10 +5146,179 @@ const handleViewTenantDetails = (tenant) => {
 
         {/* Move-Out Notices Tab Content */}
         {documentsTab === 'move-out' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Move-Out Notices</h3>
-            <p className="text-gray-600 dark:text-gray-400">Move-out notices feature will be available here.</p>
-          </div>
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Notices</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{moveOutNotices.length}</div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Pending</div>
+                <div className="text-2xl font-bold text-orange-600">{moveOutNotices.filter(n => n.status === 'submitted').length}</div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Acknowledged</div>
+                <div className="text-2xl font-bold text-blue-600">{moveOutNotices.filter(n => n.status === 'acknowledged').length}</div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Approved</div>
+                <div className="text-2xl font-bold text-green-600">{moveOutNotices.filter(n => n.status === 'approved').length}</div>
+              </div>
+            </div>
+
+            {/* Notices List */}
+            {loadingMoveOutNotices ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading move-out notices...</p>
+              </div>
+            ) : moveOutNotices.length === 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+                <FileSignature className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Move-Out Notices</h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  When tenants submit move-out notices or you issue notices to tenants, they'll appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {moveOutNotices.map((notice) => {
+                  const statusColors = {
+                    submitted: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+                    acknowledged: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                    approved: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800',
+                    rejected: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
+                  };
+
+                  const isFromTenant = notice.initiatedBy === 'tenant';
+                  const moveOutDate = notice.intendedMoveOutDate;
+                  const daysUntilMoveOut = moveOutDate ? Math.ceil((new Date(moveOutDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+
+                  return (
+                    <div key={notice.id} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      <div className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {notice.tenantName} - {notice.unit}
+                              </h3>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[notice.status] || statusColors.submitted}`}>
+                                {notice.status.charAt(0).toUpperCase() + notice.status.slice(1)}
+                              </span>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${isFromTenant ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
+                                {isFromTenant ? 'From Tenant' : 'Issued by You'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{notice.propertyName}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-600 dark:text-gray-400">Move-Out Date</div>
+                            <div className="text-lg font-bold text-gray-900 dark:text-white">{new Date(moveOutDate).toLocaleDateString()}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {daysUntilMoveOut > 0 ? `${daysUntilMoveOut} days remaining` : daysUntilMoveOut === 0 ? 'Today' : 'Past due'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 text-sm">
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">Notice Period:</span>
+                            <p className="font-medium text-gray-900 dark:text-white">{notice.noticePeriod} days</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">Submitted:</span>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {notice.noticeSubmittedDate?.toDate?.() ? new Date(notice.noticeSubmittedDate.toDate()).toLocaleDateString() : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">Reference:</span>
+                            <p className="font-mono text-xs text-gray-900 dark:text-white">{notice.referenceNumber}</p>
+                          </div>
+                        </div>
+
+                        {notice.reason && (
+                          <div className="mb-4">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Reason:</span>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{notice.reason}</p>
+                          </div>
+                        )}
+
+                        {notice.legalGrounds && (
+                          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Legal Grounds:</span>
+                            <p className="text-sm text-gray-900 dark:text-white mt-1">{notice.legalGrounds}</p>
+                          </div>
+                        )}
+
+                        {notice.additionalNotes && (
+                          <div className="mb-4">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Notes:</span>
+                            <p className="text-sm text-gray-900 dark:text-white mt-1">{notice.additionalNotes}</p>
+                          </div>
+                        )}
+
+                        {notice.rejectionReason && (
+                          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                            <span className="text-sm font-medium text-red-700 dark:text-red-300">Rejection Reason:</span>
+                            <p className="text-sm text-red-900 dark:text-red-200 mt-1">{notice.rejectionReason}</p>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        {isFromTenant && notice.status === 'submitted' && (
+                          <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button
+                              onClick={() => handleAcknowledgeNotice(notice.id, notice.tenantName)}
+                              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                            >
+                              <Check className="w-4 h-4" />
+                              Acknowledge
+                            </button>
+                            <button
+                              onClick={() => handleApproveNotice(notice.id, notice.tenantId, notice.tenantName)}
+                              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectNotice(notice.id, notice.tenantId, notice.tenantName)}
+                              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                            >
+                              <X className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </div>
+                        )}
+
+                        {isFromTenant && notice.status === 'acknowledged' && (
+                          <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button
+                              onClick={() => handleApproveNotice(notice.id, notice.tenantId, notice.tenantName)}
+                              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectNotice(notice.id, notice.tenantId, notice.tenantName)}
+                              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                            >
+                              <X className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
 
       </div>
