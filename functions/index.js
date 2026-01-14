@@ -2047,6 +2047,233 @@ exports.sendManualReminder = onCall(
 */ // END DISABLED sendManualReminder
 
 /**
+ * Send Rent Reminder with Channel Selection and SMS Quota Management
+ * Supports Email, WhatsApp, and SMS channels
+ * Automatically manages SMS quotas (3 per tenant per month)
+ */
+exports.sendRentReminder = onCall(
+  {
+    region: "us-central1"
+  },
+  async (request) => {
+    try {
+      const userId = request.auth?.uid;
+      if (!userId) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+      }
+
+      const {
+        landlordId,
+        tenantId,
+        tenantName,
+        tenantEmail,
+        tenantPhone,
+        channel, // 'email', 'whatsapp', or 'sms'
+        message,
+        rentAmount,
+        dueDate
+      } = request.data;
+
+      // Validation
+      if (!landlordId || !tenantId || !channel || !message) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
+      }
+
+      // Verify caller is the landlord
+      if (landlordId !== userId) {
+        throw new functions.https.HttpsError('permission-denied', 'Not authorized');
+      }
+
+      const db = admin.firestore();
+      const currentMonth = new Date().toISOString().slice(0, 7); // "2026-01"
+      let success = false;
+      let finalChannel = channel;
+      let quotaDeducted = false;
+
+      // Channel-specific sending logic
+      if (channel === 'email') {
+        // Send via Email
+        if (!tenantEmail) {
+          throw new functions.https.HttpsError('failed-precondition', 'Tenant has no email address');
+        }
+
+        try {
+          const { resendKey } = getApiKeys();
+          const resendClient = new Resend(resendKey);
+
+          await resendClient.emails.send({
+            from: 'Nyumbanii <noreply@nyumbanii.co.ke>',
+            to: [tenantEmail],
+            subject: 'Rent Payment Reminder',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #003366;">Rent Payment Reminder</h2>
+                <p>${message}</p>
+                <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                  <p style="margin: 5px 0;"><strong>Amount:</strong> KES ${rentAmount.toLocaleString()}</p>
+                  <p style="margin: 5px 0;"><strong>Due Date:</strong> Day ${dueDate} of the month</p>
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                  This is an automated reminder from Nyumbanii Property Management.
+                </p>
+              </div>
+            `
+          });
+
+          success = true;
+          logger.info(`✅ Email sent to ${tenantName}`);
+        } catch (error) {
+          logger.error('Email sending failed:', error);
+          throw new functions.https.HttpsError('internal', 'Failed to send email');
+        }
+
+      } else if (channel === 'whatsapp') {
+        // Send via WhatsApp
+        if (!tenantPhone) {
+          throw new functions.https.HttpsError('failed-precondition', 'Tenant has no phone number');
+        }
+
+        try {
+          const phone = formatPhoneNumber(tenantPhone);
+          const africastalking = getAfricasTalking();
+
+          // For now, send via SMS as WhatsApp requires Business API setup
+          // TODO: Integrate WhatsApp Business API when available
+          await africastalking.SMS.send({
+            to: [phone],
+            message: message,
+            from: 'Nyumbanii'
+          });
+
+          success = true;
+          logger.info(`✅ WhatsApp (SMS fallback) sent to ${tenantName}`);
+
+          // Log to whatsappLog
+          await db.collection('whatsappLog').add({
+            landlordId,
+            tenantId,
+            tenantName,
+            phone,
+            message,
+            status: 'sent',
+            fallbackUsed: true,
+            originalChannel: 'whatsapp',
+            finalChannel: 'sms',
+            sentAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+
+        } catch (error) {
+          logger.error('WhatsApp sending failed, falling back to email:', error);
+
+          // Fallback to email
+          if (tenantEmail) {
+            try {
+              const { resendKey } = getApiKeys();
+              const resendClient = new Resend(resendKey);
+
+              await resendClient.emails.send({
+                from: 'Nyumbanii <noreply@nyumbanii.co.ke>',
+                to: [tenantEmail],
+                subject: 'Rent Payment Reminder',
+                html: `<p>${message}</p>`
+              });
+
+              success = true;
+              finalChannel = 'email';
+              logger.info(`✅ Fallback email sent to ${tenantName}`);
+            } catch (emailError) {
+              throw new functions.https.HttpsError('internal', 'All channels failed');
+            }
+          } else {
+            throw new functions.https.HttpsError('internal', 'WhatsApp failed and no email available');
+          }
+        }
+
+      } else if (channel === 'sms') {
+        // Send via SMS with Quota Management
+        if (!tenantPhone) {
+          throw new functions.https.HttpsError('failed-precondition', 'Tenant has no phone number');
+        }
+
+        // Check SMS Quota
+        const quotaRef = db.collection('smsQuota').doc(tenantId);
+        const quotaSnap = await quotaRef.get();
+        let quotaData = quotaSnap.exists ? quotaSnap.data() : null;
+
+        // Initialize or reset quota if needed
+        if (!quotaData || quotaData.month !== currentMonth) {
+          quotaData = {
+            tenantId,
+            landlordId,
+            month: currentMonth,
+            creditsUsed: 0,
+            creditsRemaining: 3,
+            lastResetDate: admin.firestore.FieldValue.serverTimestamp()
+          };
+          await quotaRef.set(quotaData);
+        }
+
+        // Check if credits available
+        if (quotaData.creditsRemaining <= 0) {
+          throw new functions.https.HttpsError('resource-exhausted', 'SMS quota exceeded for this tenant');
+        }
+
+        try {
+          const phone = formatPhoneNumber(tenantPhone);
+          const africastalking = getAfricasTalking();
+
+          await africastalking.SMS.send({
+            to: [phone],
+            message: message,
+            from: 'Nyumbanii'
+          });
+
+          // Deduct credit atomically
+          await quotaRef.update({
+            creditsUsed: admin.firestore.FieldValue.increment(1),
+            creditsRemaining: admin.firestore.FieldValue.increment(-1),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+
+          success = true;
+          quotaDeducted = true;
+          logger.info(`✅ SMS sent to ${tenantName} (${quotaData.creditsRemaining - 1} credits remaining)`);
+
+          // Log to smsLog
+          await db.collection('smsLog').add({
+            landlordId,
+            tenantId,
+            tenantName,
+            phone,
+            message,
+            status: 'sent',
+            quotaDeducted: true,
+            type: 'rent_reminder',
+            sentAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+
+        } catch (error) {
+          logger.error('SMS sending failed:', error);
+          throw new functions.https.HttpsError('internal', 'Failed to send SMS');
+        }
+      } else {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid channel specified');
+      }
+
+      return {
+        success: true,
+        channel: finalChannel,
+        quotaDeducted
+      };
+
+    } catch (error) {
+      logger.error('❌ Error in sendRentReminder:', error);
+      throw error;
+    }
+  }
+);
+
+/**
  * HTTP callable function to send WhatsApp message
  */
 exports.sendWhatsAppMessage = onCall(

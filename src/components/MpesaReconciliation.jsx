@@ -217,7 +217,7 @@ const MpesaReconciliation = ({ landlordId, properties, tenants }) => {
     try {
       // Create payment record in Firestore
       await addDoc(collection(db, 'payments'), {
-        tenantId: transaction.matchedTenant.id,
+        tenantId: transaction.matchedTenant.docId || transaction.matchedTenant.id, // Use docId (document ID) for tenant reference
         tenantName: transaction.matchedTenant.name,
         landlordId: landlordId,
         propertyId: transaction.matchedTenant.propertyId,

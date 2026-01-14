@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, MessageSquare, Send, Clock, Settings, AlertCircle, CheckCircle } from 'lucide-react';
-import { doc, getDoc, updateDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { Bell, MessageSquare, Send, Clock, Settings, AlertCircle, CheckCircle, Mail, Check } from 'lucide-react';
+import { doc, getDoc, updateDoc, collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 
@@ -15,8 +15,8 @@ const ReminderSettings = ({ landlordId }) => {
     overdueReminderInterval: 3
   });
   const [showManualReminder, setShowManualReminder] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState(null);
-  const [manualMessage, setManualMessage] = useState('');
+  const [selectedTenantsForReminder, setSelectedTenantsForReminder] = useState([]);
+  const [selectedChannel, setSelectedChannel] = useState('email'); // 'email' or 'message' (in-app)
   const [tenants, setTenants] = useState([]);
   const [smsLogs, setSmsLogs] = useState([]);
   const [sendingManual, setSendingManual] = useState(false);
@@ -94,29 +94,101 @@ const ReminderSettings = ({ landlordId }) => {
   };
 
   const handleSendManualReminder = async () => {
-    if (!selectedTenant || !manualMessage.trim()) {
-      alert('Please select a tenant and enter a message');
+    if (selectedTenantsForReminder.length === 0) {
+      alert('Please select at least one tenant');
       return;
     }
 
     setSendingManual(true);
-    try {
-      const sendManualReminder = httpsCallable(functions, 'sendManualReminder');
-      const result = await sendManualReminder({
-        tenantId: selectedTenant,
-        message: manualMessage
-      });
+    let successCount = 0;
+    let failCount = 0;
 
-      if (result.data.success) {
-        alert('Reminder sent successfully!');
+    try {
+      // Get landlord info for in-app messages
+      const landlordDoc = await getDoc(doc(db, 'users', landlordId));
+      const landlordName = landlordDoc.exists() ? (landlordDoc.data().displayName || landlordDoc.data().name || 'Landlord') : 'Landlord';
+
+      for (const tenantId of selectedTenantsForReminder) {
+        const tenant = tenants.find(t => t.id === tenantId);
+        if (!tenant) continue;
+
+        // Generate message based on tone
+        const message = settings.messageType === 'friendly'
+          ? `Hi ${tenant.name}! Just a friendly reminder that your rent is due soon. Amount: KES ${(tenant.monthlyRent || 0).toLocaleString()}. Thank you!`
+          : `Dear ${tenant.name}, this is a reminder that your rent payment of KES ${(tenant.monthlyRent || 0).toLocaleString()} is due soon. Please ensure timely payment. Thank you.`;
+
+        try {
+          if (selectedChannel === 'message') {
+            // Send in-app message to tenant's messages dashboard
+            const conversationId = [landlordId, tenant.userId || tenantId].sort().join('_');
+
+            // Create message document
+            await addDoc(collection(db, 'messages'), {
+              conversationId: conversationId,
+              senderId: landlordId,
+              senderName: landlordName,
+              senderRole: 'landlord',
+              recipientId: tenant.userId || tenantId,
+              recipientName: tenant.name,
+              recipientRole: 'tenant',
+              text: message,
+              timestamp: serverTimestamp(),
+              read: false,
+              propertyName: tenant.propertyName || '',
+              unit: tenant.unit || '',
+              participants: [landlordId, tenant.userId || tenantId]
+            });
+
+            // Create notification for tenant
+            await addDoc(collection(db, 'notifications'), {
+              userId: tenant.userId || tenantId,
+              type: 'message',
+              title: 'Rent Reminder from Landlord',
+              message: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
+              read: false,
+              timestamp: serverTimestamp(),
+              senderId: landlordId,
+              senderName: landlordName,
+              senderRole: 'landlord',
+              conversationId: conversationId
+            });
+
+            successCount++;
+          } else if (selectedChannel === 'email') {
+            // Send via Cloud Function (email only for now)
+            const sendRentReminder = httpsCallable(functions, 'sendRentReminder');
+            await sendRentReminder({
+              landlordId: landlordId,
+              tenantId: tenant.id,
+              tenantName: tenant.name,
+              tenantEmail: tenant.email,
+              tenantPhone: tenant.phone,
+              channel: 'email',
+              message: message,
+              rentAmount: tenant.monthlyRent || 0,
+              dueDate: tenant.rentDueDay || settings.defaultRentDueDay
+            });
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Error sending to ${tenant.name}:`, error);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        const channelName = selectedChannel === 'email' ? 'Email' : 'In-App Message';
+        alert(`Reminders sent successfully to ${successCount} tenant(s) via ${channelName}!${failCount > 0 ? ` ${failCount} failed.` : ''}`);
         setShowManualReminder(false);
-        setSelectedTenant(null);
-        setManualMessage('');
+        setSelectedTenantsForReminder([]);
+        setSelectedChannel('email');
         loadRecentLogs();
+      } else {
+        alert('Failed to send reminders. Please try again.');
       }
     } catch (error) {
-      console.error('Error sending reminder:', error);
-      alert('Failed to send reminder: ' + error.message);
+      console.error('Error sending reminders:', error);
+      alert('Failed to send reminders: ' + error.message);
     } finally {
       setSendingManual(false);
     }
@@ -153,7 +225,7 @@ const ReminderSettings = ({ landlordId }) => {
                 Rent Reminders
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Automated SMS/WhatsApp reminders via Africa's Talking
+                Automated email reminders and in-app messaging
               </p>
             </div>
           </div>
@@ -373,56 +445,136 @@ const ReminderSettings = ({ landlordId }) => {
         )}
       </div>
 
-      {/* Manual Reminder Modal */}
+      {/* Manual Reminder Modal with Channel Selection */}
       {showManualReminder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6 my-8">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Send Manual Reminder
+              Send Rent Reminder
             </h3>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
+              {/* Select Tenants (Multi-select with checkboxes) */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Select Tenant
+                  Select Tenant(s)
                 </label>
-                <select
-                  value={selectedTenant || ''}
-                  onChange={(e) => setSelectedTenant(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Choose a tenant...</option>
+                <div className="max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3 space-y-2">
+                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedTenantsForReminder.length === tenants.length && tenants.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTenantsForReminder(tenants.map(t => t.id));
+                        } else {
+                          setSelectedTenantsForReminder([]);
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 rounded"
+                    />
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      Select All ({tenants.length} tenants)
+                    </span>
+                  </label>
                   {tenants.map(tenant => (
-                    <option key={tenant.id} value={tenant.id}>
-                      {tenant.name} - {tenant.propertyName} {tenant.unit}
-                    </option>
+                    <label key={tenant.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedTenantsForReminder.includes(tenant.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedTenantsForReminder([...selectedTenantsForReminder, tenant.id]);
+                          } else {
+                            setSelectedTenantsForReminder(selectedTenantsForReminder.filter(id => id !== tenant.id));
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-gray-900 dark:text-white">
+                        {tenant.name} - {tenant.unit || tenant.propertyName}
+                      </span>
+                    </label>
                   ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Message
-                </label>
-                <textarea
-                  value={manualMessage}
-                  onChange={(e) => setManualMessage(e.target.value)}
-                  rows={4}
-                  maxLength={160}
-                  placeholder="Enter your reminder message (max 160 characters)"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                />
+                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {manualMessage.length}/160 characters
+                  {selectedTenantsForReminder.length} tenant(s) selected
                 </p>
               </div>
 
+              {/* Message Preview */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Message Preview
+                </label>
+                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                  {settings.messageType === 'friendly'
+                    ? "Hi [Name]! Just a friendly reminder that your rent is due soon. Thank you!"
+                    : "Dear [Name], this is a reminder that your rent payment is due soon. Please ensure timely payment."}
+                </div>
+              </div>
+
+              {/* Channel Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Choose Channel
+                </label>
+                <div className="space-y-3">
+                  {/* Email Option */}
+                  <div
+                    onClick={() => setSelectedChannel('email')}
+                    className={`border-2 rounded-lg p-4 cursor-pointer transition ${
+                      selectedChannel === 'email'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">Email</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Free • Reliable delivery</div>
+                        </div>
+                      </div>
+                      {selectedChannel === 'email' && (
+                        <Check className="w-5 h-5 text-blue-600" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Send Message (In-App) Option */}
+                  <div
+                    onClick={() => setSelectedChannel('message')}
+                    className={`border-2 rounded-lg p-4 cursor-pointer transition ${
+                      selectedChannel === 'message'
+                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <MessageSquare className="w-5 h-5 text-purple-600" />
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">Send Message (In-App)</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Free • Sent to tenant's messages dashboard</div>
+                        </div>
+                      </div>
+                      {selectedChannel === 'message' && (
+                        <Check className="w-5 h-5 text-purple-600" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => {
                     setShowManualReminder(false);
-                    setSelectedTenant(null);
-                    setManualMessage('');
+                    setSelectedTenantsForReminder([]);
+                    setSelectedChannel('email');
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
                 >
@@ -430,8 +582,8 @@ const ReminderSettings = ({ landlordId }) => {
                 </button>
                 <button
                   onClick={handleSendManualReminder}
-                  disabled={sendingManual || !selectedTenant || !manualMessage.trim()}
-                  className="flex-1 px-4 py-2 bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                  disabled={sendingManual || selectedTenantsForReminder.length === 0}
+                  className="flex-1 px-4 py-2 bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 text-white rounded-lg transition-all flex items-center justify-center gap-2 font-medium"
                 >
                   {sendingManual ? (
                     <>
@@ -441,7 +593,7 @@ const ReminderSettings = ({ landlordId }) => {
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      Send SMS
+                      Send via {selectedChannel === 'email' ? 'Email' : 'In-App Message'}
                     </>
                   )}
                 </button>

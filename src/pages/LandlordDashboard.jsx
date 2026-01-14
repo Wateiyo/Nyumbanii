@@ -1438,7 +1438,7 @@ const handleEditProperty = async () => {
       // Prepare notice data
       const noticeData = {
         initiatedBy: 'landlord',
-        tenantId: selectedTenantForNotice.id,
+        tenantId: selectedTenantForNotice.docId || selectedTenantForNotice.id, // Use docId (document ID) for tenant reference
         tenantName: selectedTenantForNotice.name,
         tenantEmail: selectedTenantForNotice.email || '',
         tenantPhone: selectedTenantForNotice.phone || '',
@@ -8747,7 +8747,7 @@ const handleViewTenantDetails = (tenant) => {
                     setNewPayment({
                       ...newPayment,
                       tenant: e.target.value,
-                      tenantId: selectedTenant?.id || '',
+                      tenantId: selectedTenant?.docId || selectedTenant?.id || '', // Use docId (document ID) for tenant reference
                       property: selectedTenant?.property || '',
                       unit: selectedTenant?.unit || '',
                       amount: selectedTenant?.rent || ''

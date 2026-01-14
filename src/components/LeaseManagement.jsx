@@ -314,7 +314,7 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
       const leaseData = {
         landlordId,
         landlordName: selectedProperty?.ownerName || 'Landlord',
-        tenantId: leaseForm.tenantId,
+        tenantId: selectedTenant?.docId || leaseForm.tenantId, // Use docId (document ID) for tenant reference
         tenantName: selectedTenant?.name,
         tenantEmail: selectedTenant?.email,
         tenantPhone: selectedTenant?.phone,

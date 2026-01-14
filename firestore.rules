@@ -185,5 +185,11 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if false; // Only server can write
     }
+
+    // SMS Quota collection - tracks monthly SMS credits per tenant
+    match /smsQuota/{quotaId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only server can write
+    }
   }
 }
