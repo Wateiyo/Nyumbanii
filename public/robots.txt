@@ -1,0 +1,14 @@
+# robots.txt for Nyumbanii
+
+User-agent: *
+Allow: /
+
+# Allow all bots to crawl the site
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap location
+Sitemap: https://nyumbanii.co.ke/sitemap.xml
+
+# Crawl delay (optional, 1 second between requests)
+Crawl-delay: 1
