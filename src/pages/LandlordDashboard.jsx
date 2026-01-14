@@ -197,6 +197,7 @@ const LandlordDashboard = () => {
 
   // Move-out notice state (landlord-initiated)
   const [showMoveOutNoticeModal, setShowMoveOutNoticeModal] = useState(false);
+  const [showTenantSelectorModal, setShowTenantSelectorModal] = useState(false);
   const [selectedTenantForNotice, setSelectedTenantForNotice] = useState(null);
   const [submittingMoveOutNotice, setSubmittingMoveOutNotice] = useState(false);
   const [landlordMoveOutData, setLandlordMoveOutData] = useState({
@@ -5147,6 +5148,27 @@ const handleViewTenantDetails = (tenant) => {
         {/* Move-Out Notices Tab Content */}
         {documentsTab === 'move-out' && (
           <>
+            {/* Action Button */}
+            <div className="mb-6 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Move-Out Notices</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Issue move-out notices to tenants or view submitted notices</p>
+              </div>
+              <button
+                onClick={() => {
+                  if (tenants.length === 0) {
+                    alert('No tenants available. Please add tenants first.');
+                    return;
+                  }
+                  setShowTenantSelectorModal(true);
+                }}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition text-sm font-medium flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Issue Move-Out Notice
+              </button>
+            </div>
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
@@ -10398,6 +10420,86 @@ const handleViewTenantDetails = (tenant) => {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tenant Selector Modal */}
+      {showTenantSelectorModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <User className="w-6 h-6 text-orange-600" />
+                Select Tenant for Move-Out Notice
+              </h3>
+              <button
+                onClick={() => setShowTenantSelectorModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Select a tenant to issue a move-out notice. A legal notice document will be generated and sent to the tenant.
+              </p>
+
+              {/* Tenant List */}
+              <div className="space-y-3">
+                {tenants.map((tenant) => (
+                  <div
+                    key={tenant.id}
+                    onClick={() => {
+                      setSelectedTenantForNotice(tenant);
+                      setLandlordMoveOutData({
+                        noticePeriod: 30,
+                        reason: 'Breach of Contract',
+                        legalGrounds: '',
+                        additionalTerms: ''
+                      });
+                      setShowTenantSelectorModal(false);
+                      setShowMoveOutNoticeModal(true);
+                    }}
+                    className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 cursor-pointer hover:border-orange-500 dark:hover:border-orange-500 hover:shadow-md transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{tenant.name}</h4>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                          <div>
+                            <span className="font-medium">Property:</span> {tenant.property}
+                          </div>
+                          <div>
+                            <span className="font-medium">Unit:</span> {tenant.unit}
+                          </div>
+                          {tenant.email && (
+                            <div className="col-span-2">
+                              <span className="font-medium">Email:</span> {tenant.email}
+                            </div>
+                          )}
+                          {tenant.phone && (
+                            <div className="col-span-2">
+                              <span className="font-medium">Phone:</span> {tenant.phone}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {tenants.length === 0 && (
+                <div className="text-center py-8">
+                  <User className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-600 dark:text-gray-400">No tenants available</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Add tenants first to issue move-out notices</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
