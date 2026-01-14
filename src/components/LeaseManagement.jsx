@@ -129,173 +129,160 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
     setFilteredLeases(filtered);
   }, [searchTerm, statusFilter, leases]);
 
-  // Generate lease PDF
+  // Generate lease PDF following Kenyan legal format
   const generateLeasePDF = (lease) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
     let yPos = 20;
 
-    // Header
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('RESIDENTIAL LEASE AGREEMENT', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 15;
+    // Helper function to add text with word wrap
+    const addText = (text, fontSize = 11, isBold = false, indent = 0) => {
+      doc.setFontSize(fontSize);
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      const maxWidth = pageWidth - (2 * margin) - indent;
+      const lines = doc.splitTextToSize(text, maxWidth);
 
-    // Border
-    doc.setDrawColor(0, 51, 102);
-    doc.setLineWidth(0.5);
-    doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
-
-    // Agreement Details Section
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('AGREEMENT DETAILS', 15, yPos);
-    yPos += 10;
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Lease Agreement No: ${lease.leaseNumber || lease.id}`, 15, yPos);
-    yPos += 6;
-    doc.text(`Date of Agreement: ${formatDate(lease.createdAt?.toDate ? lease.createdAt.toDate() : new Date())}`, 15, yPos);
-    yPos += 10;
-
-    // Parties Section
-    doc.setFont('helvetica', 'bold');
-    doc.text('PARTIES TO THIS AGREEMENT', 15, yPos);
-    yPos += 10;
-
-    doc.setFont('helvetica', 'normal');
-    doc.text('LANDLORD:', 15, yPos);
-    yPos += 6;
-    doc.text(`Name: ${lease.landlordName || 'Landlord Name'}`, 20, yPos);
-    yPos += 6;
-    doc.text(`Contact: ${lease.landlordContact || 'Contact Info'}`, 20, yPos);
-    yPos += 10;
-
-    doc.text('TENANT:', 15, yPos);
-    yPos += 6;
-    doc.text(`Name: ${lease.tenantName}`, 20, yPos);
-    yPos += 6;
-    doc.text(`ID Number: ${lease.tenantIdNumber || 'N/A'}`, 20, yPos);
-    yPos += 6;
-    doc.text(`Phone: ${lease.tenantPhone || 'N/A'}`, 20, yPos);
-    yPos += 6;
-    doc.text(`Email: ${lease.tenantEmail || 'N/A'}`, 20, yPos);
-    yPos += 10;
-
-    // Property Details
-    doc.setFont('helvetica', 'bold');
-    doc.text('PROPERTY DETAILS', 15, yPos);
-    yPos += 10;
-
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Property: ${lease.propertyName}`, 15, yPos);
-    yPos += 6;
-    doc.text(`Unit: ${lease.unit}`, 15, yPos);
-    yPos += 6;
-    doc.text(`Address: ${lease.propertyAddress || 'Property Address'}`, 15, yPos);
-    yPos += 10;
-
-    // Lease Terms
-    doc.setFont('helvetica', 'bold');
-    doc.text('LEASE TERMS', 15, yPos);
-    yPos += 10;
-
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Start Date: ${formatDate(lease.startDate?.toDate ? lease.startDate.toDate() : new Date(lease.startDate))}`, 15, yPos);
-    yPos += 6;
-    doc.text(`End Date: ${formatDate(lease.endDate?.toDate ? lease.endDate.toDate() : new Date(lease.endDate))}`, 15, yPos);
-    yPos += 6;
-    doc.text(`Monthly Rent: ${formatCurrency(lease.monthlyRent)}`, 15, yPos);
-    yPos += 6;
-    doc.text(`Security Deposit: ${formatCurrency(lease.securityDeposit)}`, 15, yPos);
-    yPos += 6;
-    doc.text(`Late Fee: ${lease.lateFeePercentage}% after ${lease.lateFeeDays} days`, 15, yPos);
-    yPos += 10;
-
-    // Utilities
-    if (lease.utilitiesIncluded && lease.utilitiesIncluded.length > 0) {
-      doc.text(`Utilities Included: ${lease.utilitiesIncluded.join(', ')}`, 15, yPos);
-      yPos += 10;
-    }
-
-    // Special Terms
-    if (lease.specialTerms) {
-      doc.setFont('helvetica', 'bold');
-      doc.text('SPECIAL TERMS AND CONDITIONS', 15, yPos);
-      yPos += 10;
-
-      doc.setFont('helvetica', 'normal');
-      const specialTermsLines = doc.splitTextToSize(lease.specialTerms, pageWidth - 30);
-      doc.text(specialTermsLines, 15, yPos);
-      yPos += (specialTermsLines.length * 6) + 10;
-    }
-
-    // Check if we need a new page
-    if (yPos > pageHeight - 80) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    // Standard Terms
-    doc.setFont('helvetica', 'bold');
-    doc.text('STANDARD TERMS', 15, yPos);
-    yPos += 10;
-
-    doc.setFont('helvetica', 'normal');
-    const standardTerms = [
-      '1. The tenant shall pay rent on or before the 5th day of each month.',
-      '2. The tenant shall maintain the property in good condition.',
-      '3. The tenant shall not sub-let the property without written consent.',
-      '4. The landlord shall be responsible for major repairs and maintenance.',
-      '5. Either party may terminate this agreement with 30 days written notice.',
-      '6. The security deposit will be refunded within 30 days after move-out, less any deductions.',
-      '7. This agreement is governed by the laws of Kenya.'
-    ];
-
-    standardTerms.forEach(term => {
-      const lines = doc.splitTextToSize(term, pageWidth - 30);
-      if (yPos > pageHeight - 30) {
+      // Check if we need a new page
+      if (yPos + (lines.length * (fontSize * 0.5)) > pageHeight - 30) {
         doc.addPage();
         yPos = 20;
       }
-      doc.text(lines, 15, yPos);
-      yPos += (lines.length * 6) + 3;
+
+      doc.text(lines, margin + indent, yPos);
+      yPos += (lines.length * (fontSize * 0.5)) + 5;
+    };
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RESIDENTIAL TENANCY AGREEMENT', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 15;
+
+    // Opening clause
+    const agreementDate = formatDate(lease.createdAt?.toDate ? lease.createdAt.toDate() : new Date());
+    doc.setFont('helvetica', 'normal');
+
+    // Opening paragraph - Kenyan legal format
+    addText(`This agreement is made on the ${agreementDate} between ${lease.landlordName || 'Landlord'} of ${lease.landlordContact || 'Address'} (hereinafter called "The Landlord") which term shall include its successors and/or assigns in title of one part and ${lease.tenantName} of I.D No. ${lease.tenantIdNumber || 'N/A'}, ${lease.propertyAddress || 'Address'} (hereinafter called "The Tenant") of the other part.`);
+
+    yPos += 5;
+
+    // WHEREAS clause
+    addText(`Whereas the Landlord is the registered owner of ${lease.propertyName}, ${lease.unit || 'Unit'}, together with fixtures and fittings therein, all of which for the purpose of this agreement are referred to as "The Premises".`);
+
+    yPos += 5;
+
+    // NOW THIS AGREEMENT WITNESSES
+    addText('NOW THIS AGREEMENT WITNESSES as follows:', 11, true);
+    yPos += 5;
+
+    // LETTING PROVISIONS
+    addText('LETTING PROVISIONS', 12, true);
+    yPos += 5;
+
+    // Clause 1 - Letting and rent
+    addText(`1. The Landlord agrees to let and the tenant agrees to hire the premises situated at ${lease.propertyName}, ${lease.unit || 'Unit'}. The Tenant shall hold the same at a monthly rent of ${formatCurrency(lease.monthlyRent)} payable monthly in advance and not later than the 5th of each month (without any deduction whatsoever) commencing on the ${formatDate(lease.startDate?.toDate ? lease.startDate.toDate() : new Date(lease.startDate))} re-viewable yearly. (Payment made later than the 5th day of the month, a fine of ${formatCurrency((lease.monthlyRent * lease.lateFeePercentage) / 100)} shall be paid together with rent without fail).`, 10);
+
+    yPos += 3;
+
+    // Clause 2 - Deposit
+    addText(`2. The Tenant shall pay the sum equal to ${formatCurrency(lease.securityDeposit)} as deposit.`, 10);
+    yPos += 3;
+
+    // Clause 3 - Tenant obligations
+    addText('3. The tenant agrees as follows:', 10, true);
+    yPos += 3;
+
+    const tenantObligations = [
+      `(a) To pay the rent for ${formatDate(lease.startDate?.toDate ? lease.startDate.toDate() : new Date(lease.startDate))} and deposit as specified to the Landlord before occupying the premises.`,
+      `(b) To pay the rent on the days and in the manner aforesaid without any deductions whatsoever.`,
+      `(c) The Tenant shall at all times during the tenancy keep the interior of the said premises including all doors, windows, sanitary apparatus, bath basins and shower fittings, electrical wiring apparatus and electric light fittings clean and in good condition (fair wear and tear only excepted) and also make good of any blockage or damage to the drains if caused by the Tenant or to maintain them in the same condition as they found them.`,
+      `(d) The Tenant shall pay for the replacement or make good repair or restore all such articles or fixtures and effects as shall be broken, lost, damaged or destroyed during the tenancy period.`,
+      `(e) The Tenant shall not assign, sublet or otherwise part with any part of the premise without the written consent of the landlord.`,
+      `(f) The Tenant shall replace immediately any lock with keys which have been lost.`,
+      `(g) The Tenant shall not make any structural changes, alterations in order to or erect any fixtures to the said premises without obtaining the prior written consent of the Landlord.`,
+      `(h) The Tenant shall use the said premises as residence for one family and shall not use them as boarding house or any other unauthorized purpose without the written consent of the Landlord.`,
+      `(i) The Tenant shall not sublet lease or part with the possessions of the said premises or any other part thereof to any person and shall not permit or suffer anything to be done which may or become a nuisance to the Landlord or the owners or occupiers of adjoining premises.`,
+      `(j) The Tenant shall at all times during the tenancy pay to the appropriate authorities all charges in respect of security, garbage collection, electricity and water supplied to the said premises.`
+    ];
+
+    tenantObligations.forEach(obligation => {
+      addText(obligation, 9, false, 10);
+      yPos += 2;
     });
 
-    // Signatures Section
-    if (yPos > pageHeight - 60) {
-      doc.addPage();
-      yPos = 20;
-    }
+    // Clause 4 - Landlord obligations
+    addText('4. The landlord agrees as follows:', 10, true);
+    yPos += 3;
+    addText('(a) That the tenant paying the rent hereby reserved and performing and observing all agreements and conditions herein contained or implied and on its part to be performed and observed shall during the tenancy peaceably enjoy the premise without interruption by the landlord.', 9, false, 10);
+    yPos += 5;
 
+    // Clause 5 - Mutual agreements
+    addText('5. It is hereby mutually agreed by both parties hereto as follows:', 10, true);
+    yPos += 3;
+    addText('(a) If and whenever the aforementioned rent payment or any part thereof is in arrears for twenty one (21) days whether legally demanded or not, or if the tenant becomes bankrupt or commits any breach of the previous terms herein contained, then the landlord may re-enter upon the demised premises and to again repossess the same without prejudice to any right of action or remedy of the Landlord in respect of any antecedent breach of any of the covenants herein contained or implied.', 9, false, 10);
+    yPos += 3;
+    addText('(b) The parties shall attempt to resolve any dispute arising out of or relating to this contract through negotiations between the parties or their representatives. In the event of failed negotiations, the parties wish to seek an amicable settlement of that dispute by mediation, where the mediation shall take place in accordance with the Nairobi Centre for International Arbitration - Mediation Rules as at present in force.', 9, false, 10);
+    yPos += 5;
+
+    // Clause 6 - Termination
+    addText('6. Termination:', 10, true);
+    yPos += 3;
+    addText('Either party shall have the option of terminating this agreement by giving to the other two (2) months\' notice in writing of such intention, upon the expiration of such, this agreement shall determine absolutely but Without Prejudice to the rights of either party in respect of any of the terms thereof.', 9, false, 10);
+    yPos += 5;
+
+    // Entire agreement clause
+    addText('This Agreement contains the whole agreement and understanding between the parties relating to the transaction provided for in this Agreement and supersedes all previous agreements (if any) whether written or oral between the parties in respect of such matters.', 9);
     yPos += 10;
-    doc.setFont('helvetica', 'bold');
-    doc.text('SIGNATURES', 15, yPos);
-    yPos += 15;
 
-    // Landlord Signature
+    // Check if need new page for signatures
+    if (yPos > pageHeight - 80) {
+      doc.addPage();
+      yPos = 30;
+    }
+
+    // Signature blocks - Kenyan format
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Landlord Signature:', 15, yPos);
-    if (lease.landlordSignature) {
-      doc.addImage(lease.landlordSignature, 'PNG', 15, yPos + 2, 50, 15);
-    }
-    doc.line(15, yPos + 20, 85, yPos + 20);
-    yPos += 25;
-    doc.text(`Date: ${formatDate(lease.landlordSignedAt?.toDate ? lease.landlordSignedAt.toDate() : new Date())}`, 15, yPos);
 
-    // Tenant Signature
-    yPos += 15;
-    doc.text('Tenant Signature:', 15, yPos);
-    if (lease.tenantSignature) {
-      doc.addImage(lease.tenantSignature, 'PNG', 15, yPos + 2, 50, 15);
-    }
-    doc.line(15, yPos + 20, 85, yPos + 20);
-    yPos += 25;
+    // Landlord signature
+    doc.text('Signed by the Landlord/Representative', margin, yPos);
+    doc.text('}', margin - 5, yPos + 5);
+    doc.text('ID NO.', margin, yPos + 5);
+    doc.text('}', margin - 5, yPos + 10);
+    doc.text('}', margin - 5, yPos + 15);
+    doc.line(margin + 30, yPos + 15, margin + 80, yPos + 15);
+    doc.text('Date', margin, yPos + 20);
+    doc.text('}', margin - 5, yPos + 20);
+    doc.line(margin + 30, yPos + 20, margin + 80, yPos + 20);
+    doc.text('}', margin - 5, yPos + 25);
+
+    yPos += 35;
+
+    // Tenant signature
+    doc.text('Signed by the Tenant', margin, yPos);
+    doc.text('}', margin - 5, yPos + 5);
+    doc.line(margin + 30, yPos + 5, margin + 80, yPos + 5);
+    doc.text(`ID NO. ${lease.tenantIdNumber || 'N/A'}`, margin, yPos + 10);
+    doc.text('}', margin - 5, yPos + 10);
+    doc.text(`${lease.tenantName}`, margin + 40, yPos + 10);
+    doc.text('}', margin - 5, yPos + 15);
+    doc.text('Date', margin, yPos + 20);
+    doc.text('}', margin - 5, yPos + 20);
     if (lease.tenantSignedAt) {
-      doc.text(`Date: ${formatDate(lease.tenantSignedAt.toDate())}`, 15, yPos);
+      doc.text(formatDate(lease.tenantSignedAt.toDate()), margin + 30, yPos + 20);
+    } else {
+      doc.line(margin + 30, yPos + 20, margin + 80, yPos + 20);
     }
+
+    // Footer
+    yPos = pageHeight - 15;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Generated via Nyumbanii Property Management System - www.nyumbanii.co.ke', pageWidth / 2, yPos, { align: 'center' });
+    doc.text(`Agreement No: ${lease.leaseNumber || lease.id}`, pageWidth / 2, yPos + 5, { align: 'center' });
 
     return doc;
   };

@@ -1,6 +1,19 @@
 import { jsPDF } from 'jspdf';
 
 /**
+ * Helper function to get day suffix (st, nd, rd, th)
+ */
+const getDaySuffix = (day) => {
+  if (day >= 11 && day <= 13) return 'th';
+  switch (day % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+};
+
+/**
  * Generate a professional legal notice PDF for move-out notices
  * @param {Object} noticeData - The move-out notice data from Firestore
  * @returns {jsPDF} PDF document instance
@@ -10,23 +23,30 @@ export const generateLegalNoticePDF = (noticeData) => {
 
   // Page dimensions
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
   const contentWidth = pageWidth - (2 * margin);
   let yPosition = 20;
 
   // Helper function to add text with word wrap
-  const addText = (text, fontSize = 11, align = 'left', isBold = false) => {
+  const addText = (text, fontSize = 11, align = 'left', isBold = false, indent = 0) => {
     doc.setFontSize(fontSize);
     doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+
+    // Check if we need a new page
+    if (yPosition > pageHeight - 40) {
+      doc.addPage();
+      yPosition = 20;
+    }
 
     if (align === 'center') {
       doc.text(text, pageWidth / 2, yPosition, { align: 'center' });
     } else {
-      const lines = doc.splitTextToSize(text, contentWidth);
-      doc.text(lines, margin, yPosition);
+      const lines = doc.splitTextToSize(text, contentWidth - indent);
+      doc.text(lines, margin + indent, yPosition);
       yPosition += (lines.length * fontSize * 0.5);
     }
-    yPosition += 7;
+    yPosition += 6;
   };
 
   // Helper function to add a horizontal line
@@ -36,129 +56,167 @@ export const generateLegalNoticePDF = (noticeData) => {
     yPosition += 10;
   };
 
-  // Header
-  doc.setFillColor(25, 46, 91); // Blue-900
-  doc.rect(0, 0, pageWidth, 30, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text('NOTICE TO VACATE PREMISES', pageWidth / 2, 18, { align: 'center' });
-
-  // Reset colors
-  doc.setTextColor(0, 0, 0);
-  yPosition = 45;
-
-  // Reference and date
-  const referenceNumber = `MVN-${noticeData.id.substring(0, 8).toUpperCase()}`;
-  const dateIssued = noticeData.noticeSubmittedDate?.toDate
-    ? noticeData.noticeSubmittedDate.toDate().toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })
-    : new Date().toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' });
-
-  addText(`Reference No: ${referenceNumber}`, 10, 'left', true);
-  addText(`Date Issued: ${dateIssued}`, 10);
-  addText(`Notice Period: ${noticeData.noticePeriod || 30} Days`, 10);
-
-  yPosition += 5;
-  addLine();
-
-  // TO Section
-  addText('TO:', 12, 'left', true);
-  addText(`${noticeData.tenantName || 'Tenant'}`, 11);
-  if (noticeData.tenantIdNumber) {
-    addText(`ID Number: ${noticeData.tenantIdNumber}`, 10);
-  }
-  addText(`${noticeData.propertyName || 'Property'}${noticeData.unit ? ', Unit ' + noticeData.unit : ''}`, 11);
-
-  yPosition += 5;
-
-  // FROM Section
-  addText('FROM:', 12, 'left', true);
-  addText(`${noticeData.landlordName || 'Landlord'}`, 11);
-  if (noticeData.landlordEmail) {
-    addText(`Contact: ${noticeData.landlordEmail}`, 10);
-  }
-
-  yPosition += 5;
-  addLine();
-
-  // Subject
-  addText('SUBJECT: NOTICE TO VACATE', 13, 'center', true);
-  yPosition += 3;
-
-  // Legal Notice Body
-  const moveOutDate = noticeData.intendedMoveOutDate?.toDate
-    ? noticeData.intendedMoveOutDate.toDate().toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })
-    : 'the specified date';
-
+  // Determine if landlord or tenant initiated
   const initiator = noticeData.initiatedBy === 'landlord' ? 'landlord' : 'tenant';
 
-  if (initiator === 'tenant') {
-    addText(`This notice is issued by the tenant in accordance with the tenancy agreement and applicable Kenyan laws governing landlord-tenant relationships.`);
-    addText(`The tenant hereby notifies the landlord of their intention to vacate the above-mentioned premises on ${moveOutDate}, which is ${noticeData.noticePeriod || 30} days from the date of this notice.`);
+  // Header - Different for landlord vs tenant
+  if (initiator === 'landlord') {
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text("LANDLORD'S NOTICE TO TERMINATE TENANCY", pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 15;
   } else {
-    addText(`This notice is issued in accordance with the tenancy agreement and applicable Kenyan laws governing landlord-tenant relationships.`);
-    addText(`You are hereby notified that your tenancy at the above-mentioned premises will be terminated on ${moveOutDate}, which is ${noticeData.noticePeriod} days from the date of this notice.`);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text("TENANT'S NOTICE TO VACATE PREMISES", pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 15;
   }
 
-  yPosition += 5;
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'normal');
 
-  // Reason
-  if (noticeData.reason) {
-    addText('REASON FOR NOTICE:', 11, 'left', true);
-    addText(noticeData.reason, 11);
+  // Format dates
+  const moveOutDate = noticeData.intendedMoveOutDate?.toDate
+    ? noticeData.intendedMoveOutDate.toDate()
+    : new Date(Date.now() + (noticeData.noticePeriod || 30) * 24 * 60 * 60 * 1000);
+
+  const dateIssued = noticeData.noticeSubmittedDate?.toDate
+    ? noticeData.noticeSubmittedDate.toDate()
+    : new Date();
+
+  if (initiator === 'landlord') {
+    // LANDLORD-INITIATED NOTICE (follows Kenyan prescribed format)
+
+    // TO Section
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    addText(`To: ${noticeData.tenantName || 'Tenant'} – Tenant, ${noticeData.unit ? 'House No. ' + noticeData.unit : 'Unit'}`, 11, 'left', true);
+    doc.setFont('helvetica', 'normal');
+    addText(`Phone No: ${noticeData.tenantPhone || '…………………………………..'}`, 10);
+    addText(`Premises: ${noticeData.propertyName || 'Property Address'}${noticeData.unit ? ' – House No. ' + noticeData.unit : ''}`, 10);
+
+    yPosition += 5;
+
+    // Main body
+    addText(`I, ${noticeData.landlordName || 'Landlord'}, ${noticeData.landlordContact ? 'of ' + noticeData.landlordContact : ''}, the lawful landlord of the above-mentioned premises, hereby issue this notice to terminate your tenancy, effective from the ${moveOutDate.getDate()}${getDaySuffix(moveOutDate.getDate())} day of ${moveOutDate.toLocaleDateString('en-KE', { month: 'long' })}, ${moveOutDate.getFullYear()}.`, 11);
+
     yPosition += 3;
-  }
-
-  // Legal grounds (for landlord-initiated notices)
-  if (noticeData.legalGrounds && initiator === 'landlord') {
-    addText('LEGAL GROUNDS:', 11, 'left', true);
-    addText(noticeData.legalGrounds, 11);
+    addText('This notice is issued on the following grounds:', 11, 'left', true);
     yPosition += 3;
-  }
 
-  // Additional notes
-  if (noticeData.additionalNotes) {
-    addText('ADDITIONAL DETAILS:', 11, 'left', true);
-    addText(noticeData.additionalNotes, 11);
+    // Grounds for termination
+    if (noticeData.reason || noticeData.legalGrounds) {
+      const grounds = noticeData.legalGrounds || noticeData.reason || '';
+      const groundsList = grounds.split('\n').filter(g => g.trim());
+
+      if (groundsList.length > 0) {
+        groundsList.forEach(ground => {
+          doc.setFontSize(11);
+          doc.text('•', margin + 5, yPosition);
+          const lines = doc.splitTextToSize(ground.trim(), contentWidth - 15);
+          doc.text(lines, margin + 15, yPosition);
+          yPosition += (lines.length * 5.5) + 4;
+        });
+      } else {
+        addText('• ' + grounds, 11, 'left', false, 5);
+      }
+    } else {
+      addText('• Non-payment of rent / Breach of tenancy agreement terms', 11, 'left', false, 5);
+    }
+
+    yPosition += 5;
+
+    // Requirements
+    addText(`You are hereby required to vacate the premises within ${noticeData.noticePeriod || 28} days from the date of receipt of this notice.`, 11);
+    addText('During this period, you are also required to settle any outstanding rent arrears. Failure to comply may result in legal action, including distress for rent as provided by law.', 11);
+
+    yPosition += 10;
+
+    // Date and signature
+    addText(`Dated this ${dateIssued.getDate()}${getDaySuffix(dateIssued.getDate())} day of ${dateIssued.toLocaleDateString('en-KE', { month: 'long' })}, ${dateIssued.getFullYear()}`, 11);
+    yPosition += 10;
+
+    // Signature line
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPosition, margin + 80, yPosition);
+    yPosition += 7;
+    addText(noticeData.landlordName || 'Landlord', 11, 'left', false);
+    addText('Landlord', 10, 'left', false);
+
+  } else {
+    // TENANT-INITIATED NOTICE
+
+    // TO Section
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    addText(`To: ${noticeData.landlordName || 'Landlord'} – Landlord`, 11, 'left', true);
+    doc.setFont('helvetica', 'normal');
+    addText(`Contact: ${noticeData.landlordEmail || noticeData.landlordContact || '…………………………………..'}`, 10);
+    addText(`Premises: ${noticeData.propertyName || 'Property Address'}${noticeData.unit ? ' – House No. ' + noticeData.unit : ''}`, 10);
+
+    yPosition += 5;
+
+    // Main body
+    addText(`I, ${noticeData.tenantName || 'Tenant'}, the lawful tenant of the above-mentioned premises, hereby give notice of my intention to vacate the premises, effective from the ${moveOutDate.getDate()}${getDaySuffix(moveOutDate.getDate())} day of ${moveOutDate.toLocaleDateString('en-KE', { month: 'long' })}, ${moveOutDate.getFullYear()}.`, 11);
+
     yPosition += 3;
+
+    if (noticeData.reason) {
+      addText('Reason for vacating:', 11, 'left', true);
+      addText(noticeData.reason, 11);
+      yPosition += 3;
+    }
+
+    if (noticeData.additionalNotes) {
+      addText('Additional information:', 11, 'left', true);
+      addText(noticeData.additionalNotes, 11);
+      yPosition += 3;
+    }
+
+    yPosition += 5;
+
+    // Requirements
+    addText(`This notice is given in accordance with the tenancy agreement, which requires ${noticeData.noticePeriod || 30} days' notice. I will ensure that all outstanding rent and utility bills are settled before vacating.`, 11);
+
+    yPosition += 10;
+
+    // Date and signature
+    addText(`Dated this ${dateIssued.getDate()}${getDaySuffix(dateIssued.getDate())} day of ${dateIssued.toLocaleDateString('en-KE', { month: 'long' })}, ${dateIssued.getFullYear()}`, 11);
+    yPosition += 10;
+
+    // Signature line
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPosition, margin + 80, yPosition);
+    yPosition += 7;
+    addText(noticeData.tenantName || 'Tenant', 11, 'left', false);
+    addText('Tenant', 10, 'left', false);
   }
-
-  yPosition += 5;
-
-  // Requirements Section
-  addText('REQUIREMENTS:', 12, 'left', true);
-  const requirements = [
-    `• Vacate the premises by ${moveOutDate}`,
-    '• Settle all outstanding rent and utility bills',
-    '• Property inspection will be scheduled prior to move-out',
-    '• Return all keys, access cards, and property items',
-    '• Deposit refund (if applicable) subject to property inspection results',
-    '• Leave the property in good condition as per the tenancy agreement'
-  ];
-
-  requirements.forEach(req => {
-    addText(req, 10);
-  });
-
-  yPosition += 10;
-  addLine();
-
-  // Footer
-  addText('This is a legally binding notice. For any inquiries, please contact the parties mentioned above.', 9, 'center');
-  yPosition += 5;
-
-  addText(`Issued by: ${initiator === 'landlord' ? noticeData.landlordName : noticeData.tenantName}`, 10);
-  addText(`Date: ${dateIssued}`, 10);
-  addText(`Reference: ${referenceNumber}`, 10);
 
   yPosition += 15;
 
-  // Signature line
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition, margin + 60, yPosition);
+  // Acknowledgment section
+  if (yPosition > pageHeight - 60) {
+    doc.addPage();
+    yPosition = 20;
+  }
+
+  addLine();
+  doc.setFont('helvetica', 'bold');
+  addText('ACKNOWLEDGMENT OF RECEIPT', 12, 'left', true);
+  doc.setFont('helvetica', 'normal');
   yPosition += 5;
-  addText('Authorized Signature', 9);
+
+  addText('I acknowledge receipt of this notice:', 10);
+  yPosition += 10;
+
+  addText('Name: _________________________________________', 10);
+  yPosition += 10;
+
+  addText('Signature: _____________________________________', 10);
+  yPosition += 10;
+
+  addText('Date: __________________________________________', 10);
+  yPosition += 10;
 
   // Watermark footer
   doc.setFontSize(8);
