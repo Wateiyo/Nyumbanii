@@ -3543,48 +3543,119 @@ const TenantDashboard = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {/* Move-out notices list - Full implementation from move-out view will go here */}
                       {moveOutNotices.map((notice) => (
-                        <div key={notice.id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div key={notice.id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition">
+                          {/* Header */}
                           <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h4 className="font-semibold text-lg text-gray-900 dark:text-white">Move-Out Notice</h4>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Reference: {notice.referenceNumber}</p>
+                            <div className="flex items-start gap-3">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                notice.status === 'submitted' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                notice.status === 'acknowledged' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                                notice.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30' :
+                                'bg-red-100 dark:bg-red-900/30'
+                              }`}>
+                                <DoorOpen className={`w-6 h-6 ${
+                                  notice.status === 'submitted' ? 'text-yellow-600 dark:text-yellow-400' :
+                                  notice.status === 'acknowledged' ? 'text-blue-600 dark:text-blue-400' :
+                                  notice.status === 'approved' ? 'text-green-600 dark:text-green-400' :
+                                  'text-red-600 dark:text-red-400'
+                                }`} />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-lg text-gray-900 dark:text-white">
+                                  Move-Out Notice
+                                </h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Reference: {notice.referenceNumber}
+                                </p>
+                              </div>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                               notice.status === 'submitted' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
                               notice.status === 'acknowledged' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                              'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                              notice.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                              'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                             }`}>
                               {notice.status === 'submitted' ? 'Pending' :
-                               notice.status === 'acknowledged' ? 'Acknowledged' : 'Approved'}
+                               notice.status === 'acknowledged' ? 'Acknowledged' :
+                               notice.status === 'approved' ? 'Approved' :
+                               notice.status}
                             </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+
+                          {/* Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Move-Out Date</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Property</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.propertyName}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Unit</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.unit}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Move-Out Date</p>
                               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                {notice.intendedMoveOutDate?.toDate ? notice.intendedMoveOutDate.toDate().toLocaleDateString() : new Date(notice.intendedMoveOutDate).toLocaleDateString()}
+                                {notice.intendedMoveOutDate?.toDate ?
+                                  notice.intendedMoveOutDate.toDate().toLocaleDateString() :
+                                  new Date(notice.intendedMoveOutDate).toLocaleDateString()}
                               </p>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Notice Period</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notice Submitted</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {notice.noticeSubmittedDate?.toDate ?
+                                  notice.noticeSubmittedDate.toDate().toLocaleDateString() :
+                                  new Date(notice.noticeSubmittedDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Reason</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.reason}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notice Period</p>
                               <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.noticePeriod} days</p>
                             </div>
                           </div>
-                          {notice.legalNoticeURL && (
-                            <div className="mt-4">
+
+                          {/* Additional Notes */}
+                          {notice.additionalNotes && (
+                            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Additional Notes</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-300">{notice.additionalNotes}</p>
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            {notice.legalNoticeURL && (
                               <a
                                 href={notice.legalNoticeURL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2 border border-orange-600 text-orange-600 rounded-lg hover:bg-orange-50 transition text-sm font-medium"
+                                className="flex items-center gap-2 px-4 py-2 border border-orange-600 dark:border-orange-400 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition text-sm font-medium"
                               >
                                 <Download className="w-4 h-4" />
                                 Download Legal Notice
                               </a>
-                            </div>
-                          )}
+                            )}
+                            {notice.status === 'submitted' && (
+                              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Clock className="w-4 h-4" />
+                                <span>Awaiting landlord acknowledgment</span>
+                              </div>
+                            )}
+                            {notice.status === 'acknowledged' && (
+                              <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Acknowledged by landlord on {notice.acknowledgedAt?.toDate ?
+                                  notice.acknowledgedAt.toDate().toLocaleDateString() :
+                                  new Date(notice.acknowledgedAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
