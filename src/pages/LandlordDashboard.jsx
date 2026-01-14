@@ -5088,7 +5088,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* M-Pesa Reconciliation Tab Content */}
         {paymentsTab === 'mpesa' && (
           <MpesaReconciliation
-            landlordId={user.uid}
+            landlordId={currentUser.uid}
             properties={properties}
             tenants={tenants}
           />
@@ -5138,7 +5138,7 @@ const handleViewTenantDetails = (tenant) => {
         {/* Leases Tab Content */}
         {documentsTab === 'leases' && (
           <LeaseManagement
-            landlordId={user.uid}
+            landlordId={currentUser.uid}
             properties={properties}
             tenants={tenants}
           />
@@ -5162,7 +5162,7 @@ const handleViewTenantDetails = (tenant) => {
   <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
     <div className="px-6 pb-8 pt-6">
       <LeaseManagement
-        landlordId={user.uid}
+        landlordId={currentUser.uid}
         properties={properties}
         tenants={tenants}
       />
@@ -5175,7 +5175,7 @@ const handleViewTenantDetails = (tenant) => {
   <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
     <div className="px-6 pb-8 pt-6">
       <MpesaReconciliation
-        landlordId={user.uid}
+        landlordId={currentUser.uid}
         properties={properties}
         tenants={tenants}
       />
@@ -5200,7 +5200,7 @@ const handleViewTenantDetails = (tenant) => {
   <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
     <div className="px-6 pb-8 pt-6">
       <LeaseManagement
-        landlordId={user.uid}
+        landlordId={currentUser.uid}
         properties={properties}
         tenants={tenants}
       />
@@ -5213,7 +5213,7 @@ const handleViewTenantDetails = (tenant) => {
   <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
     <div className="px-6 pb-8 pt-6">
       <MpesaReconciliation
-        landlordId={user.uid}
+        landlordId={currentUser.uid}
         properties={properties}
         tenants={tenants}
       />

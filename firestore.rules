@@ -153,5 +153,37 @@ service cloud.firestore {
       // Only server (via Cloud Functions) can write power outages
       allow write: if false;
     }
+
+    // Tenant Applications collection
+    match /tenantApplications/{applicationId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Activity Log collection
+    match /activityLog/{logId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Move-Out Notices collection
+    match /moveOutNotices/{noticeId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Leases collection
+    match /leases/{leaseId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // SMS Log collection
+    match /smsLog/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only server can write
+    }
+
+    // WhatsApp Log collection
+    match /whatsappLog/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only server can write
+    }
   }
 }

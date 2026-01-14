@@ -262,6 +262,9 @@ const TenantDashboard = () => {
   // Unread messages counter
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
+  // Documents tab state
+  const [documentsTab, setDocumentsTab] = useState('uploaded'); // 'uploaded', 'leases', 'move-out'
+
   // ============ FIREBASE REALTIME DATA ============
 
   // Fetch tenant data to get their landlordId
@@ -2636,8 +2639,6 @@ const TenantDashboard = () => {
             { name: 'Maintenance', icon: Wrench, view: 'maintenance' },
             { name: 'Documents', icon: FileText, view: 'documents' },
             { name: 'Messages', icon: MessageSquare, view: 'messages' },
-            { name: 'Lease Agreement', icon: FileSignature, view: 'leases' },
-            { name: 'Move-Out Notice', icon: DoorOpen, view: 'move-out' },
             { name: 'Updates & Memos', icon: Megaphone, view: 'updates' },
             { name: 'Available Listings', icon: Search, view: 'listings' },
             { name: 'Settings', icon: Settings, view: 'settings' }
@@ -3356,67 +3357,238 @@ const TenantDashboard = () => {
           {/* Documents View */}
           {currentView === 'documents' && (
             <div className="space-y-6 w-full max-w-full px-4 lg:px-6">
-              {/* Blue Banner */}
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Documents</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Access your lease agreements and receipts</p>
-                </div>
+              {/* Header */}
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Documents</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Access your uploaded documents, lease agreements, and move-out notices</p>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
                 <button
-                  onClick={() => setShowDocumentUploadModal(true)}
-                  className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                  onClick={() => setDocumentsTab('uploaded')}
+                  className={`px-6 py-3 font-semibold transition ${
+                    documentsTab === 'uploaded'
+                      ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
                 >
-                  <Upload className="w-5 h-5" />
-                  Upload Document
+                  <div className="flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    Uploaded Documents
+                  </div>
+                </button>
+                <button
+                  onClick={() => setDocumentsTab('leases')}
+                  className={`px-6 py-3 font-semibold transition ${
+                    documentsTab === 'leases'
+                      ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <FileSignature className="w-4 h-4" />
+                    Lease Agreements
+                  </div>
+                </button>
+                <button
+                  onClick={() => setDocumentsTab('move-out')}
+                  className={`px-6 py-3 font-semibold transition ${
+                    documentsTab === 'move-out'
+                      ? 'border-b-2 border-[#003366] text-[#003366] dark:text-blue-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <DoorOpen className="w-4 h-4" />
+                    Move-Out Notices
+                  </div>
                 </button>
               </div>
 
-              {documents.length === 0 ? (
-                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Documents Yet</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">Upload your first document to get started</p>
-                  <button
-                    onClick={() => setShowDocumentUploadModal(true)}
-                    className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
-                  >
-                    <Upload className="w-5 h-5" />
-                    Upload Document
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                  {documents.map((doc) => (
-                    <div key={doc.id} className="bg-white dark:bg-gray-800 p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition flex items-center gap-4 lg:gap-6 min-h-[120px] lg:min-h-[140px]">
-                      <FileText className="w-12 h-12 lg:w-14 lg:h-14 text-[#003366] dark:text-blue-400 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white truncate">{doc.name}</h4>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{doc.type}</span>
-                            <button
-                              onClick={() => handleDeleteDocument(doc)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                              title="Delete document"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                          <span>{doc.date}</span>
-                          <span>{doc.size}</span>
-                        </div>
-                      </div>
+              {/* Uploaded Documents Tab */}
+              {documentsTab === 'uploaded' && (
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setShowDocumentUploadModal(true)}
+                      className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold whitespace-nowrap flex items-center gap-2"
+                    >
+                      <Upload className="w-5 h-5" />
+                      Upload Document
+                    </button>
+                  </div>
+
+                  {documents.length === 0 ? (
+                    <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Documents Yet</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6">Upload your first document to get started</p>
                       <button
-                        onClick={() => handleDownloadDocument(doc)}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white dark:hover:text-white transition text-sm font-medium flex-shrink-0"
+                        onClick={() => setShowDocumentUploadModal(true)}
+                        className="px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-semibold inline-flex items-center gap-2"
                       >
-                        <Eye className="w-4 h-4" />
-                        View Document
+                        <Upload className="w-5 h-5" />
+                        Upload Document
                       </button>
                     </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                      {documents.map((doc) => (
+                        <div key={doc.id} className="bg-white dark:bg-gray-800 p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition flex items-center gap-4 lg:gap-6 min-h-[120px] lg:min-h-[140px]">
+                          <FileText className="w-12 h-12 lg:w-14 lg:h-14 text-[#003366] dark:text-blue-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                              <h4 className="font-semibold text-base lg:text-lg text-gray-900 dark:text-white truncate">{doc.name}</h4>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{doc.type}</span>
+                                <button
+                                  onClick={() => handleDeleteDocument(doc)}
+                                  className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                                  title="Delete document"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                              <span>{doc.date}</span>
+                              <span>{doc.size}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDownloadDocument(doc)}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#003366] dark:border-blue-400 text-[#003366] dark:text-blue-400 rounded-lg hover:bg-[#003366] dark:hover:bg-blue-400 hover:text-white dark:hover:text-white transition text-sm font-medium flex-shrink-0"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View Document
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Lease Agreements Tab - Content moved here from separate view */}
+              {documentsTab === 'leases' && (
+                <div className="space-y-4">
+                  {/* Loading State */}
+                  {loadingLeases && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-200 dark:border-gray-700">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto"></div>
+                      <p className="text-gray-600 dark:text-gray-400 mt-4">Loading lease agreements...</p>
+                    </div>
+                  )}
+
+                  {/* No Leases State */}
+                  {!loadingLeases && leases.length === 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center border border-gray-200 dark:border-gray-700">
+                      <FileSignature className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Lease Agreement Yet</h3>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Your landlord hasn't created a lease agreement for you yet. <br />
+                        Contact your landlord if you need a lease agreement.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Leases List - Full implementation from leases view will go here */}
+                  {!loadingLeases && leases.length > 0 && leases.map((lease) => (
+                    <div key={lease.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      {/* This is a placeholder - the full lease rendering code will be moved here */}
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{lease.propertyName} - Unit {lease.unit}</h3>
+                        <p className="text-gray-600 dark:text-gray-400">View full lease details in the Lease Agreement section</p>
+                      </div>
+                    </div>
                   ))}
+                </div>
+              )}
+
+              {/* Move-Out Notices Tab - Content moved here from separate view */}
+              {documentsTab === 'move-out' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3 flex-1 mr-4">
+                      <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-1">Legal Requirements</h4>
+                        <p className="text-xs text-blue-800 dark:text-blue-400">
+                          Under Kenyan law, you must provide a minimum of 30 days written notice before vacating a rental property.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowMoveOutModal(true)}
+                      className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold whitespace-nowrap flex items-center gap-2"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Submit Notice
+                    </button>
+                  </div>
+
+                  {moveOutNotices.length === 0 ? (
+                    <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <DoorOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Move-Out Notices</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6">You haven't submitted any move-out notices yet</p>
+                      <button
+                        onClick={() => setShowMoveOutModal(true)}
+                        className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold inline-flex items-center gap-2"
+                      >
+                        <Plus className="w-5 h-5" />
+                        Submit Move-Out Notice
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Move-out notices list - Full implementation from move-out view will go here */}
+                      {moveOutNotices.map((notice) => (
+                        <div key={notice.id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h4 className="font-semibold text-lg text-gray-900 dark:text-white">Move-Out Notice</h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Reference: {notice.referenceNumber}</p>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              notice.status === 'submitted' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                              notice.status === 'acknowledged' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                              'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                            }`}>
+                              {notice.status === 'submitted' ? 'Pending' :
+                               notice.status === 'acknowledged' ? 'Acknowledged' : 'Approved'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Move-Out Date</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {notice.intendedMoveOutDate?.toDate ? notice.intendedMoveOutDate.toDate().toLocaleDateString() : new Date(notice.intendedMoveOutDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Notice Period</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{notice.noticePeriod} days</p>
+                            </div>
+                          </div>
+                          {notice.legalNoticeURL && (
+                            <div className="mt-4">
+                              <a
+                                href={notice.legalNoticeURL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 border border-orange-600 text-orange-600 rounded-lg hover:bg-orange-50 transition text-sm font-medium"
+                              >
+                                <Download className="w-4 h-4" />
+                                Download Legal Notice
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
