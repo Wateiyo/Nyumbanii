@@ -1605,8 +1605,8 @@ const handleEditProperty = async () => {
         propertyName: selectedTenantForNotice.property || '',
         unit: selectedTenantForNotice.unit || '',
         landlordId: currentUser.uid,
-        landlordName: landlordData?.name || currentUser.displayName || '',
-        landlordEmail: landlordData?.email || currentUser.email || '',
+        landlordName: userProfile?.name || currentUser.displayName || '',
+        landlordEmail: userProfile?.email || currentUser.email || '',
         intendedMoveOutDate: moveOutDate,
         noticeSubmittedDate: new Date(),
         noticePeriod: landlordMoveOutData.noticePeriod,
@@ -1660,7 +1660,7 @@ const handleEditProperty = async () => {
       // Log activity
       await addDoc(collection(db, 'activityLog'), {
         userId: currentUser.uid,
-        userName: landlordData?.name || currentUser.displayName || '',
+        userName: userProfile?.name || currentUser.displayName || '',
         userRole: 'landlord',
         propertyId: selectedTenantForNotice.propertyId || '',
         unit: selectedTenantForNotice.unit || '',
