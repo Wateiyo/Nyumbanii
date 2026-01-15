@@ -39,8 +39,23 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.landlordId == request.auth.uid;
     }
     
+    // Landlords collection
+    match /landlords/{landlordId} {
+      allow read, write: if isAuthenticated();
+    }
+
     // Tenants collection
     match /tenants/{tenantId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Property Managers collection
+    match /propertyManagers/{managerId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Maintenance Staff collection
+    match /maintenanceStaff/{staffId} {
       allow read, write: if isAuthenticated();
     }
     

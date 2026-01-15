@@ -1,4 +1,4 @@
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 /**
@@ -53,10 +53,23 @@ export const markOnboardingComplete = async (userId, role) => {
     const collectionName = getRoleCollection(role);
     const userDocRef = doc(db, collectionName, userId);
 
-    await updateDoc(userDocRef, {
-      onboardingCompleted: true,
-      onboardingCompletedAt: new Date().toISOString()
-    });
+    // Check if document exists first
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      // Document exists, update it
+      await updateDoc(userDocRef, {
+        onboardingCompleted: true,
+        onboardingCompletedAt: new Date().toISOString()
+      });
+    } else {
+      // Document doesn't exist, create it with setDoc
+      await setDoc(userDocRef, {
+        onboardingCompleted: true,
+        onboardingCompletedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+    }
 
     // Also save to localStorage for quick access
     const localStorageKey = `onboarding_${userId}_${role}`;
