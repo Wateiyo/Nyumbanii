@@ -588,7 +588,22 @@ const Register = () => {
                     required
                   />
                   <label className="ml-2 text-sm text-white">
-                    I agree to the <span className="text-blue-200 hover:text-white underline cursor-pointer">Terms of Service</span> and <span className="text-blue-200 hover:text-white underline cursor-pointer">Privacy Policy</span>
+                    I agree to the{' '}
+                    <button
+                      type="button"
+                      onClick={() => window.open('/terms-of-service', '_blank')}
+                      className="text-blue-200 hover:text-white underline"
+                    >
+                      Terms of Service
+                    </button>
+                    {' '}and{' '}
+                    <button
+                      type="button"
+                      onClick={() => window.open('/privacy-policy', '_blank')}
+                      className="text-blue-200 hover:text-white underline"
+                    >
+                      Privacy Policy
+                    </button>
                   </label>
                 </div>
 
@@ -748,6 +763,27 @@ const Register = () => {
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <div className="absolute bottom-4 left-0 right-0 text-center">
+        <p className="text-sm text-white/70">
+          <button
+            type="button"
+            onClick={() => navigate('/privacy-policy')}
+            className="hover:text-white transition-colors underline"
+          >
+            Privacy Policy
+          </button>
+          {' • '}
+          <button
+            type="button"
+            onClick={() => navigate('/terms-of-service')}
+            className="hover:text-white transition-colors underline"
+          >
+            Terms of Service
+          </button>
+        </p>
+      </div>
     </div>
   );
 };

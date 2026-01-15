@@ -3,11 +3,9 @@ import { Play, Video, CheckCircle } from 'lucide-react';
 
 const VideoDemo = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
 
-  // You can replace this with your actual video URL (YouTube, Vimeo, or hosted video)
-  // For now, this is a placeholder that shows how to embed
-  const demoVideoUrl = 'https://www.youtube.com/embed/YOUR_VIDEO_ID';
+  // Self-hosted MP4 video from public/videos folder
+  const demoVideoUrl = '/videos/demo.mp4';
 
   const features = [
     'Property & Tenant Management',
@@ -68,27 +66,17 @@ const VideoDemo = () => {
                   </div>
                 </div>
               ) : (
-                // Video Player (iframe for YouTube/Vimeo or video tag for hosted)
+                // Self-hosted MP4 Video Player
                 <div className="w-full h-full">
-                  {/* YouTube/Vimeo Embed */}
-                  <iframe
-                    className="w-full h-full"
-                    src={`${demoVideoUrl}?autoplay=1`}
-                    title="Nyumbanii Product Demo"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-
-                  {/* Alternative: Self-hosted video */}
-                  {/* <video
+                  <video
                     className="w-full h-full"
                     controls
                     autoPlay
-                    src="/videos/nyumbanii-demo.mp4"
+                    src={demoVideoUrl}
+                    type="video/mp4"
                   >
                     Your browser does not support the video tag.
-                  </video> */}
+                  </video>
                 </div>
               )}
             </div>

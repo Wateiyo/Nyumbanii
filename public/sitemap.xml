@@ -52,4 +52,20 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- Terms of Service -->
+  <url>
+    <loc>https://nyumbanii.org/terms-of-service</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Privacy Policy -->
+  <url>
+    <loc>https://nyumbanii.org/privacy-policy</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
 </urlset>

@@ -341,6 +341,27 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-4 left-0 right-0 text-center">
+        <p className="text-sm text-white/70">
+          <button
+            type="button"
+            onClick={() => navigate('/privacy-policy')}
+            className="hover:text-white transition-colors underline"
+          >
+            Privacy Policy
+          </button>
+          {' • '}
+          <button
+            type="button"
+            onClick={() => navigate('/terms-of-service')}
+            className="hover:text-white transition-colors underline"
+          >
+            Terms of Service
+          </button>
+        </p>
+      </div>
     </div>
   );
 };
