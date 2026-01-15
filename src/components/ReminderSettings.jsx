@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, MessageSquare, Send, Clock, Settings, AlertCircle, CheckCircle, Mail, Check } from 'lucide-react';
-import { doc, getDoc, updateDoc, collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Bell, MessageSquare, Send, Settings, AlertCircle, CheckCircle, Mail, Check } from 'lucide-react';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 
@@ -18,13 +18,11 @@ const ReminderSettings = ({ landlordId }) => {
   const [selectedTenantsForReminder, setSelectedTenantsForReminder] = useState([]);
   const [selectedChannel, setSelectedChannel] = useState('email'); // 'email' or 'message' (in-app)
   const [tenants, setTenants] = useState([]);
-  const [smsLogs, setSmsLogs] = useState([]);
   const [sendingManual, setSendingManual] = useState(false);
 
   useEffect(() => {
     loadSettings();
     loadTenants();
-    loadRecentLogs();
   }, [landlordId]);
 
   const loadSettings = async () => {
@@ -55,25 +53,6 @@ const ReminderSettings = ({ landlordId }) => {
       setTenants(tenantsData);
     } catch (error) {
       console.error('Error loading tenants:', error);
-    }
-  };
-
-  const loadRecentLogs = async () => {
-    try {
-      const logsQuery = query(
-        collection(db, 'smsLog'),
-        where('landlordId', '==', landlordId),
-        orderBy('sentAt', 'desc'),
-        limit(10)
-      );
-      const logsSnapshot = await getDocs(logsQuery);
-      const logsData = logsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setSmsLogs(logsData);
-    } catch (error) {
-      console.error('Error loading logs:', error);
     }
   };
 
@@ -182,7 +161,6 @@ const ReminderSettings = ({ landlordId }) => {
         setShowManualReminder(false);
         setSelectedTenantsForReminder([]);
         setSelectedChannel('email');
-        loadRecentLogs();
       } else {
         alert('Failed to send reminders. Please try again.');
       }
@@ -394,61 +372,79 @@ const ReminderSettings = ({ landlordId }) => {
         </div>
       </div>
 
-      {/* Recent SMS Logs */}
+      {/* Reminder Best Practices */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5" />
-          Recent SMS Activity
+          <Mail className="w-5 h-5" />
+          Reminder Best Practices
         </h3>
-        {smsLogs.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-            No SMS activity yet
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {smsLogs.map(log => (
-              <div
-                key={log.id}
-                className="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {log.tenantName}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      log.type === 'rent_reminder' ? 'bg-blue-100 text-blue-800' :
-                      log.type === 'overdue_reminder' ? 'bg-red-100 text-red-800' :
-                      log.type === 'payment_confirmation' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-200 text-gray-800'
-                    }`}>
-                      {log.type.replace('_', ' ')}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    {log.message}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
-                    {log.sentAt?.toDate().toLocaleString() || 'Recently'}
-                  </p>
-                </div>
-                <div className={`ml-4 ${log.success ? 'text-green-600' : 'text-red-600'}`}>
-                  {log.success ? (
-                    <CheckCircle className="w-5 h-5" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5" />
-                  )}
-                </div>
-              </div>
-            ))}
+        <div className="space-y-4">
+          {/* Tip 1 */}
+          <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              1
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                Send Reminders Early
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                We recommend sending reminders 7, 3, and 1 day before rent is due. This gives tenants enough time to prepare and reduces late payments.
+              </p>
+            </div>
           </div>
-        )}
+
+          {/* Tip 2 */}
+          <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              2
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                Use In-App Messages for Quick Reminders
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                In-app messages appear instantly in your tenant's dashboard and send them a notification. Perfect for urgent reminders or follow-ups.
+              </p>
+            </div>
+          </div>
+
+          {/* Tip 3 */}
+          <div className="flex items-start gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              3
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                Keep Messages Professional and Friendly
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                A friendly tone maintains positive relationships while still being clear about payment expectations. Avoid aggressive language.
+              </p>
+            </div>
+          </div>
+
+          {/* Tip 4 */}
+          <div className="flex items-start gap-3 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+            <div className="flex-shrink-0 w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              4
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                Automate to Save Time
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Enable automated reminders above to save hours each month. The system will send reminders automatically based on your schedule.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Manual Reminder Modal with Channel Selection */}
       {showManualReminder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6 my-8">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 my-auto">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               Send Rent Reminder
             </h3>
@@ -459,7 +455,7 @@ const ReminderSettings = ({ landlordId }) => {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Select Tenant(s)
                 </label>
-                <div className="max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3 space-y-2">
+                <div className="max-h-40 sm:max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-2 sm:p-3 space-y-1 sm:space-y-2">
                   <label className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
                     <input
                       type="checkbox"
@@ -569,31 +565,33 @@ const ReminderSettings = ({ landlordId }) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button
                   onClick={() => {
                     setShowManualReminder(false);
                     setSelectedTenantsForReminder([]);
                     setSelectedChannel('email');
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSendManualReminder}
                   disabled={sendingManual || selectedTenantsForReminder.length === 0}
-                  className="flex-1 px-4 py-2 bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 text-white rounded-lg transition-all flex items-center justify-center gap-2 font-medium"
+                  className="flex-1 px-4 py-2.5 bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 text-white rounded-lg transition-all flex items-center justify-center gap-2 font-medium"
                 >
                   {sendingManual ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Sending...
+                      <span className="hidden sm:inline">Sending...</span>
+                      <span className="sm:hidden">Sending...</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      Send via {selectedChannel === 'email' ? 'Email' : 'In-App Message'}
+                      <span className="hidden sm:inline">Send via {selectedChannel === 'email' ? 'Email' : 'In-App Message'}</span>
+                      <span className="sm:hidden">Send {selectedChannel === 'email' ? 'Email' : 'Message'}</span>
                     </>
                   )}
                 </button>

@@ -4764,15 +4764,16 @@ const handleViewTenantDetails = (tenant) => {
                             </div>
 
                             <div className="flex flex-col gap-2">
-                              <div className="flex gap-2">
+                              {/* Primary action buttons - stack on mobile, row on desktop */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <button
                                   onClick={() => handleViewTenantDetails(tenant)}
-                                  className="flex-1 px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm">
+                                  className="px-3 sm:px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition text-sm font-medium">
                                   View Details
                                 </button>
                                 <button
                                   onClick={() => handleMessageTenant(tenant)}
-                                  className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm relative">
+                                  className="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm font-medium relative">
                                   Message
                                    {unreadMessages[tenant.id] > 0 && (
                                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
@@ -4780,18 +4781,26 @@ const handleViewTenantDetails = (tenant) => {
                                   </span>
                                     )}
                                 </button>
+                              </div>
+
+                              {/* Secondary action buttons - horizontal on all screens with icons */}
+                              <div className="flex gap-2">
                                 <button
                                   onClick={() => {
                                     setSelectedTenantForNotice(tenant);
                                     setShowMoveOutNoticeModal(true);
                                   }}
-                                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition text-sm flex items-center gap-2">
+                                  className="flex-1 px-2 sm:px-3 py-2 bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition text-xs sm:text-sm flex items-center justify-center gap-1"
+                                  title="Issue Move-Out Notice">
                                   <FileSignature className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Notice</span>
                                 </button>
                                 <button
                                   onClick={() => handleDeleteTenant(tenant.id, tenant.name)}
-                                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-sm flex items-center gap-2">
+                                  className="flex-1 px-2 sm:px-3 py-2 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition text-xs sm:text-sm flex items-center justify-center gap-1"
+                                  title="Delete Tenant">
                                   <Trash2 className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Delete</span>
                                 </button>
                               </div>
 
@@ -4810,7 +4819,7 @@ const handleViewTenantDetails = (tenant) => {
                                     });
                                     setShowInvitationModal(true);
                                   }}
-                                  className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm flex items-center justify-center gap-2">
+                                  className="w-full px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition text-sm font-medium flex items-center justify-center gap-2">
                                   <Share2 className="w-4 h-4" />
                                   Share Invitation
                                 </button>
@@ -4820,7 +4829,7 @@ const handleViewTenantDetails = (tenant) => {
                               {(!tenant.invitationToken || (tenant.status === 'active' && !tenant.userId)) && (
                                 <button
                                   onClick={() => handleResendTenantInvitation(tenant)}
-                                  className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm flex items-center justify-center gap-2">
+                                  className="w-full px-3 sm:px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition text-sm font-medium flex items-center justify-center gap-2">
                                   <Send className="w-4 h-4" />
                                   {tenant.invitationToken ? 'Resend Invitation' : 'Send Invitation'}
                                 </button>
