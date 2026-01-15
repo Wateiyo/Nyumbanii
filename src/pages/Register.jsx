@@ -368,7 +368,7 @@ const Register = () => {
                 </button>
               </div>
               <h1 className="text-4xl font-bold text-white mb-2">Create Your Account</h1>
-              <p className="text-blue-200 text-lg">Join Karibu Nyumbanii today</p>
+              <p className="text-blue-200 text-lg">Join Nyumbanii today</p>
 
               {/* Selected Plan Badge */}
               {pendingPlanUpgrade && (
