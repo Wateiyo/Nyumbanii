@@ -169,7 +169,7 @@ const TenantDashboard = () => {
   // Check if user needs onboarding
   useEffect(() => {
     const checkOnboarding = async () => {
-      if (currentUser && tenant) {
+      if (currentUser && tenantData) {
         try {
           const completed = await hasCompletedOnboarding(currentUser.uid, 'tenant');
           if (!completed) {
@@ -185,7 +185,7 @@ const TenantDashboard = () => {
     };
 
     checkOnboarding();
-  }, [currentUser, tenant]);
+  }, [currentUser, tenantData]);
 
   // Initialize editable profile when tenantData loads
   useEffect(() => {
