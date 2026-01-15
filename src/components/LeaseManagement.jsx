@@ -281,7 +281,7 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
     yPos = pageHeight - 15;
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text('Generated via Nyumbanii Property Management System - www.nyumbanii.co.ke', pageWidth / 2, yPos, { align: 'center' });
+    doc.text('Generated via Nyumbanii Property Management System - www.nyumbanii.org', pageWidth / 2, yPos, { align: 'center' });
     doc.text(`Agreement No: ${lease.leaseNumber || lease.id}`, pageWidth / 2, yPos + 5, { align: 'center' });
 
     return doc;

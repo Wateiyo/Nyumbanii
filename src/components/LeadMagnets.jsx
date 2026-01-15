@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Download, BookOpen, FileCheck, Wrench, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import LeadMagnetModal from './LeadMagnetModal';
 
 const LeadMagnets = () => {
+  const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState('ebook');
 
@@ -21,13 +23,13 @@ const LeadMagnets = () => {
     {
       id: 'checklist',
       icon: <FileCheck className="w-8 h-8" />,
-      title: 'Rent Collection Checklist',
-      description: 'Never miss a payment with this proven system',
+      title: 'Ultimate Rent Collection Checklist',
+      description: '60+ actionable steps to achieve 95% on-time payments',
       iconBg: 'bg-green-600',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200',
       highlight: 'FREE Download',
-      pages: 'Step-by-step'
+      pages: '6 pages'
     },
     {
       id: 'maintenance',
@@ -42,9 +44,15 @@ const LeadMagnets = () => {
     }
   ];
 
-  const openModal = (resourceId) => {
-    setSelectedResource(resourceId);
-    setModalOpen(true);
+  const handleResourceClick = (resourceId) => {
+    if (resourceId === 'checklist') {
+      navigate('/resources/rent-collection-checklist');
+    } else if (resourceId === 'maintenance') {
+      navigate('/resources/maintenance-guide');
+    } else {
+      setSelectedResource(resourceId);
+      setModalOpen(true);
+    }
   };
 
   return (
@@ -69,7 +77,7 @@ const LeadMagnets = () => {
               <div
                 key={resource.id}
                 className={`${resource.bgColor} border-2 ${resource.borderColor} rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group`}
-                onClick={() => openModal(resource.id)}
+                onClick={() => handleResourceClick(resource.id)}
               >
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 bg-white px-2 py-1 rounded-full text-xs font-bold text-gray-900 mb-3 shadow-sm">

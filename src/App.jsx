@@ -13,6 +13,8 @@ import TenantDashboard from './pages/TenantDashboard';
 import PropertyManagerDashboard from './pages/PropertyManagerDashboard';
 import MaintenanceStaffDashboard from './pages/MaintenanceStaffDashboard';
 import PropertyListings from './pages/Listings';
+import ChecklistDownload from './components/ChecklistDownload';
+import MaintenanceGuideDownload from './components/MaintenanceGuideDownload';
 
 function App() {
   return (
@@ -24,7 +26,9 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/listings" element={<PropertyListings />} />
-          
+          <Route path="/resources/rent-collection-checklist" element={<ChecklistDownload />} />
+          <Route path="/resources/maintenance-guide" element={<MaintenanceGuideDownload />} />
+
           {/* Protected Dashboard Routes */}
           <Route
             path="/landlord/dashboard"

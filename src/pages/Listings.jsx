@@ -197,7 +197,7 @@ const Listings = () => {
           description: data.description || 'No description available',
           landlord: 'Property Owner', // You can fetch landlord details separately
           phone: '+254 712 345 678', // Default or fetch from landlord profile
-          email: 'info@nyumbanii.co.ke', // Default or fetch from landlord profile
+          email: 'info@nyumbanii.org', // Default or fetch from landlord profile
           images: data.images && data.images.length > 0 ? data.images : [
             'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop'
           ],

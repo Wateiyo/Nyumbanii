@@ -467,7 +467,7 @@ const displayCalendarEvents = [...displayViewingBookings.map(v => ({...v, type: 
 
   const [profileSettings, setProfileSettings] = useState({
     name: userProfile?.displayName || 'Tom Doe',
-    email: userProfile?.email || 'tom@nyumbanii.co.ke',
+    email: userProfile?.email || 'tom@nyumbanii.org',
     phone: userProfile?.phone || '+254 712 345 678',
     company: userProfile?.companyName || 'Doe Properties Ltd',
     address: userProfile?.address || 'Westlands, Nairobi',

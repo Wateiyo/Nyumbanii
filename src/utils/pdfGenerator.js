@@ -222,7 +222,7 @@ export const generateLegalNoticePDF = (noticeData) => {
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
   doc.text('Generated via Nyumbanii Property Management System', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
-  doc.text('www.nyumbanii.co.ke', pageWidth / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
+  doc.text('www.nyumbanii.org', pageWidth / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
 
   return doc;
 };
@@ -412,7 +412,7 @@ export const generatePaymentReceiptPDF = (paymentData, tenantData = {}, landlord
   doc.setTextColor(150, 150, 150);
   doc.text('Generated via Nyumbanii Property Management System', pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 4;
-  doc.text('www.nyumbanii.co.ke', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('www.nyumbanii.org', pageWidth / 2, yPosition, { align: 'center' });
 
   return doc;
 };

@@ -1020,7 +1020,7 @@ exports.generateMonthlyReports = onSchedule(
 
                 <p>You can view detailed reports and analytics in your dashboard.</p>
 
-                <a href="https://nyumbanii.co.ke/landlord/dashboard"
+                <a href="https://nyumbanii.org/landlord/dashboard"
                    style="display: inline-block; background-color: #003366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
                   View Dashboard
                 </a>
@@ -2135,7 +2135,7 @@ exports.sendRentReminder = onCall(
           const resendClient = new Resend(resendKey);
 
           await resendClient.emails.send({
-            from: 'Nyumbanii <noreply@nyumbanii.co.ke>',
+            from: 'Nyumbanii <noreply@nyumbanii.org>',
             to: [tenantEmail],
             subject: 'Rent Payment Reminder',
             html: `
@@ -2205,7 +2205,7 @@ exports.sendRentReminder = onCall(
               const resendClient = new Resend(resendKey);
 
               await resendClient.emails.send({
-                from: 'Nyumbanii <noreply@nyumbanii.co.ke>',
+                from: 'Nyumbanii <noreply@nyumbanii.org>',
                 to: [tenantEmail],
                 subject: 'Rent Payment Reminder',
                 html: `<p>${message}</p>`

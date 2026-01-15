@@ -1844,7 +1844,7 @@ const TenantDashboard = () => {
       doc.setFontSize(8);
       doc.setFont('helvetica', 'italic');
       doc.text('Generated via Nyumbanii Property Management', 105, 285, { align: 'center' });
-      doc.text('www.nyumbanii.co.ke', 105, 290, { align: 'center' });
+      doc.text('www.nyumbanii.org', 105, 290, { align: 'center' });
 
       // Download
       const filename = `Lease_${lease.propertyName}_${lease.unit}_${lease.id.substring(0, 8)}.pdf`;

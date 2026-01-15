@@ -6,7 +6,7 @@
 
   <!-- Homepage -->
   <url>
-    <loc>https://nyumbanii.co.ke/</loc>
+    <loc>https://nyumbanii.org/</loc>
     <lastmod>2025-01-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -14,7 +14,7 @@
 
   <!-- Login Page -->
   <url>
-    <loc>https://nyumbanii.co.ke/login</loc>
+    <loc>https://nyumbanii.org/login</loc>
     <lastmod>2025-01-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -22,7 +22,7 @@
 
   <!-- Signup Page -->
   <url>
-    <loc>https://nyumbanii.co.ke/signup</loc>
+    <loc>https://nyumbanii.org/signup</loc>
     <lastmod>2025-01-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -30,10 +30,26 @@
 
   <!-- Listings Page -->
   <url>
-    <loc>https://nyumbanii.co.ke/listings</loc>
+    <loc>https://nyumbanii.org/listings</loc>
     <lastmod>2025-01-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+  </url>
+
+  <!-- Free Resource - Rent Collection Checklist -->
+  <url>
+    <loc>https://nyumbanii.org/resources/rent-collection-checklist</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Free Resource - Maintenance Guide -->
+  <url>
+    <loc>https://nyumbanii.org/resources/maintenance-guide</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
 </urlset>
