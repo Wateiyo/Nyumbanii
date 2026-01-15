@@ -301,7 +301,8 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
       const leaseData = {
         landlordId,
         landlordName: selectedProperty?.ownerName || 'Landlord',
-        tenantId: selectedTenant?.docId || leaseForm.tenantId, // Use docId (document ID) for tenant reference
+        tenantId: selectedTenant?.userId || selectedTenant?.id || leaseForm.tenantId, // Use userId (Firebase Auth ID) for tenant reference
+        tenantDocId: selectedTenant?.docId || leaseForm.tenantId, // Store document ID separately
         tenantName: selectedTenant?.name,
         tenantEmail: selectedTenant?.email,
         tenantPhone: selectedTenant?.phone,
