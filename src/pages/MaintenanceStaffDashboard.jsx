@@ -39,13 +39,17 @@ import {
   X,
   DollarSign,
   BarChart3,
-  AlertTriangle
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
 import EnhancedCalendar from '../components/EnhancedCalendar';
 import { canViewFinancials } from '../utils/formatters';
+import OnboardingWizard from '../components/OnboardingWizard';
+import { maintenanceStaffOnboardingSteps } from '../config/onboardingSteps';
+import { hasCompletedOnboarding, markOnboardingComplete } from '../utils/onboardingService';
 
 const MaintenanceStaffDashboard = () => {
   const navigate = useNavigate();
@@ -105,6 +109,9 @@ const MaintenanceStaffDashboard = () => {
   const [budgetInfo, setBudgetInfo] = useState(null);
   const [showBudgetSummary, setShowBudgetSummary] = useState(false);
 
+  // Onboarding wizard state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   // Quote submission states
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [selectedRequestForQuote, setSelectedRequestForQuote] = useState(null);
@@ -155,6 +162,27 @@ const MaintenanceStaffDashboard = () => {
     fetchTeamMember();
   }, [currentUser, navigate]);
 
+  // Check if user needs onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (currentUser && teamMember && !loading) {
+        try {
+          const completed = await hasCompletedOnboarding(currentUser.uid, 'maintenance');
+          if (!completed) {
+            // Small delay to let the dashboard load first
+            setTimeout(() => {
+              setShowOnboarding(true);
+            }, 500);
+          }
+        } catch (error) {
+          console.error('Error checking onboarding:', error);
+        }
+      }
+    };
+
+    checkOnboarding();
+  }, [currentUser, teamMember, loading]);
+
   // Fetch landlord team permissions
   useEffect(() => {
     if (!teamMember?.landlordId) return;
@@ -175,6 +203,33 @@ const MaintenanceStaffDashboard = () => {
 
     return () => unsubscribe();
   }, [teamMember?.landlordId]);
+
+  // ONBOARDING HANDLERS
+  const handleOnboardingComplete = async () => {
+    if (currentUser) {
+      try {
+        await markOnboardingComplete(currentUser.uid, 'maintenance');
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        // Still hide the wizard even if there's an error
+        setShowOnboarding(false);
+      }
+    }
+  };
+
+  const handleOnboardingSkip = async () => {
+    if (currentUser) {
+      try {
+        await markOnboardingComplete(currentUser.uid, 'maintenance');
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        // Still hide the wizard even if there's an error
+        setShowOnboarding(false);
+      }
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -1210,8 +1265,8 @@ const MaintenanceStaffDashboard = () => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'requests', 'properties', 'messages', 'calendar'].map((view) => {
-            const icons = { dashboard: Home, requests: Wrench, properties: Building, messages: MessageSquare, calendar: Calendar };
+          {['dashboard', 'requests', 'properties', 'messages', 'calendar', 'settings'].map((view) => {
+            const icons = { dashboard: Home, requests: Wrench, properties: Building, messages: MessageSquare, calendar: Calendar, settings: Settings };
             const Icon = icons[view];
             return (
               <button
@@ -1956,6 +2011,63 @@ const MaintenanceStaffDashboard = () => {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Settings View */}
+          {currentView === 'settings' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
+
+                {/* Profile Section */}
+                <div className="border-b border-gray-200 pb-6 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                      <p className="text-gray-900">{teamMember?.name || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <p className="text-gray-900">{teamMember?.email || currentUser?.email || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <p className="text-gray-900">{teamMember?.phone || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                      <p className="text-gray-900">Maintenance Staff</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Help Section */}
+                <div className="border-b border-gray-200 pb-6 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Help & Support</h3>
+                  <button
+                    onClick={() => setShowOnboarding(true)}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    <AlertCircle className="w-5 h-5" />
+                    View Tutorial Again
+                  </button>
+                  <p className="text-sm text-gray-500 mt-2">Restart the onboarding wizard to learn about dashboard features</p>
+                </div>
+
+                {/* Account Actions */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Account</h3>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 text-red-600 hover:text-red-700 font-medium"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Logout
+                  </button>
                 </div>
               </div>
             </div>
@@ -2771,6 +2883,16 @@ const MaintenanceStaffDashboard = () => {
       onClose={handleCloseMessageModal}
       senderRole="maintenance"
     />
+
+    {/* Onboarding Wizard */}
+    {showOnboarding && (
+      <OnboardingWizard
+        steps={maintenanceStaffOnboardingSteps}
+        onComplete={handleOnboardingComplete}
+        onSkip={handleOnboardingSkip}
+        userRole="Maintenance Staff"
+      />
+    )}
   </>
   );
 };

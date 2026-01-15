@@ -48,6 +48,9 @@ import {
   DoorOpen
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
+import OnboardingWizard from '../components/OnboardingWizard';
+import { tenantOnboardingSteps } from '../config/onboardingSteps';
+import { hasCompletedOnboarding, markOnboardingComplete } from '../utils/onboardingService';
 import PowerOutagesList from '../components/PowerOutagesList';
 import SignaturePad from '../components/SignaturePad';
 import jsPDF from 'jspdf';
@@ -77,6 +80,9 @@ const TenantDashboard = () => {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [showMoveOutModal, setShowMoveOutModal] = useState(false);
   const [submittingMoveOutNotice, setSubmittingMoveOutNotice] = useState(false);
+
+  // Onboarding wizard state
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
@@ -84,6 +90,13 @@ const TenantDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedListing, setSelectedListing] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [editableProfile, setEditableProfile] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    idNumber: '',
+    emergencyContact: ''
+  });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Loading states for Firebase operations
@@ -152,6 +165,40 @@ const TenantDashboard = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [preferences.darkMode]);
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (currentUser && tenant) {
+        try {
+          const completed = await hasCompletedOnboarding(currentUser.uid, 'tenant');
+          if (!completed) {
+            // Small delay to let the dashboard load first
+            setTimeout(() => {
+              setShowOnboarding(true);
+            }, 500);
+          }
+        } catch (error) {
+          console.error('Error checking onboarding:', error);
+        }
+      }
+    };
+
+    checkOnboarding();
+  }, [currentUser, tenant]);
+
+  // Initialize editable profile when tenantData loads
+  useEffect(() => {
+    if (tenantData) {
+      setEditableProfile({
+        name: tenantData.name || '',
+        email: tenantData.email || currentUser?.email || '',
+        phone: tenantData.phone || '',
+        idNumber: tenantData.idNumber || '',
+        emergencyContact: tenantData.emergencyContact || ''
+      });
+    }
+  }, [tenantData, currentUser]);
 
   // BASIC BOOKING DATA FOR LOGGED-IN TENANTS
   const [bookingData, setBookingData] = useState({
@@ -1255,6 +1302,65 @@ const TenantDashboard = () => {
     score += additionalScore;
 
     return Math.min(score, 100);
+  };
+
+  // ONBOARDING HANDLERS
+  const handleOnboardingComplete = async () => {
+    if (currentUser) {
+      try {
+        await markOnboardingComplete(currentUser.uid, 'tenant');
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        // Still hide the wizard even if there's an error
+        setShowOnboarding(false);
+      }
+    }
+  };
+
+  const handleOnboardingSkip = async () => {
+    if (currentUser) {
+      try {
+        await markOnboardingComplete(currentUser.uid, 'tenant');
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        // Still hide the wizard even if there's an error
+        setShowOnboarding(false);
+      }
+    }
+  };
+
+  // SAVE PROFILE HANDLER
+  const handleSaveProfile = async () => {
+    if (!currentUser || !tenantData) return;
+
+    try {
+      // Update Firestore with all profile settings including notifications
+      const tenantRef = doc(db, 'tenants', tenantData.id);
+      await updateDoc(tenantRef, {
+        name: profileSettings.name,
+        email: profileSettings.email,
+        phone: profileSettings.phone,
+        idNumber: profileSettings.idNumber,
+        emergencyContact: profileSettings.emergencyContact,
+        notifications: profileSettings.notifications,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update Firebase Auth displayName if name changed
+      if (profileSettings.name !== currentUser.displayName) {
+        await updateProfile(currentUser, {
+          displayName: profileSettings.name
+        });
+      }
+
+      setEditingProfile(false);
+      alert('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    }
   };
 
   // Submit Booking to Firebase
@@ -6147,6 +6253,16 @@ const TenantDashboard = () => {
           }}
           signerName={tenantData?.name || 'Tenant'}
           title="Tenant Signature"
+        />
+      )}
+
+      {/* Onboarding Wizard */}
+      {showOnboarding && (
+        <OnboardingWizard
+          steps={tenantOnboardingSteps}
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+          userRole="Tenant"
         />
       )}
 

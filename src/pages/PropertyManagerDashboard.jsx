@@ -41,13 +41,17 @@ import {
   Check,
   CheckCheck,
   AlertCircle,
-  Minus
+  Minus,
+  Settings
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
 import MaintenanceCostEstimateModal from '../components/MaintenanceCostEstimateModal';
 import MaintenanceCompleteWorkModal from '../components/MaintenanceCompleteWorkModal';
+import OnboardingWizard from '../components/OnboardingWizard';
+import { propertyManagerOnboardingSteps } from '../config/onboardingSteps';
+import { hasCompletedOnboarding, markOnboardingComplete } from '../utils/onboardingService';
 import MaintenanceQuoteModal from '../components/MaintenanceQuoteModal';
 import BudgetSummaryModal from '../components/BudgetSummaryModal';
 import EnhancedCalendar from '../components/EnhancedCalendar';
@@ -109,6 +113,9 @@ const PropertyManagerDashboard = () => {
   // Cost estimation states
   const [showEstimateModal, setShowEstimateModal] = useState(false);
   const [selectedRequestForEstimate, setSelectedRequestForEstimate] = useState(null);
+
+  // Onboarding wizard state
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [estimateData, setEstimateData] = useState({
     estimatedCost: '',
     estimateNotes: '',
@@ -179,6 +186,27 @@ const PropertyManagerDashboard = () => {
     fetchTeamMember();
   }, [currentUser, navigate]);
 
+  // Check if user needs onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (currentUser && teamMember && !loading) {
+        try {
+          const completed = await hasCompletedOnboarding(currentUser.uid, 'property_manager');
+          if (!completed) {
+            // Small delay to let the dashboard load first
+            setTimeout(() => {
+              setShowOnboarding(true);
+            }, 500);
+          }
+        } catch (error) {
+          console.error('Error checking onboarding:', error);
+        }
+      }
+    };
+
+    checkOnboarding();
+  }, [currentUser, teamMember, loading]);
+
   // Fetch landlord team permissions
   useEffect(() => {
     if (!teamMember?.landlordId) return;
@@ -199,6 +227,33 @@ const PropertyManagerDashboard = () => {
 
     return () => unsubscribe();
   }, [teamMember?.landlordId]);
+
+  // ONBOARDING HANDLERS
+  const handleOnboardingComplete = async () => {
+    if (currentUser) {
+      try {
+        await markOnboardingComplete(currentUser.uid, 'property_manager');
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        // Still hide the wizard even if there's an error
+        setShowOnboarding(false);
+      }
+    }
+  };
+
+  const handleOnboardingSkip = async () => {
+    if (currentUser) {
+      try {
+        await markOnboardingComplete(currentUser.uid, 'property_manager');
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        // Still hide the wizard even if there's an error
+        setShowOnboarding(false);
+      }
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -1473,8 +1528,8 @@ const PropertyManagerDashboard = () => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {['dashboard', 'properties', 'viewings', 'tenants', 'maintenance', 'messages', 'calendar'].map((view) => {
-            const icons = { dashboard: Home, properties: Building, viewings: CalendarCheck, tenants: Users, maintenance: Wrench, messages: MessageSquare, calendar: Calendar };
+          {['dashboard', 'properties', 'viewings', 'tenants', 'maintenance', 'messages', 'calendar', 'settings'].map((view) => {
+            const icons = { dashboard: Home, properties: Building, viewings: CalendarCheck, tenants: Users, maintenance: Wrench, messages: MessageSquare, calendar: Calendar, settings: Settings };
             const Icon = icons[view];
             return (
               <button
@@ -2474,6 +2529,63 @@ const PropertyManagerDashboard = () => {
               }}
             />
           )}
+
+          {/* Settings View */}
+          {currentView === 'settings' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
+
+                {/* Profile Section */}
+                <div className="border-b border-gray-200 pb-6 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                      <p className="text-gray-900">{teamMember?.name || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <p className="text-gray-900">{teamMember?.email || currentUser?.email || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <p className="text-gray-900">{teamMember?.phone || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                      <p className="text-gray-900">Property Manager</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Help Section */}
+                <div className="border-b border-gray-200 pb-6 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Help & Support</h3>
+                  <button
+                    onClick={() => setShowOnboarding(true)}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    <AlertCircle className="w-5 h-5" />
+                    View Tutorial Again
+                  </button>
+                  <p className="text-sm text-gray-500 mt-2">Restart the onboarding wizard to learn about dashboard features</p>
+                </div>
+
+                {/* Account Actions */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Account</h3>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 text-red-600 hover:text-red-700 font-medium"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2563,6 +2675,16 @@ const PropertyManagerDashboard = () => {
       onClose={handleCloseMessageModal}
       senderRole="property_manager"
     />
+
+    {/* Onboarding Wizard */}
+    {showOnboarding && (
+      <OnboardingWizard
+        steps={propertyManagerOnboardingSteps}
+        onComplete={handleOnboardingComplete}
+        onSkip={handleOnboardingSkip}
+        userRole="Property Manager"
+      />
+    )}
   </>
   );
 };

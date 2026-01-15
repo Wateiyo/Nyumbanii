@@ -105,6 +105,9 @@ import ApplicationsManager from '../components/ApplicationsManager';
 import MpesaReconciliation from '../components/MpesaReconciliation';
 import LeaseManagement from '../components/LeaseManagement';
 import { generatePaymentReceiptPDF, generateLegalNoticePDF, downloadPDF, pdfToBlob } from '../utils/pdfGenerator';
+import OnboardingWizard from '../components/OnboardingWizard';
+import { landlordOnboardingSteps } from '../config/onboardingSteps';
+import { hasCompletedOnboarding, markOnboardingComplete } from '../utils/onboardingService';
 
 const LandlordDashboard = () => {
   const navigate = useNavigate();
@@ -123,6 +126,13 @@ const LandlordDashboard = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showListingModal, setShowListingModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [editableProfile, setEditableProfile] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    businessName: '',
+    idNumber: ''
+  });
   const [selectedListing, setSelectedListing] = useState(null);
   const [editingListing, setEditingListing] = useState(null);
   const [showEditListingModal, setShowEditListingModal] = useState(false);
@@ -197,6 +207,9 @@ const LandlordDashboard = () => {
 
   // Move-out notice state (landlord-initiated)
   const [showMoveOutNoticeModal, setShowMoveOutNoticeModal] = useState(false);
+
+  // Onboarding wizard state
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showTenantSelectorModal, setShowTenantSelectorModal] = useState(false);
   const [selectedTenantForNotice, setSelectedTenantForNotice] = useState(null);
   const [submittingMoveOutNotice, setSubmittingMoveOutNotice] = useState(false);
@@ -1120,6 +1133,40 @@ useEffect(() => {
   }
 }, [currentUser]);
 
+// Check if user needs onboarding
+useEffect(() => {
+  const checkOnboarding = async () => {
+    if (currentUser && !loading) {
+      try {
+        const completed = await hasCompletedOnboarding(currentUser.uid, 'landlord');
+        if (!completed) {
+          // Small delay to let the dashboard load first
+          setTimeout(() => {
+            setShowOnboarding(true);
+          }, 500);
+        }
+      } catch (error) {
+        console.error('Error checking onboarding:', error);
+      }
+    }
+  };
+
+  checkOnboarding();
+}, [currentUser, loading]);
+
+// Initialize editable profile when userProfile loads
+useEffect(() => {
+  if (userProfile) {
+    setEditableProfile({
+      name: userProfile.name || '',
+      email: userProfile.email || currentUser?.email || '',
+      phone: userProfile.phone || '',
+      businessName: userProfile.businessName || '',
+      idNumber: userProfile.idNumber || ''
+    });
+  }
+}, [userProfile, currentUser]);
+
 // Also add a check for unauthenticated users
 useEffect(() => {
   if (currentUser === null) {
@@ -1127,6 +1174,73 @@ useEffect(() => {
     navigate('/login');
   }
 }, [currentUser, navigate]);
+
+  // ONBOARDING HANDLERS
+  const handleOnboardingComplete = async () => {
+    if (currentUser) {
+      try {
+        await markOnboardingComplete(currentUser.uid, 'landlord');
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        // Still hide the wizard even if there's an error
+        setShowOnboarding(false);
+      }
+    }
+  };
+
+  const handleOnboardingSkip = async () => {
+    if (currentUser) {
+      try {
+        await markOnboardingComplete(currentUser.uid, 'landlord');
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        // Still hide the wizard even if there's an error
+        setShowOnboarding(false);
+      }
+    }
+  };
+
+  // SAVE PROFILE HANDLER
+  const handleSaveProfile = async () => {
+    if (!currentUser) return;
+
+    try {
+      // Update Firestore
+      const landlordRef = doc(db, 'landlords', currentUser.uid);
+      await updateDoc(landlordRef, {
+        name: editableProfile.name,
+        email: editableProfile.email,
+        phone: editableProfile.phone,
+        businessName: editableProfile.businessName,
+        idNumber: editableProfile.idNumber,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update Firebase Auth displayName if name changed
+      if (editableProfile.name !== currentUser.displayName) {
+        await updateProfile(currentUser, {
+          displayName: editableProfile.name
+        });
+      }
+
+      // Update local userProfile via AuthContext
+      await updateUserProfile({
+        name: editableProfile.name,
+        email: editableProfile.email,
+        phone: editableProfile.phone,
+        businessName: editableProfile.businessName,
+        idNumber: editableProfile.idNumber
+      });
+
+      setEditingProfile(false);
+      alert('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    }
+  };
 
   // PROFILE PHOTO UPLOAD
   const handleProfilePhotoUpload = async (event) => {
@@ -6584,7 +6698,7 @@ const handleViewTenantDetails = (tenant) => {
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Settings</h2>
             <button
-              onClick={() => setEditingProfile(!editingProfile)}
+              onClick={() => editingProfile ? handleSaveProfile() : setEditingProfile(true)}
               className="px-4 py-2 sm:px-6 sm:py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium text-sm sm:text-base"
             >
               {editingProfile ? 'Save Profile' : 'Edit Profile'}
@@ -6645,17 +6759,19 @@ const handleViewTenantDetails = (tenant) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
                 <input
                   type="text"
-                  value={userProfile?.name || 'Test User'}
+                  value={editableProfile.name}
+                  onChange={(e) => setEditableProfile({...editableProfile, name: e.target.value})}
                   disabled={!editingProfile}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                 <input
                   type="email"
-                  value={userProfile?.email || 'test@test.com'}
+                  value={editableProfile.email}
+                  onChange={(e) => setEditableProfile({...editableProfile, email: e.target.value})}
                   disabled={!editingProfile}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
@@ -6665,29 +6781,34 @@ const handleViewTenantDetails = (tenant) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
                 <input
                   type="tel"
-                  value={userProfile?.phone || '+25470000000'}
+                  value={editableProfile.phone}
+                  onChange={(e) => setEditableProfile({...editableProfile, phone: e.target.value})}
                   disabled={!editingProfile}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Business Name</label>
                 <input
                   type="text"
-                  value={userProfile?.companyName || 'Doe Properties Ltd'}
+                  value={editableProfile.businessName}
+                  onChange={(e) => setEditableProfile({...editableProfile, businessName: e.target.value})}
                   disabled={!editingProfile}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Optional"
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID Number</label>
                 <input
                   type="text"
-                  value={userProfile?.address || 'Westlands, Nairobi'}
+                  value={editableProfile.idNumber}
+                  onChange={(e) => setEditableProfile({...editableProfile, idNumber: e.target.value})}
                   disabled={!editingProfile}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Optional"
                 />
               </div>
             </div>
@@ -6750,11 +6871,15 @@ const handleViewTenantDetails = (tenant) => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Receive updates via email</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                <input
+                  type="checkbox"
+                  checked={communicationPrefs.email}
+                  onChange={(e) => setCommunicationPrefs({...communicationPrefs, email: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
               </label>
             </div>
-
 
             <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
               <div className="flex-1">
@@ -6762,8 +6887,13 @@ const handleViewTenantDetails = (tenant) => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Receive browser push notifications</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
+                <input
+                  type="checkbox"
+                  checked={communicationPrefs.push}
+                  onChange={(e) => setCommunicationPrefs({...communicationPrefs, push: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003366]"></div>
               </label>
             </div>
           </div>
@@ -10606,6 +10736,16 @@ const handleViewTenantDetails = (tenant) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Onboarding Wizard */}
+      {showOnboarding && (
+        <OnboardingWizard
+          steps={landlordOnboardingSteps}
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+          userRole="Landlord"
+        />
       )}
 
     </div>
