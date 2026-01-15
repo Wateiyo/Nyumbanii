@@ -67,7 +67,7 @@ const OnboardingWizard = ({ steps, onComplete, onSkip, userRole }) => {
             {/* Progress Bar */}
             <div className="mt-3 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-500 ease-out"
+                className="bg-[#003366] h-full rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -77,7 +77,7 @@ const OnboardingWizard = ({ steps, onComplete, onSkip, userRole }) => {
           <div className="p-4 sm:p-5 space-y-3 overflow-y-auto flex-1">
             {/* Step Icon */}
             <div className="flex items-center justify-center mb-2">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#003366] rounded-full flex items-center justify-center text-white">
                 {currentStepData.icon}
               </div>
             </div>
@@ -141,7 +141,7 @@ const OnboardingWizard = ({ steps, onComplete, onSkip, userRole }) => {
 
               <button
                 onClick={handleNext}
-                className="flex items-center gap-1.5 px-4 py-1.5 sm:px-6 sm:py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg font-medium text-xs sm:text-sm"
+                className="flex items-center gap-1.5 px-4 py-1.5 sm:px-6 sm:py-2 rounded-lg bg-[#003366] text-white hover:bg-[#004488] transition-all shadow-md hover:shadow-lg font-medium text-xs sm:text-sm"
               >
                 {isLastStep ? (
                   <>

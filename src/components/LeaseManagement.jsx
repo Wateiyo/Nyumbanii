@@ -165,7 +165,7 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
     doc.setFont('helvetica', 'normal');
 
     // Opening paragraph - Kenyan legal format
-    addText(`This agreement is made on the ${agreementDate} between ${lease.landlordName || 'Landlord'} of ${lease.landlordContact || 'Address'} (hereinafter called "The Landlord") which term shall include its successors and/or assigns in title of one part and ${lease.tenantName} of I.D No. ${lease.tenantIdNumber || 'N/A'}, ${lease.propertyAddress || 'Address'} (hereinafter called "The Tenant") of the other part.`);
+    addText(`This agreement is made on the ${agreementDate} between ${lease.landlordName || 'Landlord'} of ${lease.landlordContact || 'Address'} (hereinafter called "The Landlord") which term shall include its successors and/or assigns in title of one part and ${lease.tenantName} of I.D No. _________________, ${lease.propertyAddress || 'Address'} (hereinafter called "The Tenant") of the other part.`);
 
     yPos += 5;
 
@@ -250,10 +250,11 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
     // Landlord signature
     doc.text('Signed by the Landlord/Representative', margin, yPos);
     doc.text('}', margin - 5, yPos + 5);
-    doc.text('ID NO.', margin, yPos + 5);
+    doc.line(margin + 30, yPos + 5, margin + 80, yPos + 5);
+    doc.text('ID NO.', margin, yPos + 10);
     doc.text('}', margin - 5, yPos + 10);
+    doc.line(margin + 30, yPos + 10, margin + 80, yPos + 10);
     doc.text('}', margin - 5, yPos + 15);
-    doc.line(margin + 30, yPos + 15, margin + 80, yPos + 15);
     doc.text('Date', margin, yPos + 20);
     doc.text('}', margin - 5, yPos + 20);
     doc.line(margin + 30, yPos + 20, margin + 80, yPos + 20);
@@ -265,9 +266,9 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
     doc.text('Signed by the Tenant', margin, yPos);
     doc.text('}', margin - 5, yPos + 5);
     doc.line(margin + 30, yPos + 5, margin + 80, yPos + 5);
-    doc.text(`ID NO. ${lease.tenantIdNumber || 'N/A'}`, margin, yPos + 10);
+    doc.text('ID NO.', margin, yPos + 10);
     doc.text('}', margin - 5, yPos + 10);
-    doc.text(`${lease.tenantName}`, margin + 40, yPos + 10);
+    doc.line(margin + 30, yPos + 10, margin + 80, yPos + 10);
     doc.text('}', margin - 5, yPos + 15);
     doc.text('Date', margin, yPos + 20);
     doc.text('}', margin - 5, yPos + 20);
@@ -285,6 +286,14 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
     doc.text(`Agreement No: ${lease.leaseNumber || lease.id}`, pageWidth / 2, yPos + 5, { align: 'center' });
 
     return doc;
+  };
+
+  // Helper function to parse currency input (removes commas)
+  const parseCurrency = (value) => {
+    if (!value) return 0;
+    // Remove commas and any non-numeric characters except decimal point
+    const cleaned = String(value).replace(/,/g, '').replace(/[^\d.]/g, '');
+    return parseFloat(cleaned) || 0;
   };
 
   // Handle lease creation
@@ -313,8 +322,8 @@ const LeaseManagement = ({ landlordId, properties, tenants }) => {
         unit: leaseForm.unit || '',
         startDate: new Date(leaseForm.startDate),
         endDate: new Date(leaseForm.endDate),
-        monthlyRent: parseFloat(leaseForm.monthlyRent) || 0,
-        securityDeposit: parseFloat(leaseForm.securityDeposit) || 0,
+        monthlyRent: parseCurrency(leaseForm.monthlyRent),
+        securityDeposit: parseCurrency(leaseForm.securityDeposit),
         lateFeeDays: parseInt(leaseForm.lateFeeDays) || 5,
         lateFeePercentage: parseFloat(leaseForm.lateFeePercentage) || 10,
         utilitiesIncluded: leaseForm.utilitiesIncluded || [],
