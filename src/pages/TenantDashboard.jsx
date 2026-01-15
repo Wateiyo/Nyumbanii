@@ -2379,32 +2379,6 @@ const TenantDashboard = () => {
     }
   };
 
-  // Profile Settings Save Handler
-  const handleSaveProfile = async () => {
-    if (!tenantData?.id) {
-      alert('Unable to save: Tenant data not found');
-      return;
-    }
-
-    try {
-      const tenantRef = doc(db, 'tenants', tenantData.id);
-      await updateDoc(tenantRef, {
-        name: profileSettings.name,
-        email: profileSettings.email,
-        phone: profileSettings.phone,
-        idNumber: profileSettings.idNumber,
-        emergencyContact: profileSettings.emergencyContact,
-        updatedAt: serverTimestamp()
-      });
-
-      setEditingProfile(false);
-      alert('Profile updated successfully!');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      alert(`Failed to update profile: ${error.message}`);
-    }
-  };
-
   // Password Change Handler
   const handlePasswordChange = async () => {
     if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
