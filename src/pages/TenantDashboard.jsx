@@ -663,11 +663,13 @@ const TenantDashboard = () => {
 
   // Fetch move-out notices from Firebase
   useEffect(() => {
-    if (!tenantData?.id) return;
+    if (!currentUser?.uid) return;
+
+    console.log('📋 Fetching move-out notices for tenant userId:', currentUser.uid);
 
     const moveOutNoticesQuery = query(
       collection(db, 'moveOutNotices'),
-      where('tenantId', '==', tenantData.id),
+      where('tenantId', '==', currentUser.uid), // Use Firebase Auth ID, not Firestore doc ID
       orderBy('createdAt', 'desc')
     );
 
@@ -677,13 +679,13 @@ const TenantDashboard = () => {
         ...doc.data()
       }));
       setMoveOutNotices(noticesData);
-      console.log('📋 Move-out notices loaded:', noticesData.length);
+      console.log('📋 Move-out notices loaded:', noticesData.length, noticesData);
     }, (error) => {
       console.error('Error fetching move-out notices:', error);
     });
 
     return () => unsubscribe();
-  }, [tenantData]);
+  }, [currentUser?.uid]);
 
   // Fetch notifications from Firebase
   useEffect(() => {
@@ -1659,7 +1661,7 @@ const TenantDashboard = () => {
       // Prepare notice data
       const noticeData = {
         initiatedBy: 'tenant',
-        tenantId: tenantData.id || currentUser.uid,
+        tenantId: currentUser.uid, // Use Firebase Auth ID consistently
         tenantName: tenantData.name || currentUser.displayName,
         tenantEmail: tenantData.email || currentUser.email,
         tenantPhone: tenantData.phone || '',
@@ -3577,16 +3579,126 @@ const TenantDashboard = () => {
                     </div>
                   )}
 
-                  {/* Leases List - Full implementation from leases view will go here */}
-                  {!loadingLeases && leases.length > 0 && leases.map((lease) => (
-                    <div key={lease.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                      {/* This is a placeholder - the full lease rendering code will be moved here */}
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{lease.propertyName} - Unit {lease.unit}</h3>
-                        <p className="text-gray-600 dark:text-gray-400">View full lease details in the Lease Agreement section</p>
+                  {/* Leases List - Full Details */}
+                  {!loadingLeases && leases.length > 0 && leases.map((lease) => {
+                    const startDate = lease.startDate?.toDate ? lease.startDate.toDate() : new Date(lease.startDate);
+                    const endDate = lease.endDate?.toDate ? lease.endDate.toDate() : new Date(lease.endDate);
+                    const daysUntilExpiry = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
+
+                    const statusColors = {
+                      draft: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+                      pending_signature: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+                      active: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+                      expired: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+                      terminated: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                    };
+
+                    return (
+                      <div key={lease.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="p-6">
+                          {/* Header */}
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                {lease.propertyName} - Unit {lease.unit}
+                              </h3>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Lease Number: <span className="font-mono">{lease.leaseNumber}</span>
+                              </p>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[lease.status] || statusColors.draft}`}>
+                              {lease.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </div>
+
+                          {/* Lease Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Lease Period</p>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {daysUntilExpiry > 0 ? `${daysUntilExpiry} days remaining` : 'Expired'}
+                              </p>
+                            </div>
+
+                            <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Monthly Rent</p>
+                              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                                KSH {lease.monthlyRent?.toLocaleString()}
+                              </p>
+                            </div>
+
+                            <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Security Deposit</p>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                KSH {lease.securityDeposit?.toLocaleString()}
+                              </p>
+                            </div>
+
+                            <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Late Fee</p>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {lease.lateFeePercentage}% after {lease.lateFeeDays} days
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Landlord Info */}
+                          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1">Landlord</p>
+                            <p className="text-sm text-gray-900 dark:text-white">{lease.landlordName}</p>
+                          </div>
+
+                          {/* Utilities Included */}
+                          {lease.utilitiesIncluded && lease.utilitiesIncluded.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold mb-2">Utilities Included</p>
+                              <div className="flex flex-wrap gap-2">
+                                {lease.utilitiesIncluded.map((utility, idx) => (
+                                  <span key={idx} className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs">
+                                    {utility}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Special Terms */}
+                          {lease.specialTerms && (
+                            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                              <p className="text-xs text-yellow-800 dark:text-yellow-300 font-semibold mb-1">Special Terms</p>
+                              <p className="text-sm text-gray-900 dark:text-white">{lease.specialTerms}</p>
+                            </div>
+                          )}
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button
+                              onClick={() => handleDownloadLeasePDF(lease)}
+                              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                            >
+                              <Download className="w-4 h-4" />
+                              Download Lease PDF
+                            </button>
+                            {!lease.tenantSignature && lease.status === 'pending_signature' && (
+                              <button
+                                onClick={() => {
+                                  setCurrentSigningLease(lease);
+                                  setShowSignaturePad(true);
+                                }}
+                                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                              >
+                                <PenTool className="w-4 h-4" />
+                                Sign Lease
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -3711,26 +3823,16 @@ const TenantDashboard = () => {
                             </div>
                           )}
 
-                          {/* Actions */}
-                          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                            {notice.legalNoticeURL && (
-                              <a
-                                href={notice.legalNoticeURL}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2 border border-orange-600 dark:border-orange-400 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition text-sm font-medium"
-                              >
-                                <Download className="w-4 h-4" />
-                                Download Legal Notice
-                              </a>
-                            )}
+                          {/* Status Information */}
+                          <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                             {notice.status === 'submitted' && (
                               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                 <Clock className="w-4 h-4" />
                                 <span>Awaiting landlord acknowledgment</span>
                               </div>
                             )}
-                            {notice.status === 'acknowledged' && (
+
+                            {notice.status === 'acknowledged' && notice.acknowledgedAt && (
                               <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
                                 <CheckCircle className="w-4 h-4" />
                                 <span>Acknowledged by landlord on {notice.acknowledgedAt?.toDate ?
@@ -3738,6 +3840,61 @@ const TenantDashboard = () => {
                                   new Date(notice.acknowledgedAt).toLocaleDateString()}
                                 </span>
                               </div>
+                            )}
+
+                            {notice.status === 'approved' && notice.approvedAt && (
+                              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                                    Move-Out Notice Approved
+                                  </p>
+                                </div>
+                                <p className="text-xs text-green-700 dark:text-green-400">
+                                  Approved on {notice.approvedAt?.toDate ?
+                                    notice.approvedAt.toDate().toLocaleDateString() :
+                                    new Date(notice.approvedAt).toLocaleDateString()}
+                                </p>
+                                {notice.approvedBy && (
+                                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                    By: {notice.approvedBy}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {notice.status === 'rejected' && (
+                              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                  <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                                    Move-Out Notice Rejected
+                                  </p>
+                                </div>
+                                {notice.rejectionReason && (
+                                  <div className="mt-2">
+                                    <p className="text-xs font-medium text-red-700 dark:text-red-400 mb-1">
+                                      Reason for Rejection:
+                                    </p>
+                                    <p className="text-sm text-red-900 dark:text-red-200 bg-white dark:bg-gray-800 p-2 rounded">
+                                      {notice.rejectionReason}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Download Button */}
+                            {notice.legalNoticeURL && (
+                              <a
+                                href={notice.legalNoticeURL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 w-full px-4 py-2 border border-orange-600 dark:border-orange-400 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition text-sm font-medium"
+                              >
+                                <Download className="w-4 h-4" />
+                                Download Legal Notice
+                              </a>
                             )}
                           </div>
                         </div>
@@ -3880,26 +4037,16 @@ const TenantDashboard = () => {
                         </div>
                       )}
 
-                      {/* Actions */}
-                      <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        {notice.legalNoticeURL && (
-                          <a
-                            href={notice.legalNoticeURL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2 border border-orange-600 dark:border-orange-400 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition text-sm font-medium"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download Legal Notice
-                          </a>
-                        )}
+                      {/* Status Information */}
+                      <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                         {notice.status === 'submitted' && (
                           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                             <Clock className="w-4 h-4" />
                             <span>Awaiting landlord acknowledgment</span>
                           </div>
                         )}
-                        {notice.status === 'acknowledged' && (
+
+                        {notice.status === 'acknowledged' && notice.acknowledgedAt && (
                           <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
                             <CheckCircle className="w-4 h-4" />
                             <span>Acknowledged by landlord on {notice.acknowledgedAt?.toDate ?
@@ -3907,6 +4054,61 @@ const TenantDashboard = () => {
                               new Date(notice.acknowledgedAt).toLocaleDateString()}
                             </span>
                           </div>
+                        )}
+
+                        {notice.status === 'approved' && notice.approvedAt && (
+                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <div className="flex items-center gap-2 mb-2">
+                              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                              <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                                Move-Out Notice Approved
+                              </p>
+                            </div>
+                            <p className="text-xs text-green-700 dark:text-green-400">
+                              Approved on {notice.approvedAt?.toDate ?
+                                notice.approvedAt.toDate().toLocaleDateString() :
+                                new Date(notice.approvedAt).toLocaleDateString()}
+                            </p>
+                            {notice.approvedBy && (
+                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                By: {notice.approvedBy}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {notice.status === 'rejected' && (
+                          <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                              <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                                Move-Out Notice Rejected
+                              </p>
+                            </div>
+                            {notice.rejectionReason && (
+                              <div className="mt-2">
+                                <p className="text-xs font-medium text-red-700 dark:text-red-400 mb-1">
+                                  Reason for Rejection:
+                                </p>
+                                <p className="text-sm text-red-900 dark:text-red-200 bg-white dark:bg-gray-800 p-2 rounded">
+                                  {notice.rejectionReason}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Download Button */}
+                        {notice.legalNoticeURL && (
+                          <a
+                            href={notice.legalNoticeURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 w-full px-4 py-2 border border-orange-600 dark:border-orange-400 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition text-sm font-medium"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download Legal Notice
+                          </a>
                         )}
                       </div>
                     </div>
