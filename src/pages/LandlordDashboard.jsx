@@ -1641,14 +1641,8 @@ const handleEditProperty = async () => {
       noticeData.legalNoticeGenerated = true;
       noticeData.legalNoticeURL = pdfURL;
 
-      // Save to Firestore with timestamp fields
-      const firestoreNoticeData = {
-        ...noticeData,
-        intendedMoveOutDate: serverTimestamp(),
-        noticeSubmittedDate: serverTimestamp()
-      };
-
-      const docRef = await addDoc(collection(db, 'moveOutNotices'), firestoreNoticeData);
+      // Save to Firestore (keep dates as Date objects, not serverTimestamp)
+      const docRef = await addDoc(collection(db, 'moveOutNotices'), noticeData);
 
       // Send notification to tenant
       if (selectedTenantForNotice.userId) {
@@ -1698,7 +1692,25 @@ const handleEditProperty = async () => {
       alert(`Move-out notice issued successfully!\n\nReference Number: ${referenceNumber}\n\nThe tenant has been notified and must vacate by ${formattedMoveOutDate}.\n\nA legal notice PDF has been generated and sent to the tenant.`);
     } catch (error) {
       console.error('Error issuing move-out notice:', error);
-      alert('Failed to issue move-out notice. Please try again.');
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+
+      let errorMessage = 'Failed to issue move-out notice. ';
+
+      if (error.code === 'storage/unauthorized') {
+        errorMessage += 'Storage permission denied. Please check Firebase Storage rules.';
+      } else if (error.code === 'permission-denied') {
+        errorMessage += 'Firestore permission denied. Please check Firestore rules.';
+      } else if (error.message) {
+        errorMessage += `Error: ${error.message}`;
+      } else {
+        errorMessage += 'Please try again.';
+      }
+
+      alert(errorMessage);
     } finally {
       setSubmittingMoveOutNotice(false);
     }
