@@ -5,7 +5,7 @@ const VideoDemo = () => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Self-hosted MP4 video from public/videos folder
-  const demoVideoUrl = '/videos/demo.mp4';
+  const demoVideoUrl = '/videos/nyumbaniidemo.mp4';
 
   const features = [
     'Property & Tenant Management',
