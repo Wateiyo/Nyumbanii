@@ -381,17 +381,18 @@ const TenantDashboard = () => {
 
   // Fetch leases for the current tenant
   useEffect(() => {
-    if (!tenantData?.id) {
+    if (!currentUser?.uid || !tenantData?.id) {
       setLoadingLeases(false);
       return;
     }
 
-    console.log('Fetching leases for tenant:', tenantData.id);
+    console.log('Fetching leases for tenant. userId:', currentUser.uid, 'docId:', tenantData.id);
     setLoadingLeases(true);
 
+    // Query by userId (Firebase Auth ID) - this is what's stored in lease.tenantId
     const leasesQuery = query(
       collection(db, 'leases'),
-      where('tenantId', '==', tenantData.id)
+      where('tenantId', '==', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(leasesQuery, (snapshot) => {
@@ -408,7 +409,7 @@ const TenantDashboard = () => {
     });
 
     return () => unsubscribe();
-  }, [tenantData?.id]);
+  }, [currentUser?.uid, tenantData?.id]);
 
   // Permission check helpers
   const canAccessPortal = () => {

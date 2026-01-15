@@ -1803,6 +1803,96 @@ const handleEditProperty = async () => {
     }
   };
 
+  // DOWNLOAD MOVE-OUT NOTICE PDF
+  const handleDownloadMoveOutNoticePDF = (notice) => {
+    try {
+      if (notice.legalNoticeURL) {
+        // If PDF already exists in storage, download it
+        window.open(notice.legalNoticeURL, '_blank');
+      } else {
+        // Generate PDF on the fly
+        const pdfDoc = generateLegalNoticePDF(notice);
+        downloadPDF(pdfDoc, `Move-Out-Notice-${notice.referenceNumber}.pdf`);
+      }
+    } catch (error) {
+      console.error('Error downloading move-out notice PDF:', error);
+      alert('Failed to download PDF. Please try again.');
+    }
+  };
+
+  // EDIT MOVE-OUT NOTICE
+  const [showEditNoticeModal, setShowEditNoticeModal] = useState(false);
+  const [editingNotice, setEditingNotice] = useState(null);
+
+  const handleEditNotice = (notice) => {
+    setEditingNotice({
+      id: notice.id,
+      noticePeriod: notice.noticePeriod,
+      reason: notice.reason,
+      legalGrounds: notice.legalGrounds || '',
+      additionalNotes: notice.additionalNotes || ''
+    });
+    setShowEditNoticeModal(true);
+  };
+
+  const handleSaveEditedNotice = async () => {
+    if (!editingNotice || !editingNotice.legalGrounds || editingNotice.legalGrounds.trim() === '') {
+      alert('Legal grounds are required for the notice.');
+      return;
+    }
+
+    try {
+      // Get the full notice from moveOutNotices
+      const fullNotice = moveOutNotices.find(n => n.id === editingNotice.id);
+      if (!fullNotice) {
+        alert('Notice not found.');
+        return;
+      }
+
+      // Calculate new move-out date if notice period changed
+      const today = new Date();
+      const moveOutDate = new Date(today);
+      moveOutDate.setDate(moveOutDate.getDate() + editingNotice.noticePeriod);
+
+      // Prepare updated notice data
+      const updatedNoticeData = {
+        ...fullNotice,
+        noticePeriod: editingNotice.noticePeriod,
+        reason: editingNotice.reason,
+        legalGrounds: editingNotice.legalGrounds,
+        additionalNotes: editingNotice.additionalNotes,
+        intendedMoveOutDate: moveOutDate
+      };
+
+      // Regenerate PDF with updated data
+      const pdfDoc = generateLegalNoticePDF(updatedNoticeData);
+      const pdfBlob = pdfToBlob(pdfDoc);
+
+      // Upload new PDF to Firebase Storage
+      const storageRef = ref(storage, `legal-notices/${fullNotice.referenceNumber}.pdf`);
+      await uploadBytes(storageRef, pdfBlob);
+      const pdfURL = await getDownloadURL(storageRef);
+
+      // Update Firestore document
+      await updateDoc(doc(db, 'moveOutNotices', editingNotice.id), {
+        noticePeriod: editingNotice.noticePeriod,
+        reason: editingNotice.reason,
+        legalGrounds: editingNotice.legalGrounds,
+        additionalNotes: editingNotice.additionalNotes,
+        intendedMoveOutDate: moveOutDate,
+        legalNoticeURL: pdfURL,
+        updatedAt: serverTimestamp()
+      });
+
+      alert('Move-out notice updated successfully!');
+      setShowEditNoticeModal(false);
+      setEditingNotice(null);
+    } catch (error) {
+      console.error('Error updating move-out notice:', error);
+      alert('Failed to update notice. Please try again.');
+    }
+  };
+
   // ADD PAYMENT
   const handleAddPayment = async () => {
     console.log('Payment data:', newPayment);
@@ -5491,6 +5581,26 @@ const handleViewTenantDetails = (tenant) => {
                           </div>
                         )}
 
+                        {/* Download and Edit Buttons - Always visible */}
+                        <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <button
+                            onClick={() => handleDownloadMoveOutNoticePDF(notice)}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium flex items-center gap-2"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download PDF
+                          </button>
+                          {!isFromTenant && (
+                            <button
+                              onClick={() => handleEditNotice(notice)}
+                              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition text-sm font-medium flex items-center gap-2"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit Notice
+                            </button>
+                          )}
+                        </div>
+
                         {/* Action Buttons */}
                         {isFromTenant && notice.status === 'submitted' && (
                           <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -5546,6 +5656,146 @@ const handleViewTenantDetails = (tenant) => {
         )}
 
       </div>
+
+      {/* Edit Move-Out Notice Modal */}
+      {showEditNoticeModal && editingNotice && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Edit className="w-6 h-6 text-blue-600" />
+                Edit Move-Out Notice
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditNoticeModal(false);
+                  setEditingNotice(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Warning Banner */}
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-yellow-900 dark:text-yellow-300 text-sm mb-1">Important</h4>
+                  <p className="text-xs text-yellow-800 dark:text-yellow-400">
+                    Editing this notice will regenerate the legal PDF with updated information. The tenant will NOT be automatically notified of changes.
+                  </p>
+                </div>
+              </div>
+
+              {/* Notice Period */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Notice Period <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="editNoticePeriod"
+                      value={30}
+                      checked={editingNotice.noticePeriod === 30}
+                      onChange={(e) => setEditingNotice({...editingNotice, noticePeriod: 30})}
+                      className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+                    />
+                    <span className="text-gray-900 dark:text-white">30 Days</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="editNoticePeriod"
+                      value={60}
+                      checked={editingNotice.noticePeriod === 60}
+                      onChange={(e) => setEditingNotice({...editingNotice, noticePeriod: 60})}
+                      className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+                    />
+                    <span className="text-gray-900 dark:text-white">60 Days</span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  New move-out date will be: {new Date(Date.now() + editingNotice.noticePeriod * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                </p>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Reason for Notice <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={editingNotice.reason}
+                  onChange={(e) => setEditingNotice({...editingNotice, reason: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="Breach of Contract">Breach of Contract</option>
+                  <option value="Non-Payment">Non-Payment of Rent</option>
+                  <option value="Property Sale">Property Sale</option>
+                  <option value="Renovation">Major Renovation</option>
+                  <option value="Owner Occupancy">Owner/Family Occupancy</option>
+                  <option value="Other">Other Legal Grounds</option>
+                </select>
+              </div>
+
+              {/* Legal Grounds */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Legal Grounds <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={editingNotice.legalGrounds}
+                  onChange={(e) => setEditingNotice({...editingNotice, legalGrounds: e.target.value})}
+                  rows={4}
+                  placeholder="Provide specific legal grounds and details..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                ></textarea>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Be specific and factual. This will be included in the legal document.
+                </p>
+              </div>
+
+              {/* Additional Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  value={editingNotice.additionalNotes}
+                  onChange={(e) => setEditingNotice({...editingNotice, additionalNotes: e.target.value})}
+                  rows={3}
+                  placeholder="Any additional terms or conditions..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                ></textarea>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowEditNoticeModal(false);
+                    setEditingNotice(null);
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEditedNotice}
+                  className="flex-1 px-6 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition flex items-center justify-center gap-2"
+                >
+                  <Check className="w-5 h-5" />
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   </div>
 )}
