@@ -3533,7 +3533,11 @@ const TenantDashboard = () => {
                         <div className="text-right">
                           <p className="font-semibold text-sm lg:text-base text-gray-900 dark:text-white">KES {payment.amount.toLocaleString()}</p>
                           <span className={`inline-block px-2 py-1 rounded text-xs ${
-                            payment.status === 'Paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
+                            payment.status?.toLowerCase() === 'paid' || payment.status?.toLowerCase() === 'verified'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                              : payment.status?.toLowerCase() === 'overdue'
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                              : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
                           }`}>
                             {payment.status}
                           </span>
