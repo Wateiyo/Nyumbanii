@@ -270,6 +270,9 @@ const LandlordDashboard = () => {
   
   const [newPayment, setNewPayment] = useState({
     tenant: '',
+    tenantId: '',
+    tenantDocId: '',
+    tenantEmail: '',
     property: '',
     unit: '',
     amount: '',
@@ -1929,7 +1932,9 @@ const handleEditProperty = async () => {
 
       const paymentData = {
         tenant: newPayment.tenant,
-        tenantId: newPayment.tenantId || null,
+        tenantId: newPayment.tenantId || null, // Firebase Auth ID
+        tenantDocId: newPayment.tenantDocId || null, // Firestore document ID for backwards compatibility
+        tenantEmail: newPayment.tenantEmail || null, // Email for reliable matching
         property: newPayment.property,
         unit: newPayment.unit,
         amount: parseInt(newPayment.amount),
@@ -1945,7 +1950,7 @@ const handleEditProperty = async () => {
       console.log('💰 Landlord creating payment with data:', paymentData);
       await addDoc(collection(db, 'payments'), paymentData);
 
-      setNewPayment({ tenant: '', tenantId: '', property: '', unit: '', amount: '', dueDate: '', method: '', referenceNumber: '' });
+      setNewPayment({ tenant: '', tenantId: '', tenantDocId: '', tenantEmail: '', property: '', unit: '', amount: '', dueDate: '', method: '', referenceNumber: '' });
       setShowPaymentModal(false);
       alert('Payment record added successfully!');
     } catch (error) {
@@ -9242,7 +9247,9 @@ const handleViewTenantDetails = (tenant) => {
                     setNewPayment({
                       ...newPayment,
                       tenant: e.target.value,
-                      tenantId: selectedTenant?.docId || selectedTenant?.id || '', // Use docId (document ID) for tenant reference
+                      tenantId: selectedTenant?.userId || selectedTenant?.id || '', // Use userId (Firebase Auth ID) for tenant reference
+                      tenantDocId: selectedTenant?.docId || '', // Also store Firestore doc ID for backwards compatibility
+                      tenantEmail: selectedTenant?.email?.toLowerCase() || '', // Store email for reliable matching
                       property: selectedTenant?.property || '',
                       unit: selectedTenant?.unit || '',
                       amount: selectedTenant?.rent || ''

@@ -45,7 +45,8 @@ import {
   Sun,
   AlertTriangle,
   FileSignature,
-  DoorOpen
+  DoorOpen,
+  PenTool
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
 import OnboardingWizard from '../components/OnboardingWizard';
@@ -381,35 +382,99 @@ const TenantDashboard = () => {
 
   // Fetch leases for the current tenant
   useEffect(() => {
-    if (!currentUser?.uid || !tenantData?.id) {
+    if (!currentUser?.uid) {
       setLoadingLeases(false);
       return;
     }
 
-    console.log('Fetching leases for tenant. userId:', currentUser.uid, 'docId:', tenantData.id);
+    console.log('Fetching leases for tenant. userId:', currentUser.uid, 'docId:', tenantData?.id);
     setLoadingLeases(true);
 
-    // Query by userId (Firebase Auth ID) - this is what's stored in lease.tenantId
-    const leasesQuery = query(
+    // Query by Firebase Auth ID (currentUser.uid)
+    const leasesQuery1 = query(
       collection(db, 'leases'),
       where('tenantId', '==', currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(leasesQuery, (snapshot) => {
-      console.log('Leases query returned:', snapshot.size, 'documents');
-      const leasesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setLeases(leasesData);
-      setLoadingLeases(false);
-    }, (error) => {
-      console.error('Error fetching leases:', error);
-      setLoadingLeases(false);
-    });
+    // Also query by email as a fallback (most reliable identifier)
+    const leasesQuery2 = currentUser.email ? query(
+      collection(db, 'leases'),
+      where('tenantEmail', '==', currentUser.email.toLowerCase())
+    ) : null;
 
-    return () => unsubscribe();
-  }, [currentUser?.uid, tenantData?.id]);
+    // Also query by tenantDocId if tenantData is available
+    const leasesQuery3 = tenantData?.id ? query(
+      collection(db, 'leases'),
+      where('tenantDocId', '==', tenantData.id)
+    ) : null;
+
+    // Also query by tenantId with Firestore doc ID (for older leases)
+    const leasesQuery4 = tenantData?.id ? query(
+      collection(db, 'leases'),
+      where('tenantId', '==', tenantData.id)
+    ) : null;
+
+    // Combine results from all queries
+    const allLeases = new Map(); // Use Map to deduplicate by ID
+
+    const handleSnapshot = (snapshot, source) => {
+      console.log(`Leases query (${source}) returned:`, snapshot.size, 'documents');
+      snapshot.docs.forEach(doc => {
+        if (!allLeases.has(doc.id)) {
+          allLeases.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+      setLeases(Array.from(allLeases.values()));
+      setLoadingLeases(false);
+    };
+
+    const handleError = (error, source) => {
+      console.error(`Error fetching leases (${source}):`, error);
+    };
+
+    const unsubscribe1 = onSnapshot(leasesQuery1,
+      (snapshot) => handleSnapshot(snapshot, 'userId'),
+      (error) => handleError(error, 'userId')
+    );
+
+    let unsubscribe2 = () => {};
+    let unsubscribe3 = () => {};
+    let unsubscribe4 = () => {};
+
+    if (leasesQuery2) {
+      unsubscribe2 = onSnapshot(leasesQuery2,
+        (snapshot) => handleSnapshot(snapshot, 'email'),
+        (error) => handleError(error, 'email')
+      );
+    }
+
+    if (leasesQuery3) {
+      unsubscribe3 = onSnapshot(leasesQuery3,
+        (snapshot) => handleSnapshot(snapshot, 'tenantDocId'),
+        (error) => handleError(error, 'tenantDocId')
+      );
+    }
+
+    if (leasesQuery4) {
+      unsubscribe4 = onSnapshot(leasesQuery4,
+        (snapshot) => handleSnapshot(snapshot, 'tenantId-docId'),
+        (error) => handleError(error, 'tenantId-docId')
+      );
+    }
+
+    // Set loading to false after a short delay if no results
+    const timeout = setTimeout(() => {
+      setLoadingLeases(false);
+    }, 3000);
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+      unsubscribe3();
+      unsubscribe4();
+      clearTimeout(timeout);
+    };
+  }, [currentUser?.uid, currentUser?.email, tenantData?.id]);
 
   // Permission check helpers
   const canAccessPortal = () => {
@@ -420,6 +485,33 @@ const TenantDashboard = () => {
   const canUseSelfService = () => {
     if (!landlordSettings) return true; // Allow access while loading
     return landlordSettings.communicationPrefs?.allowTenantSelfService !== false;
+  };
+
+  // Calculate next rent due date dynamically based on lease start date
+  const getNextRentDueDate = () => {
+    // First, check if there's a pending payment with a due date
+    const pendingPayment = payments.find(p => p.status === 'pending' && p.dueDate);
+    if (pendingPayment?.dueDate) {
+      return new Date(pendingPayment.dueDate);
+    }
+
+    // If no pending payment, calculate based on lease start date
+    const leaseStartDate = tenantData?.leaseStart;
+    if (!leaseStartDate) return null;
+
+    const today = new Date();
+    const leaseStart = new Date(leaseStartDate);
+    const dayOfMonth = leaseStart.getDate(); // Get the day of month from lease start (e.g., 5th)
+
+    // Create a date for this month on the same day
+    let nextDue = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+
+    // If that date has already passed this month, use next month
+    if (nextDue <= today) {
+      nextDue = new Date(today.getFullYear(), today.getMonth() + 1, dayOfMonth);
+    }
+
+    return nextDue;
   };
 
   // Fetch landlord settings to enforce permissions
@@ -507,25 +599,72 @@ const TenantDashboard = () => {
 
   // Fetch maintenance requests from Firebase
   useEffect(() => {
-    if (!tenantData?.id) return;
+    if (!currentUser?.uid) return;
 
-    const maintenanceQuery = query(
+    console.log('🔧 Fetching maintenance requests for tenant');
+
+    const allRequests = new Map(); // Deduplicate by ID
+
+    // Query by Firebase Auth ID
+    const query1 = query(
       collection(db, 'maintenance'),
-      where('tenantId', '==', tenantData.id)
+      where('tenantId', '==', currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(maintenanceQuery, (snapshot) => {
-      const maintenanceData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setMaintenanceRequests(maintenanceData);
-    }, (error) => {
-      console.error('Error fetching maintenance requests:', error);
-    });
+    // Query by Firestore doc ID (for older requests)
+    const query2 = tenantData?.id ? query(
+      collection(db, 'maintenance'),
+      where('tenantId', '==', tenantData.id)
+    ) : null;
 
-    return () => unsubscribe();
-  }, [tenantData]);
+    // Query by email as fallback
+    const query3 = currentUser?.email ? query(
+      collection(db, 'maintenance'),
+      where('tenantEmail', '==', currentUser.email.toLowerCase())
+    ) : null;
+
+    const handleSnapshot = (snapshot, source) => {
+      console.log(`🔧 Maintenance query (${source}) returned:`, snapshot.size, 'documents');
+      snapshot.docs.forEach(doc => {
+        if (!allRequests.has(doc.id)) {
+          allRequests.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+      setMaintenanceRequests(Array.from(allRequests.values()));
+    };
+
+    const handleError = (error, source) => {
+      console.error(`Error fetching maintenance (${source}):`, error);
+    };
+
+    const unsubscribe1 = onSnapshot(query1,
+      (snapshot) => handleSnapshot(snapshot, 'userId'),
+      (error) => handleError(error, 'userId')
+    );
+
+    let unsubscribe2 = () => {};
+    let unsubscribe3 = () => {};
+
+    if (query2) {
+      unsubscribe2 = onSnapshot(query2,
+        (snapshot) => handleSnapshot(snapshot, 'docId'),
+        (error) => handleError(error, 'docId')
+      );
+    }
+
+    if (query3) {
+      unsubscribe3 = onSnapshot(query3,
+        (snapshot) => handleSnapshot(snapshot, 'email'),
+        (error) => handleError(error, 'email')
+      );
+    }
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+      unsubscribe3();
+    };
+  }, [currentUser?.uid, currentUser?.email, tenantData?.id]);
 
   // Fetch property data for WhatsApp group link
   useEffect(() => {
@@ -548,28 +687,102 @@ const TenantDashboard = () => {
 
   // Fetch payments from Firebase
   useEffect(() => {
-    if (!tenantData?.id) return;
+    if (!currentUser?.uid) return;
 
-    console.log('💵 Tenant querying payments with tenantId:', tenantData.id);
-    const paymentsQuery = query(
+    console.log('💵 Tenant querying payments for userId:', currentUser.uid, 'docId:', tenantData?.id, 'email:', currentUser.email);
+
+    const allPayments = new Map(); // Deduplicate by ID
+
+    // Query by Firebase Auth ID (tenantId field)
+    const query1 = query(
       collection(db, 'payments'),
-      where('tenantId', '==', tenantData.id)
+      where('tenantId', '==', currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(paymentsQuery, (snapshot) => {
-      console.log('💵 Tenant payments query returned:', snapshot.size, 'documents');
-      const paymentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      console.log('💵 Tenant payments data:', paymentsData);
-      setPayments(paymentsData);
-    }, (error) => {
-      console.error('Error fetching payments:', error);
-    });
+    // Query by Firestore doc ID in tenantId field (for older payments)
+    const query2 = tenantData?.id ? query(
+      collection(db, 'payments'),
+      where('tenantId', '==', tenantData.id)
+    ) : null;
 
-    return () => unsubscribe();
-  }, [tenantData]);
+    // Query by email as fallback
+    const query3 = currentUser?.email ? query(
+      collection(db, 'payments'),
+      where('tenantEmail', '==', currentUser.email.toLowerCase())
+    ) : null;
+
+    // Query by tenantDocId field (new field we added)
+    const query4 = tenantData?.id ? query(
+      collection(db, 'payments'),
+      where('tenantDocId', '==', tenantData.id)
+    ) : null;
+
+    // Query by tenant name as last resort (for very old payments)
+    const query5 = tenantData?.name ? query(
+      collection(db, 'payments'),
+      where('tenant', '==', tenantData.name)
+    ) : null;
+
+    const handleSnapshot = (snapshot, source) => {
+      console.log(`💵 Payments query (${source}) returned:`, snapshot.size, 'documents');
+      snapshot.docs.forEach(doc => {
+        if (!allPayments.has(doc.id)) {
+          allPayments.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+      setPayments(Array.from(allPayments.values()));
+    };
+
+    const handleError = (error, source) => {
+      console.error(`Error fetching payments (${source}):`, error);
+    };
+
+    const unsubscribe1 = onSnapshot(query1,
+      (snapshot) => handleSnapshot(snapshot, 'userId'),
+      (error) => handleError(error, 'userId')
+    );
+
+    let unsubscribe2 = () => {};
+    let unsubscribe3 = () => {};
+    let unsubscribe4 = () => {};
+    let unsubscribe5 = () => {};
+
+    if (query2) {
+      unsubscribe2 = onSnapshot(query2,
+        (snapshot) => handleSnapshot(snapshot, 'tenantId-docId'),
+        (error) => handleError(error, 'tenantId-docId')
+      );
+    }
+
+    if (query3) {
+      unsubscribe3 = onSnapshot(query3,
+        (snapshot) => handleSnapshot(snapshot, 'email'),
+        (error) => handleError(error, 'email')
+      );
+    }
+
+    if (query4) {
+      unsubscribe4 = onSnapshot(query4,
+        (snapshot) => handleSnapshot(snapshot, 'tenantDocId'),
+        (error) => handleError(error, 'tenantDocId')
+      );
+    }
+
+    if (query5) {
+      unsubscribe5 = onSnapshot(query5,
+        (snapshot) => handleSnapshot(snapshot, 'tenantName'),
+        (error) => handleError(error, 'tenantName')
+      );
+    }
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+      unsubscribe3();
+      unsubscribe4();
+      unsubscribe5();
+    };
+  }, [currentUser?.uid, currentUser?.email, tenantData?.id, tenantData?.name]);
 
   // Fetch messages from Firebase - fetch all messages for this user
   useEffect(() => {
@@ -641,25 +854,57 @@ const TenantDashboard = () => {
 
   // Fetch documents from Firebase
   useEffect(() => {
-    if (!tenantData?.id) return;
+    if (!currentUser?.uid) return;
 
-    const documentsQuery = query(
+    console.log('📄 Fetching documents for tenant');
+
+    const allDocuments = new Map(); // Deduplicate by ID
+
+    // Query by Firebase Auth ID
+    const query1 = query(
       collection(db, 'documents'),
-      where('tenantId', '==', tenantData.id)
+      where('tenantId', '==', currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(documentsQuery, (snapshot) => {
-      const documentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setDocuments(documentsData);
-    }, (error) => {
-      console.error('Error fetching documents:', error);
-    });
+    // Query by Firestore doc ID (for older documents)
+    const query2 = tenantData?.id ? query(
+      collection(db, 'documents'),
+      where('tenantId', '==', tenantData.id)
+    ) : null;
 
-    return () => unsubscribe();
-  }, [tenantData]);
+    const handleSnapshot = (snapshot, source) => {
+      console.log(`📄 Documents query (${source}) returned:`, snapshot.size, 'documents');
+      snapshot.docs.forEach(doc => {
+        if (!allDocuments.has(doc.id)) {
+          allDocuments.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+      setDocuments(Array.from(allDocuments.values()));
+    };
+
+    const handleError = (error, source) => {
+      console.error(`Error fetching documents (${source}):`, error);
+    };
+
+    const unsubscribe1 = onSnapshot(query1,
+      (snapshot) => handleSnapshot(snapshot, 'userId'),
+      (error) => handleError(error, 'userId')
+    );
+
+    let unsubscribe2 = () => {};
+
+    if (query2) {
+      unsubscribe2 = onSnapshot(query2,
+        (snapshot) => handleSnapshot(snapshot, 'docId'),
+        (error) => handleError(error, 'docId')
+      );
+    }
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
+  }, [currentUser?.uid, tenantData?.id]);
 
   // Fetch move-out notices from Firebase
   useEffect(() => {
@@ -667,25 +912,77 @@ const TenantDashboard = () => {
 
     console.log('📋 Fetching move-out notices for tenant userId:', currentUser.uid);
 
-    const moveOutNoticesQuery = query(
+    const allNotices = new Map(); // Deduplicate by ID
+
+    // Query by Firebase Auth ID
+    const query1 = query(
       collection(db, 'moveOutNotices'),
-      where('tenantId', '==', currentUser.uid), // Use Firebase Auth ID, not Firestore doc ID
+      where('tenantId', '==', currentUser.uid),
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(moveOutNoticesQuery, (snapshot) => {
-      const noticesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setMoveOutNotices(noticesData);
-      console.log('📋 Move-out notices loaded:', noticesData.length, noticesData);
-    }, (error) => {
-      console.error('Error fetching move-out notices:', error);
-    });
+    // Query by email as fallback
+    const query2 = currentUser.email ? query(
+      collection(db, 'moveOutNotices'),
+      where('tenantEmail', '==', currentUser.email.toLowerCase()),
+      orderBy('createdAt', 'desc')
+    ) : null;
 
-    return () => unsubscribe();
-  }, [currentUser?.uid]);
+    // Query by Firestore doc ID (for older notices)
+    const query3 = tenantData?.id ? query(
+      collection(db, 'moveOutNotices'),
+      where('tenantId', '==', tenantData.id),
+      orderBy('createdAt', 'desc')
+    ) : null;
+
+    const handleSnapshot = (snapshot, source) => {
+      console.log(`📋 Move-out notices query (${source}) returned:`, snapshot.size, 'documents');
+      snapshot.docs.forEach(doc => {
+        if (!allNotices.has(doc.id)) {
+          allNotices.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+      // Sort by createdAt descending
+      const sortedNotices = Array.from(allNotices.values()).sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB - dateA;
+      });
+      setMoveOutNotices(sortedNotices);
+    };
+
+    const handleError = (error, source) => {
+      console.error(`Error fetching move-out notices (${source}):`, error);
+    };
+
+    const unsubscribe1 = onSnapshot(query1,
+      (snapshot) => handleSnapshot(snapshot, 'userId'),
+      (error) => handleError(error, 'userId')
+    );
+
+    let unsubscribe2 = () => {};
+    let unsubscribe3 = () => {};
+
+    if (query2) {
+      unsubscribe2 = onSnapshot(query2,
+        (snapshot) => handleSnapshot(snapshot, 'email'),
+        (error) => handleError(error, 'email')
+      );
+    }
+
+    if (query3) {
+      unsubscribe3 = onSnapshot(query3,
+        (snapshot) => handleSnapshot(snapshot, 'docId'),
+        (error) => handleError(error, 'docId')
+      );
+    }
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+      unsubscribe3();
+    };
+  }, [currentUser?.uid, currentUser?.email, tenantData?.id]);
 
   // Fetch notifications from Firebase
   useEffect(() => {
@@ -1545,7 +1842,9 @@ const TenantDashboard = () => {
         method: newPayment.method,
         referenceNumber: newPayment.reference || '',
         createdAt: serverTimestamp(),
-        tenantId: tenantData.id,
+        tenantId: currentUser.uid, // Use Firebase Auth ID for consistency
+        tenantDocId: tenantData.id, // Also store Firestore doc ID for backwards compatibility
+        tenantEmail: currentUser.email?.toLowerCase() || tenantData.email?.toLowerCase() || '', // Store email for reliable matching
         tenantName: tenantData.name,
         tenant: tenantData.name,
         propertyId: tenantData.propertyId || '',
@@ -3006,7 +3305,7 @@ const TenantDashboard = () => {
 
                   {/* Value */}
                   <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {tenantData?.rentDueDate ? new Date(tenantData.rentDueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Not set'}
+                    {getNextRentDueDate() ? getNextRentDueDate().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Not set'}
                   </p>
 
                   {/* Subtitle */}
