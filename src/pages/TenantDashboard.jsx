@@ -3007,17 +3007,17 @@ const TenantDashboard = () => {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#003366] text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col`}>
         <div className="p-6">
           <a href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
             <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
               <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
             </div>
-            {sidebarOpen && <span className="text-xl font-bold">Nyumbanii</span>}
+            <span className="text-xl font-bold">Nyumbanii</span>
           </a>
         </div>
-        
-        <nav className="p-4 space-y-2">
+
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {[
             { name: 'Dashboard', icon: Home, view: 'dashboard' },
             { name: 'Payments', icon: DollarSign, view: 'payments' },
@@ -3031,7 +3031,7 @@ const TenantDashboard = () => {
             <button
               key={item.view}
               onClick={() => { setCurrentView(item.view); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition ${
                 currentView === item.view ? 'bg-white/20' : 'hover:bg-white/10'
               }`}
             >
@@ -3041,11 +3041,11 @@ const TenantDashboard = () => {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4 border-t border-white/10 space-y-2">
+        <div className="p-4 border-t border-white/10 space-y-1">
           {/* Dark Mode Toggle */}
           <button
             onClick={() => setPreferences({...preferences, darkMode: !preferences.darkMode})}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-white/10 transition"
           >
             {preferences.darkMode ? (
               <>
@@ -3061,7 +3061,7 @@ const TenantDashboard = () => {
           </button>
 
           {/* Logout Button */}
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition">
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-white/10 transition">
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
           </button>
