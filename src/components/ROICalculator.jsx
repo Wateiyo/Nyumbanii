@@ -43,7 +43,7 @@ const ROICalculator = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           {/* Left: Input Section */}
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Your Current Situation</h3>
+            <p className="text-2xl font-bold text-gray-900 mb-6">Your Current Situation</p>
 
             <div className="space-y-8">
               {/* Number of Properties */}
@@ -143,10 +143,10 @@ const ROICalculator = () => {
           <div className="space-y-6">
             {/* Main Results Card */}
             <div className="bg-blue-900 text-white rounded-2xl shadow-2xl p-8">
-              <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <p className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <TrendingUp className="w-7 h-7" />
                 Your Potential Savings
-              </h3>
+              </p>
 
               <div className="space-y-3">
                 {/* Time Saved */}

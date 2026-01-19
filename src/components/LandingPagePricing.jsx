@@ -74,9 +74,9 @@ const LandingPagePricing = () => {
         {/* Free Trial Option */}
         <div className="max-w-4xl mx-auto mb-12 bg-blue-50 border-2 border-blue-200 rounded-2xl p-8">
           <div className="text-center">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            <p className="text-2xl font-bold text-gray-900 mb-4">
               Start with a 14-Day Free Trial
-            </h3>
+            </p>
             <p className="text-gray-700 mb-6">
               Try Nyumbanii free for 14 days. No credit card required. Cancel anytime.
             </p>
@@ -115,9 +115,9 @@ const LandingPagePricing = () => {
                 )}
 
                 <div className="p-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <p className="text-2xl font-bold text-gray-900 mb-2">
                     {tier.name}
-                  </h3>
+                  </p>
 
                   <div className="mb-6">
                     {isContactPricing ? (

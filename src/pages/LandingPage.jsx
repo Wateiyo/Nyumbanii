@@ -155,7 +155,7 @@ const LandingPage = () => {
       </div>
 
       <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4">
-        Karibu <br></br> <span className="text-blue-900">Nyumbanii</span>
+        Rental Property Management Made Simple in <span className="text-blue-900">Kenya</span>
       </h1>
       
       <p className="text-xl md:text-2xl text-gray-600 italic mb-8">Relax, we'll take it from here.</p>
@@ -220,19 +220,19 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-xl shadow-md text-center">
               <div className="w-16 h-16 bg-blue-900 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">1</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Sign Up</h3>
+              <p className="text-2xl font-semibold text-gray-900 mb-4">Sign Up</p>
               <p className="text-gray-600">Create your free account in less than 2 minutes. No credit card required.</p>
             </div>
 
             <div className="bg-white p-8 rounded-xl shadow-md text-center">
               <div className="w-16 h-16 bg-blue-900 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">2</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Add Properties</h3>
+              <p className="text-2xl font-semibold text-gray-900 mb-4">Add Properties</p>
               <p className="text-gray-600">Add your properties, units, and tenants to the platform with ease.</p>
             </div>
 
             <div className="bg-white p-8 rounded-xl shadow-md text-center">
               <div className="w-16 h-16 bg-blue-900 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">3</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Relax & Manage</h3>
+              <p className="text-2xl font-semibold text-gray-900 mb-4">Relax & Manage</p>
               <p className="text-gray-600">Sit back and let Nyumbanii handle rent tracking, maintenance, and more.</p>
             </div>
           </div>
@@ -251,7 +251,7 @@ const LandingPage = () => {
                 <div className="mb-4 rounded-lg overflow-hidden">
                   <img src={feature.image} alt={feature.title} className="w-full h-48 object-cover" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</p>
                 <p className="text-gray-600">{feature.description}</p>
               </div>
             ))}
@@ -347,13 +347,13 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <h3 className="font-bold text-lg mb-4"> <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+              <div className="font-bold text-lg mb-4"> <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
               <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
-            </div> Nyumbanii</h3>
+            </div> Nyumbanii</div>
               <p className="text-gray-400">Bridging the gap between landlords and tenants.</p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
+              <p className="font-semibold mb-4">Product</p>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                 <button onClick={() => navigate('/listings')} className="hover:text-white font-medium transition-colors">Listings</button>
@@ -361,7 +361,7 @@ const LandingPage = () => {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
+              <p className="font-semibold mb-4">Company</p>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
                 <li><a href="#contact" className="hover:text-white transition-colors">Contact</a></li>
@@ -369,7 +369,7 @@ const LandingPage = () => {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
+              <p className="font-semibold mb-4">Legal</p>
               <ul className="space-y-2 text-gray-400">
                 <li><button onClick={() => navigate('/privacy-policy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
                 <li><button onClick={() => navigate('/terms-of-service')} className="hover:text-white transition-colors">Terms of Service</button></li>

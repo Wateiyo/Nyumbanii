@@ -51,9 +51,9 @@ const VideoDemo = () => {
                     />
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                       <div className="text-center mb-6">
-                        <h3 className="text-2xl md:text-3xl font-bold mb-2">
+                        <p className="text-2xl md:text-3xl font-bold mb-2">
                           Complete Platform Walkthrough
-                        </h3>
+                        </p>
                         <p className="text-blue-100">3 minutes • See all features</p>
                       </div>
                       <button
@@ -100,9 +100,9 @@ const VideoDemo = () => {
 
           {/* Features List */}
           <div className="lg:col-span-2">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+            <p className="text-2xl font-bold text-gray-900 mb-6">
               What You'll Learn:
-            </h3>
+            </p>
             <ul className="space-y-4">
               {features.map((feature, index) => (
                 <li key={index} className="flex items-start gap-3">
@@ -132,9 +132,9 @@ const VideoDemo = () => {
         {/* Additional Info */}
         <div className="mt-16 bg-gray-50 rounded-2xl p-8">
           <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            <p className="text-2xl font-bold text-gray-900 mb-2">
               Need a Personalized Demo?
-            </h3>
+            </p>
             <p className="text-gray-600">
               Schedule a free 1-on-1 demo with our team to see how Nyumbanii fits your specific needs
             </p>
