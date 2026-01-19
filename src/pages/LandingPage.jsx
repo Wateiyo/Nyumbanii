@@ -155,7 +155,7 @@ const LandingPage = () => {
       </div>
 
       <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4">
-        Rental Property Management Made Simple in <span className="text-blue-900">Kenya</span>
+        Karibu <br /> <span className="text-blue-900">Nyumbanii</span>
       </h1>
       
       <p className="text-xl md:text-2xl text-gray-600 italic mb-8">Relax, we'll take it from here.</p>
