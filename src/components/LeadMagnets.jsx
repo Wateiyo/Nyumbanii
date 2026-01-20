@@ -49,6 +49,8 @@ const LeadMagnets = () => {
       navigate('/resources/rent-collection-checklist');
     } else if (resourceId === 'maintenance') {
       navigate('/resources/maintenance-guide');
+    } else if (resourceId === 'ebook') {
+      navigate('/resources/property-management-ebook');
     } else {
       setSelectedResource(resourceId);
       setModalOpen(true);

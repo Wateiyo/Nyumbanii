@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { X, Download, FileText, CheckCircle, Mail } from 'lucide-react';
+import { downloadPropertyManagementEbook } from '../utils/propertyManagementEbookGenerator';
+import { downloadRentCollectionChecklist } from '../utils/rentCollectionChecklistGenerator';
+import { downloadMaintenanceGuidePDF } from '../utils/maintenanceGuideGenerator';
 
 const LeadMagnetModal = ({ isOpen, onClose, resourceType }) => {
   const [formData, setFormData] = useState({
@@ -69,26 +72,33 @@ const LeadMagnetModal = ({ isOpen, onClose, resourceType }) => {
     e.preventDefault();
     setIsDownloading(true);
 
-    // TODO: Send form data to your backend/email service
-    // Example: Send to Firebase, your API, or email service like Resend
     try {
+      // Log form data for lead tracking
+      console.log('Lead magnet form submitted:', formData);
+
+      // TODO: Send form data to your backend/email service
       // await axios.post('/api/lead-magnets', {
       //   ...formData,
       //   resourceType: resourceType,
       //   downloadedAt: new Date().toISOString()
       // });
 
-      console.log('Lead magnet form submitted:', formData);
-
-      // Simulate download delay
+      // Trigger the actual PDF download based on resource type
       setTimeout(() => {
+        try {
+          if (resourceType === 'ebook') {
+            downloadPropertyManagementEbook();
+          } else if (resourceType === 'checklist') {
+            downloadRentCollectionChecklist();
+          } else if (resourceType === 'maintenance') {
+            downloadMaintenanceGuidePDF();
+          }
+        } catch (downloadError) {
+          console.error('Error generating PDF:', downloadError);
+        }
+
         setIsDownloading(false);
         setIsSubmitted(true);
-
-        // Trigger PDF download
-        // In production, you'd generate/serve the actual PDF
-        // For now, we'll show success message
-        // window.open(`/downloads/${currentResource.filename}`, '_blank');
       }, 1500);
     } catch (error) {
       console.error('Error submitting form:', error);

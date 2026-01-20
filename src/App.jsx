@@ -15,6 +15,7 @@ import MaintenanceStaffDashboard from './pages/MaintenanceStaffDashboard';
 import PropertyListings from './pages/Listings';
 import ChecklistDownload from './components/ChecklistDownload';
 import MaintenanceGuideDownload from './components/MaintenanceGuideDownload';
+import EbookDownload from './components/EbookDownload';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="/listings" element={<PropertyListings />} />
           <Route path="/resources/rent-collection-checklist" element={<ChecklistDownload />} />
           <Route path="/resources/maintenance-guide" element={<MaintenanceGuideDownload />} />
+          <Route path="/resources/property-management-ebook" element={<EbookDownload />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
