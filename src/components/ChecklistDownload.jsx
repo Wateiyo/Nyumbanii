@@ -60,7 +60,7 @@ const ChecklistDownload = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="max-w-2xl w-full">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 sm:p-12 text-center">
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -72,7 +72,7 @@ const ChecklistDownload = () => {
             </h2>
 
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-              Your <strong>Ultimate Rent Collection Checklist</strong> has been downloaded to your device.
+              Your <strong>Rent Collection Checklist</strong> has been downloaded to your device.
               Check your email for additional resources and exclusive tips!
             </p>
 
@@ -103,7 +103,7 @@ const ChecklistDownload = () => {
             <div className="space-y-4">
               <a
                 href="/signup"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#003366] to-[#094483] text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
+                className="inline-flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5" />
@@ -123,17 +123,17 @@ const ChecklistDownload = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-4 py-2 rounded-full text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400 px-4 py-2 rounded-full text-sm font-medium mb-6">
             <FileText className="w-4 h-4" />
             Free Download - No Credit Card Required
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-            Ultimate Rent Collection<br />Checklist for Landlords
+            Rent Collection<br />Checklist for Landlords
           </h1>
 
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
@@ -167,7 +167,7 @@ const ChecklistDownload = () => {
               ))}
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-orange-50 dark:from-blue-900/20 dark:to-orange-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
                 Why This Checklist?
               </h3>
@@ -195,7 +195,7 @@ const ChecklistDownload = () => {
           {/* Right Column - Form */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 lg:sticky lg:top-8">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#003366] to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[#003366] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Download className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -281,7 +281,7 @@ const ChecklistDownload = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-[#003366] to-[#094483] text-white py-3 rounded-lg hover:shadow-lg transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#003366] hover:bg-[#002244] text-white py-3 rounded-lg hover:shadow-lg transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>

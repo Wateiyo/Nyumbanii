@@ -52,7 +52,7 @@ const MaintenanceGuideDownload = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="max-w-2xl w-full">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 sm:p-12 text-center">
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -64,15 +64,15 @@ const MaintenanceGuideDownload = () => {
             </h2>
 
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-              Your <strong>Property Maintenance Best Practices Guide</strong> has been downloaded.
+              Your <strong>Property Maintenance Guide</strong> has been downloaded.
               Check your email for additional resources!
             </p>
 
-            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 mb-8">
-              <h3 className="font-semibold text-purple-900 dark:text-purple-300 mb-3">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-8">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-3">
                 What's Next?
               </h3>
-              <ul className="text-sm text-purple-800 dark:text-purple-400 space-y-2 text-left">
+              <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-2 text-left">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                   <span>Implement the seasonal maintenance checklist</span>
@@ -95,7 +95,7 @@ const MaintenanceGuideDownload = () => {
             <div className="space-y-4">
               <a
                 href="/signup"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#003366] to-[#094483] text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
+                className="inline-flex items-center gap-2 bg-[#003366] hover:bg-[#002244] text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5" />
@@ -115,16 +115,16 @@ const MaintenanceGuideDownload = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-4 py-2 rounded-full text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-[#003366] dark:text-blue-400 px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Wrench className="w-4 h-4" />
             Free Download - No Credit Card Required
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-            Property Maintenance<br />Best Practices Guide
+            Property Maintenance<br />Guide
           </h1>
 
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
@@ -152,13 +152,13 @@ const MaintenanceGuideDownload = () => {
                 'Common repair scenarios & solutions'
               ].map((item, index) => (
                 <div key={index} className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                   <span className="text-gray-700 dark:text-gray-300">{item}</span>
                 </div>
               ))}
             </div>
 
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
                 Why This Guide?
               </h3>
@@ -168,15 +168,15 @@ const MaintenanceGuideDownload = () => {
               </p>
               <div className="flex items-center gap-4 text-sm">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">6</div>
+                  <div className="text-2xl font-bold text-[#003366] dark:text-blue-400">6</div>
                   <div className="text-gray-600 dark:text-gray-400">Pages</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">50+</div>
+                  <div className="text-2xl font-bold text-[#003366] dark:text-blue-400">50+</div>
                   <div className="text-gray-600 dark:text-gray-400">Tips</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">100%</div>
+                  <div className="text-2xl font-bold text-[#003366] dark:text-blue-400">100%</div>
                   <div className="text-gray-600 dark:text-gray-400">Free</div>
                 </div>
               </div>
@@ -186,7 +186,7 @@ const MaintenanceGuideDownload = () => {
           {/* Right Column - Form */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 lg:sticky lg:top-8">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[#003366] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Download className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -215,7 +215,7 @@ const MaintenanceGuideDownload = () => {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="John Doe"
                   />
                 </div>
@@ -232,7 +232,7 @@ const MaintenanceGuideDownload = () => {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -246,7 +246,7 @@ const MaintenanceGuideDownload = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="+254 700 000 000"
                 />
               </div>
@@ -258,7 +258,7 @@ const MaintenanceGuideDownload = () => {
                 <select
                   value={formData.propertyCount}
                   onChange={(e) => setFormData({ ...formData, propertyCount: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="">Select...</option>
                   <option value="1">1 property</option>
@@ -272,7 +272,7 @@ const MaintenanceGuideDownload = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg hover:shadow-lg transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#003366] hover:bg-[#002244] text-white py-3 rounded-lg hover:shadow-lg transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -299,7 +299,7 @@ const MaintenanceGuideDownload = () => {
               </p>
               <a
                 href="/signup"
-                className="text-purple-600 dark:text-purple-400 font-medium hover:underline"
+                className="text-[#003366] dark:text-blue-400 font-medium hover:underline"
               >
                 Try Nyumbanii Free →
               </a>
@@ -314,15 +314,15 @@ const MaintenanceGuideDownload = () => {
           </p>
           <div className="flex items-center justify-center gap-8 flex-wrap">
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">40%</div>
+              <div className="text-3xl font-bold text-[#003366] dark:text-blue-400">40%</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Cost Savings</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">30%</div>
+              <div className="text-3xl font-bold text-[#003366] dark:text-blue-400">30%</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Better Retention</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">24/7</div>
+              <div className="text-3xl font-bold text-[#003366] dark:text-blue-400">24/7</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Request Tracking</div>
             </div>
           </div>

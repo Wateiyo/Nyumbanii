@@ -113,14 +113,6 @@ const PricingPlans = ({ onSelectPlan, currentPlan = null, loading = false }) => 
                     </p>
                   )}
                 </div>
-
-                {tier.propertyLimit !== -1 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Up to {tier.propertyLimit} {tier.propertyLimit === 1 ? 'property' : 'properties'}
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           ))}

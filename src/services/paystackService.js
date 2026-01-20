@@ -4,23 +4,27 @@ const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
 const PAYSTACK_SECRET_KEY = import.meta.env.VITE_PAYSTACK_SECRET_KEY;
 
 // Subscription tiers configuration
+// Each property can have up to 50 units, and each unit gets 2 tenant accounts
+// All tiers include a 14-day free trial - user selects tier at signup, pays after trial ends
 export const SUBSCRIPTION_TIERS = {
-  FREE: {
-    id: 'free',
-    name: 'Free Trial',
-    price: 0,
+  STARTER: {
+    id: 'starter',
+    name: 'Starter',
+    price: 149900, // KES 1,499 in kobo
+    annualPrice: 1440000, // KES 14,400 (20% discount, rounded)
     currency: 'KES',
     interval: 'monthly',
     features: [
       '1 Property',
-      'Up to 5 Tenants',
-      'Basic Payment Tracking',
-      'Limited Support',
-      '14 Days Trial'
+      '50 Units per Property',
+      '2 Tenant Accounts per Unit',
+      'All Features Included',
+      '14-Day Free Trial'
     ],
     propertyLimit: 1,
-    tenantLimit: 5,
-    durationDays: 14
+    unitsPerProperty: 50,
+    tenantAccountsPerUnit: 2,
+    trialDays: 14
   },
   BASIC: {
     id: 'basic',
@@ -31,14 +35,15 @@ export const SUBSCRIPTION_TIERS = {
     interval: 'monthly',
     features: [
       'Up to 5 Properties',
-      'Unlimited Tenants',
-      'Payment Tracking & Reminders',
-      'Maintenance Request Management',
-      'Basic Reports',
-      'Email Support'
+      '50 Units per Property',
+      '2 Tenant Accounts per Unit',
+      'All Features Included',
+      '14-Day Free Trial'
     ],
     propertyLimit: 5,
-    tenantLimit: -1 // -1 means unlimited
+    unitsPerProperty: 50,
+    tenantAccountsPerUnit: 2,
+    trialDays: 14
   },
   PROFESSIONAL: {
     id: 'professional',
@@ -49,16 +54,15 @@ export const SUBSCRIPTION_TIERS = {
     interval: 'monthly',
     features: [
       'Up to 20 Properties',
-      'Unlimited Tenants',
-      'Advanced Payment Tracking',
-      'Team Management',
-      'Maintenance Request Management',
-      'Advanced Analytics & Reports',
-      'Bulk Messaging',
-      'Priority Support'
+      '50 Units per Property',
+      '2 Tenant Accounts per Unit',
+      'All Features Included',
+      '14-Day Free Trial'
     ],
     propertyLimit: 20,
-    tenantLimit: -1,
+    unitsPerProperty: 50,
+    tenantAccountsPerUnit: 2,
+    trialDays: 14,
     popular: true
   },
   ENTERPRISE: {
@@ -70,37 +74,15 @@ export const SUBSCRIPTION_TIERS = {
     interval: 'monthly',
     features: [
       'Unlimited Properties',
-      'Unlimited Tenants',
-      'All Professional Features',
-      'Custom Branding',
-      'API Access',
-      'Dedicated Account Manager',
-      '24/7 Priority Support',
-      'Custom Integrations'
+      '50 Units per Property',
+      '2 Tenant Accounts per Unit',
+      'All Features Included',
+      '14-Day Free Trial'
     ],
     propertyLimit: -1,
-    tenantLimit: -1
-  },
-  CUSTOM: {
-    id: 'custom',
-    name: 'Custom',
-    price: null,
-    annualPrice: null,
-    contactForPricing: true,
-    currency: 'KES',
-    interval: 'monthly',
-    features: [
-      'Everything in Enterprise',
-      'Custom Feature Development',
-      'White Label Solution',
-      'Multi-Region Support',
-      'Custom SLA',
-      'On-Premise Deployment Option',
-      'Personalized Training',
-      'Direct Line to CTO'
-    ],
-    propertyLimit: -1,
-    tenantLimit: -1
+    unitsPerProperty: 50,
+    tenantAccountsPerUnit: 2,
+    trialDays: 14
   }
 };
 

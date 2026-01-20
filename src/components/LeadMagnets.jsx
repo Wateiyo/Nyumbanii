@@ -23,7 +23,7 @@ const LeadMagnets = () => {
     {
       id: 'checklist',
       icon: <FileCheck className="w-8 h-8" />,
-      title: 'Ultimate Rent Collection Checklist',
+      title: 'Rent Collection Checklist',
       description: '60+ actionable steps to achieve 95% on-time payments',
       iconBg: 'bg-green-600',
       bgColor: 'bg-green-50',
