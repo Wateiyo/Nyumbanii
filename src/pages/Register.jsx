@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Home, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, CheckCircle, X } from 'lucide-react';
+import { Home, User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, CheckCircle, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { checkTrialEligibility, recordTrialStart } from '../services/firestoreService';
 
 const db = getFirestore();
 
@@ -21,6 +22,7 @@ const Register = () => {
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [invitationCode, setInvitationCode] = useState('');
   const [validatingCode, setValidatingCode] = useState(false);
+  const [trialWarning, setTrialWarning] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -221,6 +223,16 @@ const Register = () => {
       return;
     }
 
+    // Check trial eligibility for landlords (they get the free trial)
+    if (selectedRole === 'landlord') {
+      const trialCheck = await checkTrialEligibility(formData.email);
+      if (!trialCheck.eligible) {
+        setTrialWarning(trialCheck.reason);
+        // Don't block registration, but warn them they won't get a trial
+        // They can still register and pay immediately
+      }
+    }
+
     try {
       const result = await register(
         formData.email,
@@ -281,6 +293,17 @@ const Register = () => {
         } catch (updateErr) {
           console.error('Error updating records:', updateErr);
           // Continue anyway - user is registered
+        }
+      }
+
+      // Record trial start for landlords (if they haven't used a trial before)
+      if (selectedRole === 'landlord' && !trialWarning) {
+        try {
+          const selectedTier = pendingPlanUpgrade?.planId || 'starter';
+          await recordTrialStart(formData.email, result.user.uid, selectedTier);
+        } catch (trialErr) {
+          console.error('Error recording trial start:', trialErr);
+          // Don't block registration if trial recording fails
         }
       }
 
@@ -411,6 +434,20 @@ const Register = () => {
               {error && (
                 <div className="mb-6 p-4 bg-red-500/20 border-l-4 border-red-400 rounded-lg backdrop-blur-sm">
                   <p className="text-white text-sm font-medium">{error}</p>
+                </div>
+              )}
+
+              {trialWarning && (
+                <div className="mb-6 p-4 bg-yellow-500/20 border-l-4 border-yellow-400 rounded-lg backdrop-blur-sm">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-300 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-white text-sm font-semibold mb-1">Free Trial Not Available</p>
+                      <p className="text-yellow-100 text-xs">
+                        {trialWarning} You can still create an account, but you'll need to subscribe immediately to access features.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 

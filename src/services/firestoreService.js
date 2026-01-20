@@ -486,3 +486,120 @@ export const createPaymentRecord = async (paymentData) => {
     throw error;
   }
 };
+
+// ============= TRIAL MANAGEMENT =============
+
+/**
+ * Normalize email to prevent alias abuse
+ * - Converts to lowercase
+ * - For Gmail: removes dots and everything after + sign
+ * @param {string} email - The email to normalize
+ * @returns {string} Normalized email
+ */
+export const normalizeEmail = (email) => {
+  if (!email) return '';
+
+  const lowerEmail = email.toLowerCase().trim();
+  const [localPart, domain] = lowerEmail.split('@');
+
+  if (!domain) return lowerEmail;
+
+  // Gmail-specific normalization (also applies to googlemail.com)
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    // Remove dots and everything after +
+    const normalizedLocal = localPart.replace(/\./g, '').split('+')[0];
+    return `${normalizedLocal}@gmail.com`;
+  }
+
+  // For other domains, just remove + aliases
+  const normalizedLocal = localPart.split('+')[0];
+  return `${normalizedLocal}@${domain}`;
+};
+
+/**
+ * Check if an email has already used a free trial
+ * @param {string} email - The email to check
+ * @returns {Promise<{eligible: boolean, reason?: string}>} Trial eligibility status
+ */
+export const checkTrialEligibility = async (email) => {
+  try {
+    const normalizedEmail = normalizeEmail(email);
+
+    // Check trialHistory collection for this normalized email
+    const q = query(
+      collection(db, 'trialHistory'),
+      where('normalizedEmail', '==', normalizedEmail)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const trialRecord = snapshot.docs[0].data();
+      return {
+        eligible: false,
+        reason: 'This email has already been used for a free trial.',
+        previousTrialDate: trialRecord.trialStartDate
+      };
+    }
+
+    return { eligible: true };
+  } catch (error) {
+    console.error('Error checking trial eligibility:', error);
+    // In case of error, allow the trial (fail open) but log it
+    return { eligible: true, warning: 'Could not verify trial history' };
+  }
+};
+
+/**
+ * Record that an email has started a free trial
+ * @param {string} email - The original email
+ * @param {string} userId - The user's ID
+ * @param {string} selectedTier - The tier they selected for trial
+ * @returns {Promise<string>} The trial record ID
+ */
+export const recordTrialStart = async (email, userId, selectedTier) => {
+  try {
+    const normalizedEmail = normalizeEmail(email);
+
+    const docRef = await addDoc(collection(db, 'trialHistory'), {
+      originalEmail: email.toLowerCase().trim(),
+      normalizedEmail: normalizedEmail,
+      userId: userId,
+      selectedTier: selectedTier,
+      trialStartDate: serverTimestamp(),
+      trialDays: 14,
+      status: 'active',
+      createdAt: serverTimestamp()
+    });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Error recording trial start:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get trial record for a user
+ * @param {string} userId - The user's ID
+ * @returns {Promise<Object|null>} The trial record or null
+ */
+export const getUserTrialRecord = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'trialHistory'),
+      where('userId', '==', userId)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting trial record:', error);
+    throw error;
+  }
+};
