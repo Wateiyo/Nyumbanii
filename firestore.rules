@@ -128,6 +128,12 @@ service cloud.firestore {
       allow delete: if isAuthenticated();
     }
 
+    // Leads collection - for marketing lead capture (eBook downloads, etc.)
+    match /leads/{leadId} {
+      allow create: if true; // Allow public lead capture
+      allow read, update, delete: if isAuthenticated(); // Only authenticated users can manage leads
+    }
+
     // Messages collection
     match /messages/{messageId} {
       allow read, write: if isAuthenticated();
