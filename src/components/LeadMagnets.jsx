@@ -18,7 +18,7 @@ const LeadMagnets = () => {
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200',
       highlight: 'FREE Download',
-      pages: '50 pages'
+      pages: '25 pages'
     },
     {
       id: 'checklist',

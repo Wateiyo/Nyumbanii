@@ -17,7 +17,7 @@ const LeadMagnetModal = ({ isOpen, onClose, resourceType }) => {
   const resources = {
     ebook: {
       title: 'The Complete Property Management Guide',
-      description: 'A comprehensive 50-page guide covering everything from tenant screening to maintenance management',
+      description: 'A comprehensive guide covering everything from tenant screening to maintenance management',
       filename: 'nyumbanii-property-management-guide.pdf',
       icon: '📚',
       features: [

@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 
 /**
- * Generate a comprehensive 50-page Property Management eBook PDF
+ * Generate a comprehensive Property Management eBook PDF
  * Tailored for landlords and property managers in Kenya
  */
 export const generatePropertyManagementEbook = () => {
@@ -315,7 +315,7 @@ export const generatePropertyManagementEbook = () => {
   doc.setTextColor(200, 220, 255);
   doc.text('2025 Edition', pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 8;
-  doc.text('50+ Pages of Expert Insights', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('Expert Insights for Kenyan Landlords', pageWidth / 2, yPosition, { align: 'center' });
 
   // Footer
   yPosition = pageHeight - 15;

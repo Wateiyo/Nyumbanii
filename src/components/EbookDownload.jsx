@@ -134,7 +134,7 @@ const EbookDownload = () => {
           </h1>
 
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-            A comprehensive 50-page guide covering everything from tenant screening to
+            A comprehensive guide covering everything from tenant screening to
             portfolio scaling, specifically designed for landlords and property managers in Kenya.
           </p>
         </div>
