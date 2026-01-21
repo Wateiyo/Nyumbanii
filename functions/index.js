@@ -26,18 +26,14 @@ setGlobalOptions({
 
 // Get API keys from Firebase Functions config
 // Set these with: firebase functions:config:set resend.api_key="YOUR_KEY" paystack.secret_key="YOUR_KEY"
-// Using placeholder for build-time, actual keys loaded at runtime
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_placeholder_for_build_only";
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "placeholder";
 
-// Initialize Resend with placeholder for build
-const resend = new Resend(RESEND_API_KEY);
-
 // Lazy initialization helper that gets config at runtime
+// This ensures the actual API keys are loaded from Firebase config, not build-time placeholders
 function getApiKeys() {
   const config = functions.config();
   return {
-    resendKey: config.resend?.api_key || RESEND_API_KEY,
+    resendKey: config.resend?.api_key || process.env.RESEND_API_KEY || "",
     paystackKey: config.paystack?.secret_key || PAYSTACK_SECRET_KEY
   };
 }
@@ -74,12 +70,16 @@ exports.sendTeamInvitation = onDocumentCreated(
 
       logger.info("Sending invitation to:", teamMember.email);
 
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
       // Get landlord information
       const landlordDoc = await admin.firestore()
         .collection('users')
         .doc(teamMember.landlordId)
         .get();
-      
+
       const landlordData = landlordDoc.data();
       const landlordName = landlordData?.displayName || 'Your Landlord';
 
@@ -93,7 +93,7 @@ exports.sendTeamInvitation = onDocumentCreated(
         const properties = propertiesDocs
           .filter(result => result.status === 'fulfilled' && result.value.exists)
           .map(result => result.value.data());
-        
+
         if (properties.length > 0) {
           propertiesHtml = `
             <p><strong>Your assigned properties:</strong></p>
@@ -104,11 +104,11 @@ exports.sendTeamInvitation = onDocumentCreated(
         }
       }
 
-      const roleTitle = teamMember.role === 'property_manager' 
-        ? 'Property Manager' 
+      const roleTitle = teamMember.role === 'property_manager'
+        ? 'Property Manager'
         : 'Maintenance Staff';
 
-      const { data, error } = await resend.emails.send({
+      const { data, error } = await resendClient.emails.send({
         from: 'Nyumbanii Team <noreply@nyumbanii.org>',
         to: [teamMember.email],
         subject: 'Invitation to Join Nyumbanii Property Management',
@@ -219,12 +219,16 @@ exports.sendTenantInvitation = onDocumentCreated(
 
       logger.info('Sending invitation to tenant:', tenant.email);
 
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
       // Get landlord information
       const landlordDoc = await admin.firestore()
         .collection('users')
         .doc(tenant.landlordId)
         .get();
-      
+
       const landlordData = landlordDoc.data();
       const landlordName = landlordData?.displayName || 'Your Landlord';
 
@@ -233,11 +237,11 @@ exports.sendTenantInvitation = onDocumentCreated(
         .collection('properties')
         .doc(tenant.property)
         .get();
-      
+
       const propertyData = propertyDoc.exists ? propertyDoc.data() : null;
       const propertyName = propertyData?.name || tenant.property;
 
-      const { data, error } = await resend.emails.send({
+      const { data, error } = await resendClient.emails.send({
         from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [tenant.email],
         subject: 'Welcome to Your Tenant Portal - Nyumbanii',
@@ -350,9 +354,13 @@ exports.sendMemoToTenants = onCall(
 
       logger.info('Sending memo to', tenants.length, 'tenants');
 
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
       // Send email to each tenant
       const emailPromises = tenants.map(tenant =>
-        resend.emails.send({
+        resendClient.emails.send({
           from: 'Nyumbanii <noreply@nyumbanii.org>',
           to: [tenant.email],
           subject: memo.subject,
@@ -432,7 +440,11 @@ exports.sendEmailVerificationCode = onCall(
 
       logger.info('Sending verification code to:', email);
 
-      const { data, error } = await resend.emails.send({
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
+      const { data, error } = await resendClient.emails.send({
         from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [email],
         subject: 'Verify Your Email - Nyumbanii',
@@ -511,7 +523,11 @@ exports.sendViewingRequestEmail = onCall(
 
       logger.info('Sending viewing request to:', landlordEmail);
 
-      const { data, error } = await resend.emails.send({
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
+      const { data, error } = await resendClient.emails.send({
         from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [landlordEmail],
         subject: `New Viewing Request - ${viewing.property}`,
@@ -562,7 +578,11 @@ exports.sendViewingConfirmationEmail = onCall(
 
       logger.info('Sending confirmation to:', viewing.email);
 
-      const { data, error } = await resend.emails.send({
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
+      const { data, error } = await resendClient.emails.send({
         from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [viewing.email],
         subject: `Viewing Confirmed - ${viewing.property}`,
@@ -613,6 +633,10 @@ exports.sendRentReminders = onSchedule(
   async (event) => {
     try {
       logger.info("🔔 Starting automated rent reminders job...");
+
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
 
       const db = admin.firestore();
       const today = new Date();
@@ -677,7 +701,7 @@ exports.sendRentReminders = onSchedule(
               const formattedAmount = `${currencySymbol}${payment.amount.toLocaleString()}`;
 
               // Send reminder email
-              const emailResult = await resend.emails.send({
+              const emailResult = await resendClient.emails.send({
                 from: 'Nyumbanii <noreply@nyumbanii.org>',
                 to: tenant.email,
                 subject: `Rent Reminder: Payment Due in ${reminderDays} Days`,
@@ -758,6 +782,10 @@ exports.sendOverdueNotices = onSchedule(
     try {
       logger.info("⚠️ Starting automated overdue notices job...");
 
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
       const db = admin.firestore();
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -833,7 +861,7 @@ exports.sendOverdueNotices = onSchedule(
               const formattedLateFee = `${currencySymbol}${lateFee.toLocaleString()}`;
 
               // Send overdue notice email
-              const emailResult = await resend.emails.send({
+              const emailResult = await resendClient.emails.send({
                 from: 'Nyumbanii <noreply@nyumbanii.org>',
                 to: tenant.email,
                 subject: `⚠️ Overdue Payment Notice - ${daysOverdue} Days Late`,
@@ -928,6 +956,10 @@ exports.generateMonthlyReports = onSchedule(
     try {
       logger.info("📊 Starting monthly reports generation...");
 
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
       const db = admin.firestore();
 
       // Calculate previous month
@@ -999,7 +1031,7 @@ exports.generateMonthlyReports = onSchedule(
           const currencySymbol = currency === 'KSH' ? 'KSH ' : '$';
 
           // Send report email
-          const emailResult = await resend.emails.send({
+          const emailResult = await resendClient.emails.send({
             from: 'Nyumbanii <noreply@nyumbanii.org>',
             to: landlord.email,
             subject: `Monthly Report: ${monthName} ${year}`,
@@ -1505,7 +1537,11 @@ exports.paystackWebhook = onRequest(
         // Send confirmation email
         if (userData?.email) {
           try {
-            await resend.emails.send({
+            // Get the actual API key at runtime
+            const { resendKey } = getApiKeys();
+            const resendClient = new Resend(resendKey);
+
+            await resendClient.emails.send({
               from: "Nyumbanii <noreply@nyumbanii.org>",
               to: userData.email,
               subject: "Payment Successful - Subscription Activated",
@@ -1829,8 +1865,12 @@ exports.sendApplicationStatusEmail = onDocumentUpdated(
         return;
       }
 
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+      const resendClient = new Resend(resendKey);
+
       // Send email
-      const { data, error } = await resend.emails.send({
+      const { data, error } = await resendClient.emails.send({
         from: 'Nyumbanii <noreply@nyumbanii.org>',
         to: [after.email],
         subject: subject,
