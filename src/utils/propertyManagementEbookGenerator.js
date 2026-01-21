@@ -160,7 +160,7 @@ export const generatePropertyManagementEbook = () => {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(146, 64, 14);
-    doc.text(`💡 ${title}`, margin + 5, yPosition);
+    doc.text(`TIP: ${title}`, margin + 5, yPosition);
     yPosition += 6;
 
     doc.setFont('helvetica', 'normal');
@@ -195,7 +195,7 @@ export const generatePropertyManagementEbook = () => {
 
     doc.setFont('helvetica', 'normal');
     points.forEach(point => {
-      doc.text(`✓ ${point}`, margin + 8, yPosition);
+      doc.text(`* ${point}`, margin + 8, yPosition);
       yPosition += 6;
     });
 
@@ -270,43 +270,43 @@ export const generatePropertyManagementEbook = () => {
   doc.line(pageWidth / 2 - 40, yPosition, pageWidth / 2 + 40, yPosition);
 
   // Main title
-  yPosition += 30;
-  doc.setFontSize(28);
+  yPosition += 25;
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
   doc.text('The Complete', pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 12;
+  yPosition += 10;
   doc.text('Property Management', pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 12;
+  yPosition += 10;
   doc.text('Guide', pageWidth / 2, yPosition, { align: 'center' });
 
   // Subtitle
-  yPosition += 20;
-  doc.setFontSize(14);
+  yPosition += 15;
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(200, 220, 255);
   doc.text('For Landlords & Property Managers in Kenya', pageWidth / 2, yPosition, { align: 'center' });
 
   // Feature box
-  yPosition += 25;
-  doc.setFillColor(255, 255, 255, 0.1);
-  doc.roundedRect(margin + 20, yPosition, contentWidth - 40, 70, 5, 5, 'F');
+  yPosition += 20;
+  doc.setFillColor(0, 40, 80);
+  doc.roundedRect(margin + 15, yPosition, contentWidth - 30, 65, 3, 3, 'F');
 
-  yPosition += 15;
-  doc.setFontSize(11);
+  yPosition += 12;
+  doc.setFontSize(10);
   doc.setTextColor(255, 255, 255);
   const coverFeatures = [
-    '✓ Tenant Screening & Selection',
-    '✓ Lease Agreements & Legal Compliance',
-    '✓ Rent Collection Strategies',
-    '✓ Property Maintenance Systems',
-    '✓ Financial Management & Reporting',
-    '✓ Scaling Your Property Portfolio'
+    'Tenant Screening & Selection',
+    'Lease Agreements & Legal Compliance',
+    'Rent Collection Strategies',
+    'Property Maintenance Systems',
+    'Financial Management & Reporting',
+    'Scaling Your Property Portfolio'
   ];
 
   coverFeatures.forEach(feature => {
-    doc.text(feature, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 9;
+    doc.text('- ' + feature, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 8;
   });
 
   // Edition info

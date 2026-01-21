@@ -144,12 +144,12 @@ export const generateMaintenanceGuidePDF = () => {
   yPosition += 10;
 
   const benefits = [
-    '✓ Preventive maintenance schedules',
-    '✓ Emergency response protocols',
-    '✓ Vendor management strategies',
-    '✓ Cost-saving maintenance tips',
-    '✓ Tenant communication best practices',
-    '✓ Record-keeping and compliance'
+    '* Preventive maintenance schedules',
+    '* Emergency response protocols',
+    '* Vendor management strategies',
+    '* Cost-saving maintenance tips',
+    '* Tenant communication best practices',
+    '* Record-keeping and compliance'
   ];
 
   doc.setFontSize(11);
@@ -246,11 +246,11 @@ export const generateMaintenanceGuidePDF = () => {
   yPosition += 5;
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(textGray[0], textGray[1], textGray[2]);
-  doc.text('• Shut off main water valve immediately', margin + 10, yPosition);
+  doc.text('- Shut off main water valve immediately', margin + 10, yPosition);
   yPosition += 5;
-  doc.text('• Call emergency plumber', margin + 10, yPosition);
+  doc.text('- Call emergency plumber', margin + 10, yPosition);
   yPosition += 5;
-  doc.text('• Document damage with photos for insurance', margin + 10, yPosition);
+  doc.text('- Document damage with photos for insurance', margin + 10, yPosition);
   yPosition += 8;
 
   doc.setFont('helvetica', 'bold');
@@ -259,11 +259,11 @@ export const generateMaintenanceGuidePDF = () => {
   yPosition += 5;
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(textGray[0], textGray[1], textGray[2]);
-  doc.text('• Check if area-wide or building-specific', margin + 10, yPosition);
+  doc.text('- Check if area-wide or building-specific', margin + 10, yPosition);
   yPosition += 5;
-  doc.text('• Start backup generator if available', margin + 10, yPosition);
+  doc.text('- Start backup generator if available', margin + 10, yPosition);
   yPosition += 5;
-  doc.text('• Notify tenants of estimated restoration time', margin + 10, yPosition);
+  doc.text('- Notify tenants of estimated restoration time', margin + 10, yPosition);
   yPosition += 8;
 
   doc.setFont('helvetica', 'bold');
@@ -272,11 +272,11 @@ export const generateMaintenanceGuidePDF = () => {
   yPosition += 5;
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(textGray[0], textGray[1], textGray[2]);
-  doc.text('• Call professional drainage service immediately', margin + 10, yPosition);
+  doc.text('- Call professional drainage service immediately', margin + 10, yPosition);
   yPosition += 5;
-  doc.text('• Prevent usage of affected facilities', margin + 10, yPosition);
+  doc.text('- Prevent usage of affected facilities', margin + 10, yPosition);
   yPosition += 5;
-  doc.text('• Schedule regular cleaning to prevent recurrence', margin + 10, yPosition);
+  doc.text('- Schedule regular cleaning to prevent recurrence', margin + 10, yPosition);
 
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
@@ -387,12 +387,12 @@ export const generateMaintenanceGuidePDF = () => {
   yPosition += 6;
 
   const tenantTips = [
-    '• Proper waste disposal to prevent blocked drains',
-    '• Reporting small issues before they become big problems',
-    '• Basic appliance care and maintenance',
-    '• Water conservation and leak reporting',
-    '• Pest prevention (food storage, cleanliness)',
-    '• Respecting common areas and facilities'
+    '- Proper waste disposal to prevent blocked drains',
+    '- Reporting small issues before they become big problems',
+    '- Basic appliance care and maintenance',
+    '- Water conservation and leak reporting',
+    '- Pest prevention (food storage, cleanliness)',
+    '- Respecting common areas and facilities'
   ];
 
   tenantTips.forEach(tip => {
@@ -409,7 +409,7 @@ export const generateMaintenanceGuidePDF = () => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(146, 64, 14);
-  doc.text('💡 Pro Tip:', margin + 5, yPosition);
+  doc.text('TIP: Pro Tip:', margin + 5, yPosition);
   yPosition += 6;
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(textGray[0], textGray[1], textGray[2]);
@@ -480,7 +480,7 @@ export const generateMaintenanceGuidePDF = () => {
 
   yPosition += 8;
   doc.setFontSize(10);
-  doc.text('✓ Track requests  ✓ Assign vendors  ✓ Monitor progress  ✓ Auto-reminders', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('* Track requests  * Assign vendors  * Monitor progress  * Auto-reminders', pageWidth / 2, yPosition, { align: 'center' });
 
   yPosition += 10;
   doc.setFontSize(12);

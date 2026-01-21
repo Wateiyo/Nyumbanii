@@ -167,12 +167,12 @@ export const generateRentCollectionChecklist = () => {
   yPosition += 10;
 
   const benefits = [
-    '✓ Pre-collection preparation and tenant communication',
-    '✓ M-Pesa payment tracking and reconciliation',
-    '✓ Late payment management strategies',
-    '✓ Record-keeping and financial reporting',
-    '✓ Legal compliance for Kenyan landlords',
-    '✓ Automation opportunities to save time'
+    '* Pre-collection preparation and tenant communication',
+    '* M-Pesa payment tracking and reconciliation',
+    '* Late payment management strategies',
+    '* Record-keeping and financial reporting',
+    '* Legal compliance for Kenyan landlords',
+    '* Automation opportunities to save time'
   ];
 
   doc.setFontSize(11);
@@ -203,7 +203,7 @@ export const generateRentCollectionChecklist = () => {
   yPosition += 15;
 
   // Section 1: Pre-Collection Preparation
-  addSectionHeader('📋 Pre-Collection Preparation (5-7 Days Before Due Date)');
+  addSectionHeader('> Pre-Collection Preparation (5-7 Days Before Due Date)');
 
   addCheckboxItem('Review all tenant records and update contact information');
   addCheckboxItem('Verify current rent amounts and any pending adjustments');
@@ -297,7 +297,7 @@ export const generateRentCollectionChecklist = () => {
   yPosition = 20;
 
   // Section 7: Record Keeping
-  addSectionHeader('📊 Record Keeping & Documentation');
+  addSectionHeader('> Record Keeping & Documentation');
 
   addCheckboxItem('Update master rent collection spreadsheet or software');
   addCheckboxItem('File all payment receipts and transaction confirmations');
@@ -407,7 +407,7 @@ export const generateRentCollectionChecklist = () => {
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 122, 0);
-  doc.text('💡 Pro Tips for 95%+ On-Time Collection Rate', margin + 10, yPosition);
+  doc.text('TIP: Pro Tips for 95%+ On-Time Collection Rate', margin + 10, yPosition);
 
   yPosition += 10;
   doc.setFontSize(10);
@@ -489,10 +489,10 @@ export const generateRentCollectionChecklist = () => {
 
   yPosition += 8;
   doc.setFontSize(10);
-  doc.text('✓ Automated M-Pesa Reconciliation  ✓ Digital Receipts  ✓ Smart Reminders', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('* Automated M-Pesa Reconciliation  * Digital Receipts  * Smart Reminders', pageWidth / 2, yPosition, { align: 'center' });
 
   yPosition += 6;
-  doc.text('✓ Financial Reports  ✓ Legal Compliance  ✓ Tenant Portal', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('* Financial Reports  * Legal Compliance  * Tenant Portal', pageWidth / 2, yPosition, { align: 'center' });
 
   yPosition += 10;
   doc.setFontSize(12);

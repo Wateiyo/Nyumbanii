@@ -112,16 +112,16 @@ export const generateLegalNoticePDF = (noticeData) => {
       if (groundsList.length > 0) {
         groundsList.forEach(ground => {
           doc.setFontSize(11);
-          doc.text('•', margin + 5, yPosition);
+          doc.text('-', margin + 5, yPosition);
           const lines = doc.splitTextToSize(ground.trim(), contentWidth - 15);
           doc.text(lines, margin + 15, yPosition);
           yPosition += (lines.length * 5.5) + 4;
         });
       } else {
-        addText('• ' + grounds, 11, 'left', false, 5);
+        addText('- ' + grounds, 11, 'left', false, 5);
       }
     } else {
-      addText('• Non-payment of rent / Breach of tenancy agreement terms', 11, 'left', false, 5);
+      addText('- Non-payment of rent / Breach of tenancy agreement terms', 11, 'left', false, 5);
     }
 
     yPosition += 5;
@@ -377,7 +377,7 @@ export const generatePaymentReceiptPDF = (paymentData, tenantData = {}, landlord
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('PAID ✓', margin + 25, yPosition + 7, { align: 'center' });
+  doc.text('PAID *', margin + 25, yPosition + 7, { align: 'center' });
   doc.setTextColor(0, 0, 0);
 
   yPosition += 20;
@@ -649,12 +649,12 @@ export const generateEvictionNoticePDF = (noticeData) => {
   // Legal Requirements
   addText('LEGAL REQUIREMENTS:', 12, 'left', true);
   const requirements = [
-    '• You must vacate the premises by the specified eviction date',
-    '• All outstanding rent and charges must be settled',
-    '• The premises must be returned in good condition',
-    '• All keys and property items must be returned',
-    '• Failure to comply will result in legal eviction proceedings',
-    '• Court orders may be obtained for forceful eviction if necessary'
+    '- You must vacate the premises by the specified eviction date',
+    '- All outstanding rent and charges must be settled',
+    '- The premises must be returned in good condition',
+    '- All keys and property items must be returned',
+    '- Failure to comply will result in legal eviction proceedings',
+    '- Court orders may be obtained for forceful eviction if necessary'
   ];
 
   requirements.forEach(req => {
