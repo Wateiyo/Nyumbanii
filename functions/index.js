@@ -38,6 +38,17 @@ function getApiKeys() {
   };
 }
 
+// Email logo URL
+const EMAIL_LOGO_URL = 'https://nyumbanii.org/images/logo-email.png';
+
+// Common email header HTML with logo
+const getEmailHeader = (title = 'Nyumbanii') => `
+  <div class="header" style="background-color: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+    <img src="${EMAIL_LOGO_URL}" alt="Nyumbanii" style="height: 50px; margin-bottom: 10px;" />
+    <h1 style="margin: 0; font-size: 24px;">${title}</h1>
+  </div>
+`;
+
 // ==========================================
 // FIRESTORE TRIGGERS (Background Functions)
 // ==========================================
@@ -122,17 +133,15 @@ exports.sendTeamInvitation = onDocumentCreated(
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
               .header { background-color: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
               .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-              .button { display: inline-block; background-color: #003366; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .button { display: inline-block; background-color: #003366; color: #ffffff !important; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
               .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
             </style>
           </head>
           <body>
             <div class="container">
-              <div class="header">
-                <h1>🏠 Nyumbanii</h1>
-              </div>
+              ${getEmailHeader('Welcome to Nyumbanii!')}
               <div class="content">
-                <h2>Welcome to Nyumbanii!</h2>
+                <h2>You're Invited!</h2>
                 <p>Hello ${teamMember.name},</p>
                 <p>You have been invited by <strong>${landlordName}</strong> to join their property management team as a <strong>${roleTitle}</strong>.</p>
                 
@@ -257,29 +266,18 @@ exports.sendTenantInvitation = onDocumentCreated(
               .header { background-color: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
               .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
               .property-box { background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #003366; }
-              .button { display: inline-block; background-color: #003366; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .button { display: inline-block; background-color: #003366; color: #ffffff !important; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
               .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
             </style>
           </head>
           <body>
             <div class="container">
-              <div class="header">
-                <h1>🏠 Welcome to Nyumbanii!</h1>
-              </div>
+              ${getEmailHeader('Welcome to Nyumbanii!')}
               <div class="content">
                 <h2>Your Tenant Portal is Ready</h2>
                 <p>Hello ${tenant.name},</p>
                 <p><strong>${landlordName}</strong> has invited you to access your tenant portal on Nyumbanii.</p>
-                
-                <div class="property-box">
-                  <h3 style="margin-top: 0;">Your Property Details</h3>
-                  <p><strong>Property:</strong> ${propertyName}</p>
-                  <p><strong>Unit:</strong> ${tenant.unit}</p>
-                  <p><strong>Monthly Rent:</strong> KES ${tenant.rent?.toLocaleString()}</p>
-                  <p><strong>Lease Start:</strong> ${tenant.leaseStart}</p>
-                  <p><strong>Lease End:</strong> ${tenant.leaseEnd}</p>
-                </div>
-                
+
                 <p><strong>With your tenant portal, you can:</strong></p>
                 <ul>
                   <li>View your lease agreement and payment history</li>
@@ -288,20 +286,29 @@ exports.sendTenantInvitation = onDocumentCreated(
                   <li>Make and track rent payments</li>
                   <li>Access important documents</li>
                 </ul>
-                
+
+                <div class="property-box">
+                  <h3 style="margin-top: 0;">Your Property Details</h3>
+                  <p><strong>Property:</strong> ${propertyName}</p>
+                  <p><strong>Unit:</strong> ${tenant.unit}</p>
+                  <p><strong>Monthly Rent:</strong> KES ${tenant.rent?.toLocaleString()}</p>
+                  <p><strong>Lease Start:</strong> ${tenant.leaseStart}</p>
+                  <p><strong>Lease End:</strong> ${tenant.leaseEnd}</p>
+                </div>
+
                 <p>Click the button below to create your account and access your portal:</p>
                 <center>
-                  <a href="https://nyumbanii.web.app/register?invite=${tenant.invitationToken}" class="button">
+                  <a href="https://nyumbanii.org/register?invite=${tenant.invitationToken}" class="button" style="color: #ffffff;">
                     Create Your Account
                   </a>
                 </center>
-                
+
                 <p>If you have any questions, please contact ${landlordName}.</p>
-                
+
                 <p>Best regards,<br>The Nyumbanii Team</p>
               </div>
               <div class="footer">
-                <p>© 2025 Nyumbanii Property Management. All rights reserved.</p>
+                <p>2025 Nyumbanii Property Management. All rights reserved.</p>
               </div>
             </div>
           </body>
@@ -416,28 +423,17 @@ exports.resendTenantInvitation = onCall(
               .header { background-color: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
               .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
               .property-box { background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #003366; }
-              .button { display: inline-block; background-color: #003366; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .button { display: inline-block; background-color: #003366; color: #ffffff !important; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
               .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
             </style>
           </head>
           <body>
             <div class="container">
-              <div class="header">
-                <h1>Welcome to Nyumbanii!</h1>
-              </div>
+              ${getEmailHeader('Welcome to Nyumbanii!')}
               <div class="content">
                 <h2>Your Tenant Portal is Ready</h2>
                 <p>Hello ${tenant.name},</p>
                 <p><strong>${landlordName}</strong> has invited you to access your tenant portal on Nyumbanii.</p>
-
-                <div class="property-box">
-                  <h3 style="margin-top: 0;">Your Property Details</h3>
-                  <p><strong>Property:</strong> ${propertyName}</p>
-                  <p><strong>Unit:</strong> ${tenant.unit}</p>
-                  <p><strong>Monthly Rent:</strong> KES ${tenant.rent?.toLocaleString()}</p>
-                  <p><strong>Lease Start:</strong> ${tenant.leaseStart}</p>
-                  <p><strong>Lease End:</strong> ${tenant.leaseEnd}</p>
-                </div>
 
                 <p><strong>With your tenant portal, you can:</strong></p>
                 <ul>
@@ -448,9 +444,18 @@ exports.resendTenantInvitation = onCall(
                   <li>Access important documents</li>
                 </ul>
 
+                <div class="property-box">
+                  <h3 style="margin-top: 0;">Your Property Details</h3>
+                  <p><strong>Property:</strong> ${propertyName}</p>
+                  <p><strong>Unit:</strong> ${tenant.unit}</p>
+                  <p><strong>Monthly Rent:</strong> KES ${tenant.rent?.toLocaleString()}</p>
+                  <p><strong>Lease Start:</strong> ${tenant.leaseStart}</p>
+                  <p><strong>Lease End:</strong> ${tenant.leaseEnd}</p>
+                </div>
+
                 <p>Click the button below to create your account and access your portal:</p>
                 <center>
-                  <a href="https://nyumbanii.org/register?invite=${invitationToken}" class="button">
+                  <a href="https://nyumbanii.org/register?invite=${invitationToken}" class="button" style="color: #ffffff;">
                     Create Your Account
                   </a>
                 </center>
@@ -539,23 +544,21 @@ exports.sendMemoToTenants = onCall(
             </head>
             <body>
               <div class="container">
-                <div class="header">
-                  <h1>📢 Important Notice</h1>
-                </div>
+                ${getEmailHeader('Important Notice')}
                 <div class="content">
                   <p>Dear ${tenant.name},</p>
-                  
+
                   <div class="memo-box">
                     <h2 style="margin-top: 0;">${memo.subject}</h2>
                     <p style="white-space: pre-wrap;">${memo.content}</p>
                   </div>
-                  
+
                   <p>This message was sent by <strong>${landlord.name}</strong>.</p>
-                  
+
                   <p>Best regards,<br>The Nyumbanii Team</p>
                 </div>
                 <div class="footer">
-                  <p>© 2025 Nyumbanii Property Management. All rights reserved.</p>
+                  <p>2025 Nyumbanii Property Management. All rights reserved.</p>
                 </div>
               </div>
             </body>
@@ -625,11 +628,9 @@ exports.sendEmailVerificationCode = onCall(
           </head>
           <body>
             <div class="container">
-              <div class="header">
-                <h1>🏠 Nyumbanii</h1>
-              </div>
+              ${getEmailHeader('Email Verification')}
               <div class="content">
-                <h2 style="color: #003366;">Email Verification</h2>
+                <h2 style="color: #003366;">Verify Your Email</h2>
                 
                 <p>Dear ${name || 'User'},</p>
                 <p>Please use the following code to verify your email address:</p>
@@ -696,15 +697,29 @@ exports.sendViewingRequestEmail = onCall(
         html: `
           <!DOCTYPE html>
           <html>
-          <body style="font-family: Arial, sans-serif;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #003366;">New Viewing Request</h2>
-              <p><strong>Property:</strong> ${viewing.property}</p>
-              <p><strong>From:</strong> ${viewing.prospectName}</p>
-              <p><strong>Email:</strong> ${viewing.email}</p>
-              <p><strong>Phone:</strong> ${viewing.phone}</p>
-              <p><strong>Date:</strong> ${viewing.date} at ${viewing.time}</p>
-              ${viewing.credibilityScore ? `<p><strong>Credibility Score:</strong> ${viewing.credibilityScore}/100</p>` : ''}
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              ${getEmailHeader('New Viewing Request')}
+              <div class="content">
+                <p><strong>Property:</strong> ${viewing.property}</p>
+                <p><strong>From:</strong> ${viewing.prospectName}</p>
+                <p><strong>Email:</strong> ${viewing.email}</p>
+                <p><strong>Phone:</strong> ${viewing.phone}</p>
+                <p><strong>Date:</strong> ${viewing.date} at ${viewing.time}</p>
+                ${viewing.credibilityScore ? `<p><strong>Credibility Score:</strong> ${viewing.credibilityScore}/100</p>` : ''}
+                <p>Best regards,<br>The Nyumbanii Team</p>
+              </div>
+              <div class="footer">
+                <p>2025 Nyumbanii Property Management. All rights reserved.</p>
+              </div>
             </div>
           </body>
           </html>
@@ -752,14 +767,28 @@ exports.sendViewingConfirmationEmail = onCall(
         html: `
           <!DOCTYPE html>
           <html>
-          <body style="font-family: Arial, sans-serif;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #16a34a;">✓ Viewing Confirmed!</h2>
-              <p>Dear ${viewing.prospectName},</p>
-              <p>Your viewing request has been <strong>APPROVED</strong>.</p>
-              <p><strong>Property:</strong> ${viewing.property}</p>
-              <p><strong>Date:</strong> ${viewing.date} at ${viewing.time}</p>
-              <p><strong>Landlord Contact:</strong> ${landlord.name} - ${landlord.phone}</p>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              ${getEmailHeader('Viewing Confirmed!')}
+              <div class="content">
+                <p>Dear ${viewing.prospectName},</p>
+                <p>Your viewing request has been <strong>APPROVED</strong>.</p>
+                <p><strong>Property:</strong> ${viewing.property}</p>
+                <p><strong>Date:</strong> ${viewing.date} at ${viewing.time}</p>
+                <p><strong>Landlord Contact:</strong> ${landlord.name} - ${landlord.phone}</p>
+                <p>Best regards,<br>The Nyumbanii Team</p>
+              </div>
+              <div class="footer">
+                <p>2025 Nyumbanii Property Management. All rights reserved.</p>
+              </div>
             </div>
           </body>
           </html>
@@ -870,24 +899,40 @@ exports.sendRentReminders = onSchedule(
                 to: tenant.email,
                 subject: `Rent Reminder: Payment Due in ${reminderDays} Days`,
                 html: `
-                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #003366;">Rent Payment Reminder</h2>
-                    <p>Dear ${tenant.name},</p>
-                    <p>This is a friendly reminder that your rent payment is due in <strong>${reminderDays} days</strong>.</p>
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <style>
+                      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                      .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+                      .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="container">
+                      ${getEmailHeader('Rent Payment Reminder')}
+                      <div class="content">
+                        <p>Dear ${tenant.name},</p>
+                        <p>This is a friendly reminder that your rent payment is due in <strong>${reminderDays} days</strong>.</p>
 
-                    <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                      <p style="margin: 5px 0;"><strong>Property:</strong> ${payment.property}</p>
-                      <p style="margin: 5px 0;"><strong>Unit:</strong> ${payment.unit}</p>
-                      <p style="margin: 5px 0;"><strong>Amount Due:</strong> ${formattedAmount}</p>
-                      <p style="margin: 5px 0;"><strong>Due Date:</strong> ${payment.dueDate}</p>
+                        <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #003366;">
+                          <p style="margin: 5px 0;"><strong>Property:</strong> ${payment.property}</p>
+                          <p style="margin: 5px 0;"><strong>Unit:</strong> ${payment.unit}</p>
+                          <p style="margin: 5px 0;"><strong>Amount Due:</strong> ${formattedAmount}</p>
+                          <p style="margin: 5px 0;"><strong>Due Date:</strong> ${payment.dueDate}</p>
+                        </div>
+
+                        <p>Please ensure payment is made on or before the due date to avoid any late fees.</p>
+
+                        <p>Best regards,<br>The Nyumbanii Team</p>
+                      </div>
+                      <div class="footer">
+                        <p>2025 Nyumbanii Property Management. All rights reserved.</p>
+                      </div>
                     </div>
-
-                    <p>Please ensure payment is made on or before the due date to avoid any late fees.</p>
-
-                    <p style="color: #666; font-size: 14px; margin-top: 30px;">
-                      This is an automated reminder from Karibu Nyumbanii.
-                    </p>
-                  </div>
+                  </body>
+                  </html>
                 `
               });
 
@@ -1029,31 +1074,47 @@ exports.sendOverdueNotices = onSchedule(
               const emailResult = await resendClient.emails.send({
                 from: 'Nyumbanii <noreply@nyumbanii.org>',
                 to: tenant.email,
-                subject: `⚠️ Overdue Payment Notice - ${daysOverdue} Days Late`,
+                subject: `Overdue Payment Notice - ${daysOverdue} Days Late`,
                 html: `
-                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #dc2626;">Overdue Payment Notice</h2>
-                    <p>Dear ${tenant.name},</p>
-                    <p>This is to notify you that your rent payment is now <strong>${daysOverdue} days overdue</strong>.</p>
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <style>
+                      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                      .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+                      .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="container">
+                      ${getEmailHeader('Overdue Payment Notice')}
+                      <div class="content">
+                        <p>Dear ${tenant.name},</p>
+                        <p>This is to notify you that your rent payment is now <strong>${daysOverdue} days overdue</strong>.</p>
 
-                    <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
-                      <p style="margin: 5px 0;"><strong>Property:</strong> ${payment.property}</p>
-                      <p style="margin: 5px 0;"><strong>Unit:</strong> ${payment.unit}</p>
-                      <p style="margin: 5px 0;"><strong>Original Amount:</strong> ${formattedAmount}</p>
-                      ${lateFee > 0 ? `<p style="margin: 5px 0;"><strong>Late Fee (${lateFeePercentage}%):</strong> ${formattedLateFee}</p>` : ''}
-                      ${lateFee > 0 ? `<p style="margin: 5px 0; color: #dc2626;"><strong>Total Amount Due:</strong> ${formattedTotal}</p>` : ''}
-                      <p style="margin: 5px 0;"><strong>Original Due Date:</strong> ${payment.dueDate}</p>
-                      <p style="margin: 5px 0; color: #dc2626;"><strong>Days Overdue:</strong> ${daysOverdue} days</p>
+                        <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+                          <p style="margin: 5px 0;"><strong>Property:</strong> ${payment.property}</p>
+                          <p style="margin: 5px 0;"><strong>Unit:</strong> ${payment.unit}</p>
+                          <p style="margin: 5px 0;"><strong>Original Amount:</strong> ${formattedAmount}</p>
+                          ${lateFee > 0 ? `<p style="margin: 5px 0;"><strong>Late Fee (${lateFeePercentage}%):</strong> ${formattedLateFee}</p>` : ''}
+                          ${lateFee > 0 ? `<p style="margin: 5px 0; color: #dc2626;"><strong>Total Amount Due:</strong> ${formattedTotal}</p>` : ''}
+                          <p style="margin: 5px 0;"><strong>Original Due Date:</strong> ${payment.dueDate}</p>
+                          <p style="margin: 5px 0; color: #dc2626;"><strong>Days Overdue:</strong> ${daysOverdue} days</p>
+                        </div>
+
+                        <p><strong>Please make payment immediately to avoid further late fees and potential action.</strong></p>
+
+                        <p>If you have already made this payment, please disregard this notice and contact your property manager.</p>
+
+                        <p>Best regards,<br>The Nyumbanii Team</p>
+                      </div>
+                      <div class="footer">
+                        <p>2025 Nyumbanii Property Management. All rights reserved.</p>
+                      </div>
                     </div>
-
-                    <p><strong>Please make payment immediately to avoid further late fees and potential action.</strong></p>
-
-                    <p>If you have already made this payment, please disregard this notice and contact your property manager.</p>
-
-                    <p style="color: #666; font-size: 14px; margin-top: 30px;">
-                      This is an automated notice from Karibu Nyumbanii.
-                    </p>
-                  </div>
+                  </body>
+                  </html>
                 `
               });
 
@@ -1202,31 +1263,45 @@ exports.generateMonthlyReports = onSchedule(
             to: landlord.email,
             subject: `Monthly Report: ${monthName} ${year}`,
             html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #003366;">Monthly Financial Report</h2>
-                <h3 style="color: #666;">${monthName} ${year}</h3>
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  ${getEmailHeader('Monthly Financial Report')}
+                  <div class="content">
+                    <h3 style="color: #666;">${monthName} ${year}</h3>
 
-                <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <h3 style="margin-top: 0;">Summary</h3>
-                  <p style="margin: 10px 0;"><strong>Total Expected:</strong> ${currencySymbol}${totalExpected.toLocaleString()}</p>
-                  <p style="margin: 10px 0;"><strong>Total Collected:</strong> ${currencySymbol}${totalCollected.toLocaleString()}</p>
-                  <p style="margin: 10px 0;"><strong>Rental Income:</strong> ${currencySymbol}${totalIncome.toLocaleString()}</p>
-                  <p style="margin: 10px 0;"><strong>Late Fees:</strong> ${currencySymbol}${totalLateFees.toLocaleString()}</p>
-                  <p style="margin: 10px 0;"><strong>Collection Rate:</strong> ${collectionRate}%</p>
-                  <p style="margin: 10px 0;"><strong>Payments Received:</strong> ${paymentsReceived}</p>
-                </div>
+                    <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #003366;">
+                      <h3 style="margin-top: 0;">Summary</h3>
+                      <p style="margin: 10px 0;"><strong>Total Expected:</strong> ${currencySymbol}${totalExpected.toLocaleString()}</p>
+                      <p style="margin: 10px 0;"><strong>Total Collected:</strong> ${currencySymbol}${totalCollected.toLocaleString()}</p>
+                      <p style="margin: 10px 0;"><strong>Rental Income:</strong> ${currencySymbol}${totalIncome.toLocaleString()}</p>
+                      <p style="margin: 10px 0;"><strong>Late Fees:</strong> ${currencySymbol}${totalLateFees.toLocaleString()}</p>
+                      <p style="margin: 10px 0;"><strong>Collection Rate:</strong> ${collectionRate}%</p>
+                      <p style="margin: 10px 0;"><strong>Payments Received:</strong> ${paymentsReceived}</p>
+                    </div>
 
-                <p>You can view detailed reports and analytics in your dashboard.</p>
+                    <p>You can view detailed reports and analytics in your dashboard.</p>
 
-                <a href="https://nyumbanii.org/landlord/dashboard"
-                   style="display: inline-block; background-color: #003366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
-                  View Dashboard
-                </a>
+                    <center>
+                      <a href="https://nyumbanii.org/landlord/dashboard"
+                         style="display: inline-block; background-color: #003366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
+                        View Dashboard
+                      </a>
+                    </center>
 
-                <p style="color: #666; font-size: 14px; margin-top: 30px;">
-                  This is an automated monthly report from Karibu Nyumbanii.
-                </p>
-              </div>
+                    <p>Best regards,<br>The Nyumbanii Team</p>
+                  </div>
+                  <div class="footer">
+                    <p>2025 Nyumbanii Property Management. All rights reserved.</p>
             `
           });
 
