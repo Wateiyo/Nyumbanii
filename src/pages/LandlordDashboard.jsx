@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { auth, storage } from '../firebase';
+import { auth, storage, functions } from '../firebase';
 import { db } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 import InvitationModal from '../components/InvitationModal';
 import MessageModal from '../components/MessageModal';
@@ -191,6 +192,7 @@ const LandlordDashboard = () => {
   const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [pendingInvitation, setPendingInvitation] = useState(null);
   const [showSuccessAfterInvitation, setShowSuccessAfterInvitation] = useState(false);
+  const [hideEmailInModal, setHideEmailInModal] = useState(false);
 
   // Estimate approval modal state
   const [showEstimateApprovalModal, setShowEstimateApprovalModal] = useState(false);
@@ -1511,47 +1513,59 @@ const handleEditProperty = async () => {
   // RESEND/CREATE TENANT INVITATION
   const handleResendTenantInvitation = async (tenant) => {
     try {
-      // Generate a new invitation token
-      const invitationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      // Show loading state
+      const confirmSend = window.confirm(`Send invitation email to ${tenant.name} (${tenant.email})?`);
+      if (!confirmSend) return;
 
-      // Update tenant with new invitation token and set status to pending
-      await updateDoc(doc(db, 'tenants', tenant.id), {
-        invitationToken: invitationToken,
-        status: 'pending'
-      });
+      // Call the Firebase function to resend invitation
+      const resendTenantInvitation = httpsCallable(functions, 'resendTenantInvitation');
+      const result = await resendTenantInvitation({ tenantId: tenant.id });
 
-      // Create or update invitation record
-      const invitationData = {
-        token: invitationToken,
-        email: tenant.email.toLowerCase(),
-        landlordId: currentUser.uid,
-        landlordName: userProfile?.displayName || 'Your Landlord',
-        tenantName: tenant.name,
-        property: tenant.property,
-        unit: tenant.unit,
-        type: 'tenant',
-        status: 'pending',
-        createdAt: serverTimestamp()
-      };
+      if (result.data.success) {
+        // Get the updated tenant data to show invitation modal
+        const updatedTenantDoc = await getDocs(query(
+          collection(db, 'tenants'),
+          where('__name__', '==', tenant.id)
+        ));
 
-      await addDoc(collection(db, 'invitations'), invitationData);
+        let invitationToken = tenant.invitationToken;
+        if (!updatedTenantDoc.empty) {
+          invitationToken = updatedTenantDoc.docs[0].data().invitationToken || invitationToken;
+        }
 
-      // Show invitation modal with sharing options
-      setPendingInvitation({
-        token: invitationToken,
-        name: tenant.name,
-        email: tenant.email,
-        phone: tenant.phone,
-        role: 'tenant',
-        property: tenant.property,
-        unit: tenant.unit
-      });
-      setShowInvitationModal(true);
+        // Create invitation record for sharing
+        const invitationData = {
+          token: invitationToken,
+          email: tenant.email.toLowerCase(),
+          landlordId: currentUser.uid,
+          landlordName: userProfile?.displayName || 'Your Landlord',
+          tenantName: tenant.name,
+          property: tenant.property,
+          unit: tenant.unit,
+          type: 'tenant',
+          status: 'pending',
+          createdAt: serverTimestamp()
+        };
 
-      alert('Invitation created successfully! You can now share it with the tenant.');
+        await addDoc(collection(db, 'invitations'), invitationData);
+
+        // Show invitation modal with sharing options
+        setPendingInvitation({
+          token: invitationToken,
+          name: tenant.name,
+          email: tenant.email,
+          phone: tenant.phone,
+          role: 'tenant',
+          property: tenant.property,
+          unit: tenant.unit
+        });
+        setShowInvitationModal(true);
+
+        alert('Email invitation sent!');
+      }
     } catch (error) {
-      console.error('Error creating invitation:', error);
-      alert('Error creating invitation. Please try again.');
+      console.error('Error sending invitation:', error);
+      alert(`Error sending invitation: ${error.message || 'Please try again.'}`);
     }
   };
 
@@ -5025,25 +5039,34 @@ const handleViewTenantDetails = (tenant) => {
                                 </button>
                               </div>
 
-                              {/* Show share invitation button for pending tenants with token */}
+                              {/* Show share invitation and resend email buttons for pending tenants with token */}
                               {tenant.status === 'pending' && tenant.invitationToken && (
-                                <button
-                                  onClick={() => {
-                                    setPendingInvitation({
-                                      token: tenant.invitationToken,
-                                      name: tenant.name,
-                                      email: tenant.email,
-                                      phone: tenant.phone,
-                                      role: 'tenant',
-                                      property: tenant.property,
-                                      unit: tenant.unit
-                                    });
-                                    setShowInvitationModal(true);
-                                  }}
-                                  className="w-full px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition text-sm font-medium flex items-center justify-center gap-2">
-                                  <Share2 className="w-4 h-4" />
-                                  Share Invitation
-                                </button>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setPendingInvitation({
+                                        token: tenant.invitationToken,
+                                        name: tenant.name,
+                                        email: tenant.email,
+                                        phone: tenant.phone,
+                                        role: 'tenant',
+                                        property: tenant.property,
+                                        unit: tenant.unit
+                                      });
+                                      setHideEmailInModal(true);
+                                      setShowInvitationModal(true);
+                                    }}
+                                    className="flex-1 px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition text-sm font-medium flex items-center justify-center gap-2">
+                                    <Share2 className="w-4 h-4" />
+                                    Share
+                                  </button>
+                                  <button
+                                    onClick={() => handleResendTenantInvitation(tenant)}
+                                    className="flex-1 px-3 sm:px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition text-sm font-medium flex items-center justify-center gap-2">
+                                    <Send className="w-4 h-4" />
+                                    Resend Email
+                                  </button>
+                                </div>
                               )}
 
                               {/* Show send/resend invitation button for tenants without token or needing resend */}
@@ -10285,6 +10308,7 @@ const handleViewTenantDetails = (tenant) => {
   onClose={() => {
     setShowInvitationModal(false);
     setPendingInvitation(null);
+    setHideEmailInModal(false);
 
     // Show success message after modal closes if flag is set
     if (showSuccessAfterInvitation) {
@@ -10296,6 +10320,7 @@ const handleViewTenantDetails = (tenant) => {
   onSendEmail={() => {
     alert('Email invitation sent!');
   }}
+  hideEmailOption={hideEmailInModal}
 />
 
 {/* Delete Conversation Confirmation Modal */}

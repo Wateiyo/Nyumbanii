@@ -340,6 +340,163 @@ exports.sendTenantInvitation = onDocumentCreated(
 // ==========================================
 
 /**
+ * Resend Tenant Invitation
+ * Callable function to resend invitation emails to existing pending tenants
+ */
+exports.resendTenantInvitation = onCall(
+  {
+    region: "us-central1",
+    secrets: [resendApiKey]
+  },
+  async (request) => {
+    try {
+      const { tenantId } = request.data;
+
+      if (!tenantId) {
+        throw new Error('Tenant ID is required');
+      }
+
+      // Get tenant document
+      const tenantDoc = await admin.firestore()
+        .collection('tenants')
+        .doc(tenantId)
+        .get();
+
+      if (!tenantDoc.exists) {
+        throw new Error('Tenant not found');
+      }
+
+      const tenant = tenantDoc.data();
+
+      logger.info('Resending invitation to tenant:', tenant.email);
+
+      // Get the actual API key at runtime
+      const { resendKey } = getApiKeys();
+
+      if (!resendKey) {
+        logger.error('RESEND_API_KEY is not configured');
+        throw new Error('Email service not configured');
+      }
+
+      const resendClient = new Resend(resendKey);
+
+      // Get landlord information
+      const landlordDoc = await admin.firestore()
+        .collection('users')
+        .doc(tenant.landlordId)
+        .get();
+
+      const landlordData = landlordDoc.data();
+      const landlordName = landlordData?.displayName || 'Your Landlord';
+
+      // Get property details
+      const propertyDoc = await admin.firestore()
+        .collection('properties')
+        .doc(tenant.property)
+        .get();
+
+      const propertyData = propertyDoc.exists ? propertyDoc.data() : null;
+      const propertyName = propertyData?.name || tenant.property;
+
+      // Generate new invitation token if not present
+      const invitationToken = tenant.invitationToken ||
+        Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+      const { data, error } = await resendClient.emails.send({
+        from: 'Nyumbanii <noreply@nyumbanii.org>',
+        to: [tenant.email],
+        subject: 'Welcome to Your Tenant Portal - Nyumbanii',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #003366; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+              .property-box { background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #003366; }
+              .button { display: inline-block; background-color: #003366; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Welcome to Nyumbanii!</h1>
+              </div>
+              <div class="content">
+                <h2>Your Tenant Portal is Ready</h2>
+                <p>Hello ${tenant.name},</p>
+                <p><strong>${landlordName}</strong> has invited you to access your tenant portal on Nyumbanii.</p>
+
+                <div class="property-box">
+                  <h3 style="margin-top: 0;">Your Property Details</h3>
+                  <p><strong>Property:</strong> ${propertyName}</p>
+                  <p><strong>Unit:</strong> ${tenant.unit}</p>
+                  <p><strong>Monthly Rent:</strong> KES ${tenant.rent?.toLocaleString()}</p>
+                  <p><strong>Lease Start:</strong> ${tenant.leaseStart}</p>
+                  <p><strong>Lease End:</strong> ${tenant.leaseEnd}</p>
+                </div>
+
+                <p><strong>With your tenant portal, you can:</strong></p>
+                <ul>
+                  <li>View your lease agreement and payment history</li>
+                  <li>Submit maintenance requests online</li>
+                  <li>Communicate with your property manager</li>
+                  <li>Make and track rent payments</li>
+                  <li>Access important documents</li>
+                </ul>
+
+                <p>Click the button below to create your account and access your portal:</p>
+                <center>
+                  <a href="https://nyumbanii.org/register?invite=${invitationToken}" class="button">
+                    Create Your Account
+                  </a>
+                </center>
+
+                <p>If you have any questions, please contact ${landlordName}.</p>
+
+                <p>Best regards,<br>The Nyumbanii Team</p>
+              </div>
+              <div class="footer">
+                <p>2025 Nyumbanii Property Management. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      });
+
+      if (error) {
+        logger.error('Error sending tenant invitation email:', {
+          error: error,
+          message: error.message,
+          statusCode: error.statusCode,
+          name: error.name
+        });
+        throw new Error(`Failed to send email: ${error.message}`);
+      }
+
+      logger.info('Tenant invitation email sent successfully:', data);
+
+      // Update tenant status
+      await tenantDoc.ref.update({
+        invitationSent: true,
+        invitationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+        invitationToken: invitationToken,
+        status: 'pending'
+      });
+
+      return { success: true, emailId: data.id, message: 'Invitation sent successfully' };
+    } catch (error) {
+      logger.error('Error in resendTenantInvitation function:', error);
+      throw new Error(error.message || 'Failed to resend invitation');
+    }
+  }
+);
+
+/**
  * Send Memo to Multiple Tenants
  */
 exports.sendMemoToTenants = onCall(

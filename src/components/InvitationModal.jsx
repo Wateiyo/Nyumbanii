@@ -6,7 +6,8 @@ const InvitationModal = ({
   isOpen,
   onClose,
   invitationData,
-  onSendEmail
+  onSendEmail,
+  hideEmailOption = false
 }) => {
   const [selectedMethod, setSelectedMethod] = useState('email');
   const [copied, setCopied] = useState(false);
@@ -271,7 +272,7 @@ const InvitationModal = ({
 
   if (!isOpen || !invitationData) return null;
 
-  const invitationMethods = [
+  const allInvitationMethods = [
     {
       id: 'email',
       name: 'Email',
@@ -313,6 +314,11 @@ const InvitationModal = ({
       action: handleDownloadCard
     }
   ];
+
+  // Filter out email option if hideEmailOption is true
+  const invitationMethods = hideEmailOption
+    ? allInvitationMethods.filter(method => method.id !== 'email')
+    : allInvitationMethods;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -458,13 +464,13 @@ const InvitationModal = ({
 
           {/* Tips */}
           <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800">
-            <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">💡 Tips</h4>
+            <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Tips</h4>
             <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
-              <li>• <strong>Email</strong>: Automatic and professional, but check spam folder</li>
-              <li>• <strong>WhatsApp</strong>: Instant delivery, 99% reach in Kenya</li>
-              <li>• <strong>Copy Link</strong>: Share via any messaging app you prefer</li>
-              <li>• <strong>QR Code</strong>: Great for in-person meetings</li>
-              <li>• <strong>Download Card</strong>: Share as an image, looks professional</li>
+              {!hideEmailOption && <li>* <strong>Email</strong>: Automatic and professional, but check spam folder</li>}
+              <li>* <strong>WhatsApp</strong>: Instant delivery, 99% reach in Kenya</li>
+              <li>* <strong>Copy Link</strong>: Share via any messaging app you prefer</li>
+              <li>* <strong>QR Code</strong>: Great for in-person meetings</li>
+              <li>* <strong>Download Card</strong>: Share as an image, looks professional</li>
             </ul>
           </div>
         </div>
@@ -473,17 +479,19 @@ const InvitationModal = ({
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-2xl flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition font-medium"
+            className={`${hideEmailOption ? 'w-full' : 'flex-1'} px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition font-medium`}
           >
             Close
           </button>
-          <button
-            onClick={handleSendEmail}
-            className="flex-1 px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium flex items-center justify-center gap-2"
-          >
-            <Mail className="w-5 h-5" />
-            Send Email
-          </button>
+          {!hideEmailOption && (
+            <button
+              onClick={handleSendEmail}
+              className="flex-1 px-6 py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] transition font-medium flex items-center justify-center gap-2"
+            >
+              <Mail className="w-5 h-5" />
+              Send Email
+            </button>
+          )}
         </div>
       </div>
     </div>
