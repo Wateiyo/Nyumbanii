@@ -1,11 +1,11 @@
 const {setGlobalOptions} = require("firebase-functions/v2");
+const {defineSecret} = require("firebase-functions/params");
 const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {onDocumentUpdated} = require("firebase-functions/v2/firestore");
 const {onCall} = require("firebase-functions/v2/https");
 const {onRequest} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
-const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { Resend } = require("resend");
 const axios = require("axios");
@@ -16,6 +16,12 @@ const AfricasTalking = require("africastalking");
 // Initialize Firebase Admin
 admin.initializeApp();
 
+// Define secrets for API keys (set via Firebase Console or CLI)
+// To set: firebase functions:secrets:set RESEND_API_KEY
+// To set: firebase functions:secrets:set PAYSTACK_SECRET_KEY
+const resendApiKey = defineSecret("RESEND_API_KEY");
+const paystackSecretKey = defineSecret("PAYSTACK_SECRET_KEY");
+
 // Set global options for all functions
 setGlobalOptions({
   maxInstances: 10,
@@ -24,17 +30,11 @@ setGlobalOptions({
   memory: "256MiB"
 });
 
-// Get API keys from Firebase Functions config
-// Set these with: firebase functions:config:set resend.api_key="YOUR_KEY" paystack.secret_key="YOUR_KEY"
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "placeholder";
-
-// Lazy initialization helper that gets config at runtime
-// This ensures the actual API keys are loaded from Firebase config, not build-time placeholders
+// Helper function to get API keys at runtime
 function getApiKeys() {
-  const config = functions.config();
   return {
-    resendKey: config.resend?.api_key || process.env.RESEND_API_KEY || "",
-    paystackKey: config.paystack?.secret_key || PAYSTACK_SECRET_KEY
+    resendKey: resendApiKey.value() || process.env.RESEND_API_KEY || "",
+    paystackKey: paystackSecretKey.value() || process.env.PAYSTACK_SECRET_KEY || ""
   };
 }
 
@@ -49,7 +49,8 @@ function getApiKeys() {
 exports.sendTeamInvitation = onDocumentCreated(
   {
     document: "teamMembers/{memberId}",
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (event) => {
     try {
@@ -198,7 +199,8 @@ exports.sendTeamInvitation = onDocumentCreated(
 exports.sendTenantInvitation = onDocumentCreated(
   {
     document: "tenants/{tenantId}",
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (event) => {
     try {
@@ -342,7 +344,8 @@ exports.sendTenantInvitation = onDocumentCreated(
  */
 exports.sendMemoToTenants = onCall(
   {
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (request) => {
     try {
@@ -428,7 +431,8 @@ exports.sendMemoToTenants = onCall(
  */
 exports.sendEmailVerificationCode = onCall(
   {
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (request) => {
     try {
@@ -511,7 +515,8 @@ exports.sendEmailVerificationCode = onCall(
  */
 exports.sendViewingRequestEmail = onCall(
   {
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (request) => {
     try {
@@ -566,7 +571,8 @@ exports.sendViewingRequestEmail = onCall(
  */
 exports.sendViewingConfirmationEmail = onCall(
   {
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (request) => {
     try {
@@ -628,7 +634,8 @@ exports.sendRentReminders = onSchedule(
   {
     schedule: "0 9 * * *", // Daily at 9 AM
     timeZone: "Africa/Nairobi",
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (event) => {
     try {
@@ -776,7 +783,8 @@ exports.sendOverdueNotices = onSchedule(
   {
     schedule: "0 10 * * *", // Daily at 10 AM
     timeZone: "Africa/Nairobi",
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (event) => {
     try {
@@ -950,7 +958,8 @@ exports.generateMonthlyReports = onSchedule(
   {
     schedule: "0 8 1 * *", // 1st of month at 8 AM
     timeZone: "Africa/Nairobi",
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (event) => {
     try {
@@ -1443,13 +1452,15 @@ exports.manualScrapeKenyaPower = onCall(
 exports.paystackWebhook = onRequest(
   {
     region: "us-central1",
-    cors: true
+    cors: true,
+    secrets: [paystackSecretKey, resendApiKey]
   },
   async (req, res) => {
     try {
       // Verify the webhook is from Paystack
+      const { paystackKey } = getApiKeys();
       const hash = require("crypto")
-        .createHmac("sha512", PAYSTACK_SECRET_KEY)
+        .createHmac("sha512", paystackKey)
         .update(JSON.stringify(req.body))
         .digest("hex");
 
@@ -1590,7 +1601,8 @@ exports.paystackWebhook = onRequest(
  */
 exports.verifyPaystackPayment = onCall(
   {
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [paystackSecretKey]
   },
   async (request) => {
     try {
@@ -1602,12 +1614,15 @@ exports.verifyPaystackPayment = onCall(
 
       logger.info("🔍 Verifying payment:", reference);
 
+      // Get API keys
+      const { paystackKey } = getApiKeys();
+
       // Verify with Paystack API
       const response = await axios.get(
         `https://api.paystack.co/transaction/verify/${reference}`,
         {
           headers: {
-            Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
+            Authorization: `Bearer ${paystackKey}`
           }
         }
       );
@@ -1690,7 +1705,8 @@ exports.checkSubscriptionStatus = onCall(
 exports.sendApplicationStatusEmail = onDocumentUpdated(
   {
     document: "tenantApplications/{applicationId}",
-    region: "us-central1"
+    region: "us-central1",
+    secrets: [resendApiKey]
   },
   async (event) => {
     try {

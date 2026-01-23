@@ -10294,7 +10294,7 @@ const handleViewTenantDetails = (tenant) => {
   }}
   invitationData={pendingInvitation}
   onSendEmail={() => {
-    alert('Email invitation sent automatically via Firebase Function!');
+    alert('Email invitation sent!');
   }}
 />
 
