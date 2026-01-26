@@ -1522,46 +1522,7 @@ const handleEditProperty = async () => {
       const result = await resendTenantInvitation({ tenantId: tenant.id });
 
       if (result.data.success) {
-        // Get the updated tenant data to show invitation modal
-        const updatedTenantDoc = await getDocs(query(
-          collection(db, 'tenants'),
-          where('__name__', '==', tenant.id)
-        ));
-
-        let invitationToken = tenant.invitationToken;
-        if (!updatedTenantDoc.empty) {
-          invitationToken = updatedTenantDoc.docs[0].data().invitationToken || invitationToken;
-        }
-
-        // Create invitation record for sharing
-        const invitationData = {
-          token: invitationToken,
-          email: tenant.email.toLowerCase(),
-          landlordId: currentUser.uid,
-          landlordName: userProfile?.displayName || 'Your Landlord',
-          tenantName: tenant.name,
-          property: tenant.property,
-          unit: tenant.unit,
-          type: 'tenant',
-          status: 'pending',
-          createdAt: serverTimestamp()
-        };
-
-        await addDoc(collection(db, 'invitations'), invitationData);
-
-        // Show invitation modal with sharing options
-        setPendingInvitation({
-          token: invitationToken,
-          name: tenant.name,
-          email: tenant.email,
-          phone: tenant.phone,
-          role: 'tenant',
-          property: tenant.property,
-          unit: tenant.unit
-        });
-        setShowInvitationModal(true);
-
-        alert('Email invitation sent!');
+        alert('Email invitation sent successfully!');
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
