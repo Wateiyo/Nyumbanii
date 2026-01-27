@@ -95,7 +95,8 @@ import {
   Sun,
   AlertTriangle,
   FileSignature,
-  Receipt
+  Receipt,
+  HelpCircle
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
 import PowerOutagesList from '../components/PowerOutagesList';
@@ -115,6 +116,7 @@ const LandlordDashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [selectedViewing, setSelectedViewing] = useState(null);
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -3459,7 +3461,7 @@ const handleViewTenantDetails = (tenant) => {
           {notifications.map(notification => (
             <div
               key={notification.id}
-              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 group ${
                 !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
               }`}
               onClick={async () => {
@@ -3499,12 +3501,14 @@ const handleViewTenantDetails = (tenant) => {
                   }, 100);
                 } else if (notification.type === 'payment') {
                   setCurrentView('payments');
-                } else if (notification.type === 'maintenance') {
+                } else if (notification.type === 'maintenance' || notification.type === 'maintenance_assigned' || notification.type === 'estimate_approved' || notification.type === 'estimate_rejected' || notification.type === 'quote_approved' || notification.type === 'quote_rejected') {
                   setCurrentView('maintenance');
                 } else if (notification.type === 'viewing') {
                   setCurrentView('viewings');
-                } else if (notification.type === 'tenant') {
+                } else if (notification.type === 'tenant' || notification.type === 'move_out_notice' || notification.type === 'lease_signed') {
                   setCurrentView('tenants');
+                } else if (notification.type === 'memo') {
+                  setCurrentView('memos');
                 }
 
                 setShowNotifications(false);
@@ -3547,6 +3551,22 @@ const handleViewTenantDetails = (tenant) => {
                 {!notification.read && (
                   <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
                 )}
+
+                {/* Delete button */}
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      await deleteDoc(doc(db, 'notifications', notification.id));
+                    } catch (error) {
+                      console.error('Error deleting notification:', error);
+                    }
+                  }}
+                  className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition opacity-0 group-hover:opacity-100 flex-shrink-0"
+                  title="Delete notification"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
+                </button>
               </div>
             </div>
           ))}
@@ -3556,7 +3576,7 @@ const handleViewTenantDetails = (tenant) => {
 
     {/* Footer */}
     {notifications.length > 0 && (
-      <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+      <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 flex gap-3">
         <button
           onClick={async () => {
             try {
@@ -3573,33 +3593,159 @@ const handleViewTenantDetails = (tenant) => {
               console.error('Error marking all as read:', error);
             }
           }}
-          className="w-full text-center text-sm text-[#003366] hover:text-[#002244] font-medium transition"
+          className="flex-1 text-center text-sm text-[#003366] hover:text-[#002244] dark:text-blue-400 dark:hover:text-blue-300 font-medium transition"
         >
           Mark all as read
+        </button>
+        <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+        <button
+          onClick={async () => {
+            if (window.confirm('Are you sure you want to delete all notifications?')) {
+              try {
+                const deletePromises = notifications.map(notif =>
+                  deleteDoc(doc(db, 'notifications', notif.id))
+                );
+                await Promise.all(deletePromises);
+              } catch (error) {
+                console.error('Error deleting all notifications:', error);
+              }
+            }
+          }}
+          className="flex-1 text-center text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium transition"
+        >
+          Clear all
         </button>
       </div>
     )}
   </div>
 )}
       </div>
-      {/* Profile Photo or Avatar */}
-      {userProfile?.photoURL || currentUser?.photoURL ? (
-        <img
-          src={userProfile?.photoURL || currentUser?.photoURL}
-          alt="Profile"
-          className="w-10 h-10 rounded-full object-cover border-2 border-[#003366] dark:border-blue-500 flex-shrink-0"
-          onError={(e) => {
-            // Fallback to initials if image fails to load
-            e.target.style.display = 'none';
-            e.target.nextElementSibling.style.display = 'flex';
-          }}
-        />
-      ) : null}
-      <div
-        className="w-10 h-10 bg-[#003366] dark:bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
-        style={{ display: (userProfile?.photoURL || currentUser?.photoURL) ? 'none' : 'flex' }}
-      >
-        {profileSettings.name.split(' ').map(n => n[0]).join('')}
+      {/* Profile Photo or Avatar with Menu */}
+      <div className="relative">
+        <button
+          onClick={() => setShowProfileMenu(!showProfileMenu)}
+          className="flex items-center focus:outline-none"
+        >
+          {userProfile?.photoURL || currentUser?.photoURL ? (
+            <img
+              src={userProfile?.photoURL || currentUser?.photoURL}
+              alt="Profile"
+              className="w-10 h-10 rounded-full object-cover border-2 border-[#003366] dark:border-blue-500 flex-shrink-0 hover:opacity-80 transition cursor-pointer"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextElementSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div
+            className="w-10 h-10 bg-[#003366] dark:bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 hover:opacity-80 transition cursor-pointer"
+            style={{ display: (userProfile?.photoURL || currentUser?.photoURL) ? 'none' : 'flex' }}
+          >
+            {profileSettings.name.split(' ').map(n => n[0]).join('')}
+          </div>
+        </button>
+
+        {/* Profile Dropdown Menu */}
+        {showProfileMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowProfileMenu(false)}
+            />
+            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+              {/* Profile Header */}
+              <div className="p-4 bg-gradient-to-r from-[#003366] to-[#0055AA] text-white">
+                <div className="flex items-center gap-3">
+                  {userProfile?.photoURL || currentUser?.photoURL ? (
+                    <img
+                      src={userProfile?.photoURL || currentUser?.photoURL}
+                      alt="Profile"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white font-semibold">
+                      {profileSettings.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold truncate">{profileSettings.name}</p>
+                    <p className="text-sm text-blue-100 truncate">{currentUser?.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu Items */}
+              <div className="py-2">
+                <button
+                  onClick={() => {
+                    setCurrentView('settings');
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                >
+                  <User className="w-4 h-4" />
+                  View Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentView('settings');
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                >
+                  <Settings className="w-4 h-4" />
+                  Account Settings
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentView('settings');
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                >
+                  <Bell className="w-4 h-4" />
+                  Notification Preferences
+                </button>
+                <button
+                  onClick={() => {
+                    setDarkMode(!darkMode);
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                >
+                  {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  {darkMode ? 'Light Mode' : 'Dark Mode'}
+                </button>
+
+                <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+                <button
+                  onClick={() => {
+                    window.open('mailto:support@nyumbanii.org', '_blank');
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Help & Support
+                </button>
+
+                <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+                <button
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    handleLogout();
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   </div>

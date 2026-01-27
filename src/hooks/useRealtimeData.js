@@ -215,6 +215,14 @@ export const useNotifications = (userId) => {
           id: doc.id,
           ...doc.data()
         }));
+
+        // Sort by timestamp or createdAt (some notifications use one or the other)
+        notificationsData.sort((a, b) => {
+          const timeA = a.timestamp?.toDate?.() || a.createdAt?.toDate?.() || new Date(0);
+          const timeB = b.timestamp?.toDate?.() || b.createdAt?.toDate?.() || new Date(0);
+          return timeB - timeA; // Most recent first
+        });
+
         setNotifications(notificationsData);
         setUnreadCount(notificationsData.filter(n => !n.read).length);
         setLoading(false);

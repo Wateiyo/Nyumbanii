@@ -249,19 +249,33 @@ const Register = () => {
       if (invitationData) {
         try {
           if (selectedRole === 'tenant') {
-            // Find and update the tenant record with the new user UID
+            // Find the tenant record - first try with landlordId, then just by email
+            let tenantSnapshot;
+
+            // Try to find tenant with landlordId first
             const tenantsQuery = query(
               collection(db, 'tenants'),
               where('email', '==', formData.email.toLowerCase()),
               where('landlordId', '==', invitationData.landlordId)
             );
+            tenantSnapshot = await getDocs(tenantsQuery);
 
-            const tenantSnapshot = await getDocs(tenantsQuery);
+            // If not found, try to find by email only (for older records missing landlordId)
+            if (tenantSnapshot.empty) {
+              const emailOnlyQuery = query(
+                collection(db, 'tenants'),
+                where('email', '==', formData.email.toLowerCase())
+              );
+              tenantSnapshot = await getDocs(emailOnlyQuery);
+            }
+
             if (!tenantSnapshot.empty) {
               const tenantDocRef = doc(db, 'tenants', tenantSnapshot.docs[0].id);
+              // Update tenant with userId, status, AND ensure landlordId is set
               await updateDoc(tenantDocRef, {
                 userId: result.user.uid,
                 status: 'active',
+                landlordId: invitationData.landlordId, // Ensure landlordId is set
                 registeredAt: new Date()
               });
             }

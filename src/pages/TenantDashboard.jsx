@@ -46,7 +46,8 @@ import {
   AlertTriangle,
   FileSignature,
   DoorOpen,
-  PenTool
+  PenTool,
+  HelpCircle
 } from 'lucide-react';
 import LocationPreferences from '../components/LocationPreferences';
 import OnboardingWizard from '../components/OnboardingWizard';
@@ -74,6 +75,7 @@ const TenantDashboard = () => {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showDocumentUploadModal, setShowDocumentUploadModal] = useState(false);
@@ -330,12 +332,38 @@ const TenantDashboard = () => {
       where('userId', '==', currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(tenantsQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(tenantsQuery, async (snapshot) => {
       console.log('Tenant query returned:', snapshot.size, 'documents');
       if (!snapshot.empty) {
         const tenantDoc = snapshot.docs[0];
         const data = { id: tenantDoc.id, ...tenantDoc.data() };
         console.log('Tenant data found:', data);
+
+        // If landlordId is missing, try to find it from invitation records
+        if (!data.landlordId) {
+          console.log('landlordId missing, attempting to fix...');
+          try {
+            const invitationsQuery = query(
+              collection(db, 'invitations'),
+              where('email', '==', currentUser.email.toLowerCase()),
+              where('type', '==', 'tenant')
+            );
+            const invSnapshot = await getDocs(invitationsQuery);
+            if (!invSnapshot.empty) {
+              const invData = invSnapshot.docs[0].data();
+              if (invData.landlordId) {
+                console.log('Found landlordId from invitation:', invData.landlordId);
+                await updateDoc(doc(db, 'tenants', tenantDoc.id), {
+                  landlordId: invData.landlordId
+                });
+                data.landlordId = invData.landlordId;
+              }
+            }
+          } catch (err) {
+            console.error('Error fixing landlordId:', err);
+          }
+        }
+
         setTenantData(data);
       } else {
         console.log('No tenant data found for userId:', currentUser.uid);
@@ -344,16 +372,41 @@ const TenantDashboard = () => {
           collection(db, 'tenants'),
           where('email', '==', currentUser.email.toLowerCase())
         );
-        onSnapshot(emailQuery, (emailSnapshot) => {
+        onSnapshot(emailQuery, async (emailSnapshot) => {
           if (!emailSnapshot.empty) {
             const tenantDoc = emailSnapshot.docs[0];
             const data = { id: tenantDoc.id, ...tenantDoc.data() };
             console.log('Tenant data found by email:', data);
+
+            // Prepare update object
+            const updateData = { userId: currentUser.uid };
+
+            // If landlordId is missing, try to find it from invitation records
+            if (!data.landlordId) {
+              try {
+                const invitationsQuery = query(
+                  collection(db, 'invitations'),
+                  where('email', '==', currentUser.email.toLowerCase()),
+                  where('type', '==', 'tenant')
+                );
+                const invSnapshot = await getDocs(invitationsQuery);
+                if (!invSnapshot.empty) {
+                  const invData = invSnapshot.docs[0].data();
+                  if (invData.landlordId) {
+                    console.log('Found landlordId from invitation:', invData.landlordId);
+                    updateData.landlordId = invData.landlordId;
+                    data.landlordId = invData.landlordId;
+                  }
+                }
+              } catch (err) {
+                console.error('Error fixing landlordId:', err);
+              }
+            }
+
             setTenantData(data);
-            // Update the document with userId for future queries
-            updateDoc(doc(db, 'tenants', tenantDoc.id), {
-              userId: currentUser.uid
-            }).catch(err => console.error('Error updating tenant with userId:', err));
+            // Update the document with userId and possibly landlordId
+            updateDoc(doc(db, 'tenants', tenantDoc.id), updateData)
+              .catch(err => console.error('Error updating tenant:', err));
           } else {
             console.log('No tenant data found for email either:', currentUser.email.toLowerCase());
           }
@@ -990,10 +1043,10 @@ const TenantDashboard = () => {
 
     console.log('📬 Setting up notification listener for tenant:', currentUser.uid);
 
+    // Query without orderBy to avoid index issues (some notifications use timestamp, others use createdAt)
     const notificationsQuery = query(
       collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid), // Use currentUser.uid, not tenantData.id
-      orderBy('timestamp', 'desc')
+      where('userId', '==', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
@@ -1001,6 +1054,14 @@ const TenantDashboard = () => {
         id: doc.id,
         ...doc.data()
       }));
+
+      // Sort client-side to handle both timestamp and createdAt fields
+      notificationsData.sort((a, b) => {
+        const timeA = a.timestamp?.toDate?.() || a.createdAt?.toDate?.() || new Date(0);
+        const timeB = b.timestamp?.toDate?.() || b.createdAt?.toDate?.() || new Date(0);
+        return timeB - timeA; // Most recent first
+      });
+
       console.log('📬 Received', notificationsData.length, 'notifications for tenant');
       setNotifications(notificationsData);
     }, (error) => {
@@ -2983,11 +3044,16 @@ const TenantDashboard = () => {
     } else if (notification.type === 'maintenance') {
       // Navigate to maintenance view
       setCurrentView('maintenance');
-    } else if (notification.type === 'document') {
+    } else if (notification.type === 'document' || notification.type === 'lease_signed') {
       // Navigate to documents view
       setCurrentView('documents');
+    } else if (notification.type === 'move_out_notice') {
+      // Navigate to settings (where move-out notice is managed)
+      setCurrentView('settings');
+    } else if (notification.type === 'memo') {
+      // Navigate to dashboard where memos are shown
+      setCurrentView('dashboard');
     }
-    // Add more notification types as needed
   };
 
   const filteredListings = availableListings.filter(listing =>
@@ -3123,6 +3189,26 @@ const TenantDashboard = () => {
                                 Mark all read
                               </button>
                             )}
+                            {notifications.length > 0 && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm('Are you sure you want to delete all notifications?')) {
+                                    try {
+                                      const deletePromises = notifications.map(notif =>
+                                        deleteDoc(doc(db, 'notifications', notif.id))
+                                      );
+                                      await Promise.all(deletePromises);
+                                    } catch (error) {
+                                      console.error('Error deleting all notifications:', error);
+                                    }
+                                  }
+                                }}
+                                className="text-xs sm:text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
+                              >
+                                Clear all
+                              </button>
+                            )}
                             <button
                               onClick={() => setShowNotifications(false)}
                               className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
@@ -3142,14 +3228,14 @@ const TenantDashboard = () => {
                           </div>
                         ) : (
                           notifications.map((notification) => {
-                            const timestamp = notification.timestamp?.toDate?.();
+                            const timestamp = notification.timestamp?.toDate?.() || notification.createdAt?.toDate?.();
                             const timeAgo = timestamp ? getTimeAgo(timestamp) : '';
 
                             return (
                               <div
                                 key={notification.id}
                                 onClick={() => handleNotificationClick(notification)}
-                                className={`p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'}`}
+                                className={`p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors group ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'}`}
                               >
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
@@ -3165,6 +3251,20 @@ const TenantDashboard = () => {
                                   {!notification.read && (
                                     <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1"></span>
                                   )}
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        await deleteDoc(doc(db, 'notifications', notification.id));
+                                      } catch (error) {
+                                        console.error('Error deleting notification:', error);
+                                      }
+                                    }}
+                                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                    title="Delete notification"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
+                                  </button>
                                 </div>
                               </div>
                             );
@@ -3181,8 +3281,111 @@ const TenantDashboard = () => {
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{profileSettings.name}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Tenant</p>
                 </div>
-                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base flex-shrink-0">
-                  {profileSettings.name.split(' ').map(n => n[0]).join('')}
+
+                {/* Profile Avatar with Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="focus:outline-none"
+                  >
+                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base flex-shrink-0 hover:opacity-80 transition cursor-pointer">
+                      {profileSettings.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                  </button>
+
+                  {/* Profile Dropdown Menu */}
+                  {showProfileMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowProfileMenu(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                        {/* Profile Header */}
+                        <div className="p-4 bg-gradient-to-r from-[#003366] to-[#0055AA] text-white">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white font-semibold">
+                              {profileSettings.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate">{profileSettings.name}</p>
+                              <p className="text-sm text-blue-100 truncate">{currentUser?.email}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Menu Items */}
+                        <div className="py-2">
+                          <button
+                            onClick={() => {
+                              setCurrentView('settings');
+                              setShowProfileMenu(false);
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                          >
+                            <User className="w-4 h-4" />
+                            View Profile
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCurrentView('settings');
+                              setShowProfileMenu(false);
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                          >
+                            <Settings className="w-4 h-4" />
+                            Account Settings
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCurrentView('settings');
+                              setShowProfileMenu(false);
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                          >
+                            <Bell className="w-4 h-4" />
+                            Notification Preferences
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPreferences({...preferences, darkMode: !preferences.darkMode});
+                              setShowProfileMenu(false);
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                          >
+                            {preferences.darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                            {preferences.darkMode ? 'Light Mode' : 'Dark Mode'}
+                          </button>
+
+                          <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+                          <button
+                            onClick={() => {
+                              window.open('mailto:support@nyumbanii.org', '_blank');
+                              setShowProfileMenu(false);
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                          >
+                            <HelpCircle className="w-4 h-4" />
+                            Help & Support
+                          </button>
+
+                          <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+                          <button
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              handleLogout();
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Sign Out
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

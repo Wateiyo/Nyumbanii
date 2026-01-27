@@ -42,7 +42,8 @@ import {
   CheckCheck,
   AlertCircle,
   Minus,
-  Settings
+  Settings,
+  HelpCircle
 } from 'lucide-react';
 import MessageModal from '../components/MessageModal';
 import LocationPreferences from '../components/LocationPreferences';
@@ -90,6 +91,7 @@ const PropertyManagerDashboard = () => {
   // Notification states
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   // Conversation-based messaging states
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -393,12 +395,14 @@ const PropertyManagerDashboard = () => {
           });
         }
       }, 100);
-    } else if (notification.type === 'maintenance') {
+    } else if (notification.type === 'maintenance' || notification.type === 'maintenance_assigned' || notification.type === 'estimate_approved' || notification.type === 'estimate_rejected' || notification.type === 'quote_approved' || notification.type === 'quote_rejected') {
       setCurrentView('maintenance');
     } else if (notification.type === 'viewing') {
       setCurrentView('viewings');
     } else if (notification.type === 'payment') {
       setCurrentView('payments');
+    } else if (notification.type === 'tenant' || notification.type === 'move_out_notice' || notification.type === 'lease_signed') {
+      setCurrentView('tenants');
     }
   };
 
@@ -1282,10 +1286,10 @@ const PropertyManagerDashboard = () => {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
+    // Query without orderBy to avoid index issues (some notifications use timestamp, others use createdAt)
     const notificationsQuery = query(
       collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid),
-      orderBy('timestamp', 'desc')
+      where('userId', '==', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(notificationsQuery,
@@ -1294,6 +1298,14 @@ const PropertyManagerDashboard = () => {
           id: doc.id,
           ...doc.data()
         }));
+
+        // Sort client-side to handle both timestamp and createdAt fields
+        notificationsData.sort((a, b) => {
+          const timeA = a.timestamp?.toDate?.() || a.createdAt?.toDate?.() || new Date(0);
+          const timeB = b.timestamp?.toDate?.() || b.createdAt?.toDate?.() || new Date(0);
+          return timeB - timeA; // Most recent first
+        });
+
         console.log('🔔 Property Manager Notifications:', notificationsData.length, 'notifications');
         setNotifications(notificationsData);
       },
@@ -1579,11 +1591,46 @@ const PropertyManagerDashboard = () => {
                 </button>
 
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50">
-                    <div className="p-4 border-b border-gray-200">
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-hidden flex flex-col z-50">
+                    <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                       <h3 className="font-semibold text-gray-900">Notifications</h3>
+                      <div className="flex items-center gap-2">
+                        {notifications.filter(n => !n.read).length > 0 && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const unreadNotifs = notifications.filter(n => !n.read);
+                              for (const notif of unreadNotifs) {
+                                await updateDoc(doc(db, 'notifications', notif.id), {
+                                  read: true,
+                                  readAt: serverTimestamp()
+                                });
+                              }
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Are you sure you want to delete all notifications?')) {
+                                const deletePromises = notifications.map(notif =>
+                                  deleteDoc(doc(db, 'notifications', notif.id))
+                                );
+                                await Promise.all(deletePromises);
+                              }
+                            }}
+                            className="text-xs text-red-600 hover:text-red-700 font-medium"
+                          >
+                            Clear all
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 overflow-y-auto flex-1">
                       {notifications.length === 0 ? (
                         <div className="p-8 text-center">
                           <Bell className="w-12 h-12 text-gray-400 mx-auto mb-2" />
@@ -1591,14 +1638,14 @@ const PropertyManagerDashboard = () => {
                         </div>
                       ) : (
                         notifications.map((notification) => {
-                          const timestamp = notification.timestamp?.toDate?.();
+                          const timestamp = notification.timestamp?.toDate?.() || notification.createdAt?.toDate?.();
                           const timeAgo = timestamp ? formatRelativeTime(timestamp) : 'Just now';
 
                           return (
                             <div
                               key={notification.id}
                               onClick={() => handleNotificationClick(notification)}
-                              className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${
+                              className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 group ${
                                 !notification.read ? 'bg-blue-50' : 'bg-white'
                               }`}
                             >
@@ -1616,6 +1663,20 @@ const PropertyManagerDashboard = () => {
                                 {!notification.read && (
                                   <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></span>
                                 )}
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      await deleteDoc(doc(db, 'notifications', notification.id));
+                                    } catch (error) {
+                                      console.error('Error deleting notification:', error);
+                                    }
+                                  }}
+                                  className="p-1 hover:bg-red-100 rounded-lg transition opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                  title="Delete notification"
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-500" />
+                                </button>
                               </div>
                             </div>
                           );
@@ -1626,8 +1687,90 @@ const PropertyManagerDashboard = () => {
                 )}
               </div>
 
-              <div className="w-10 h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold">
-                {teamMember.name.split(' ').map(n => n[0]).join('')}
+              {/* Profile Avatar with Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="focus:outline-none"
+                >
+                  <div className="w-10 h-10 bg-[#003366] rounded-full flex items-center justify-center text-white font-semibold hover:opacity-80 transition cursor-pointer">
+                    {teamMember.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                </button>
+
+                {/* Profile Dropdown Menu */}
+                {showProfileMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowProfileMenu(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+                      {/* Profile Header */}
+                      <div className="p-4 bg-gradient-to-r from-[#003366] to-[#0055AA] text-white">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white font-semibold">
+                            {teamMember.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold truncate">{teamMember.name}</p>
+                            <p className="text-sm text-blue-100 truncate">{currentUser?.email}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="py-2">
+                        <button
+                          onClick={() => {
+                            setCurrentView('settings');
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition"
+                        >
+                          <User className="w-4 h-4" />
+                          View Profile
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCurrentView('settings');
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Account Settings
+                        </button>
+
+                        <div className="border-t border-gray-200 my-2"></div>
+
+                        <button
+                          onClick={() => {
+                            window.open('mailto:support@nyumbanii.org', '_blank');
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                          Help & Support
+                        </button>
+
+                        <div className="border-t border-gray-200 my-2"></div>
+
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            handleLogout();
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
