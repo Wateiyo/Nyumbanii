@@ -10,7 +10,10 @@ import {
   Landmark,
   Building,
   Plus,
-  Minus
+  Minus,
+  Facebook,
+  Twitter,
+  Instagram
 } from 'lucide-react';
 import LandingPagePricing from '../components/LandingPagePricing';
 import Testimonials from '../components/Testimonials';
@@ -350,7 +353,36 @@ const LandingPage = () => {
               <div className="font-bold text-lg mb-4"> <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
               <img src="/images/logo-light.svg" alt="Nyumbanii Logo" className="h-10 w-auto" />
             </div> Nyumbanii</div>
-              <p className="text-gray-400">Bridging the gap between landlords and tenants.</p>
+              <p className="text-gray-400 mb-4">Bridging the gap between landlords and tenants.</p>
+              <div className="flex gap-4">
+                <a
+                  href="https://web.facebook.com/nyumbaniii/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="w-5 h-5" />
+                </a>
+                <a
+                  href="https://x.com/Nyumbanii_"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="w-5 h-5" />
+                </a>
+                <a
+                  href="https://www.instagram.com/nyumbanii_/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-5 h-5" />
+                </a>
+              </div>
             </div>
             <div>
               <p className="font-semibold mb-4">Product</p>
