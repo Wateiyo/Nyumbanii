@@ -6089,6 +6089,16 @@ const TenantDashboard = () => {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                <input
+                  type="text"
+                  value={newMaintenance.location}
+                  onChange={(e) => setNewMaintenance({...newMaintenance, location: e.target.value})}
+                  placeholder="e.g., Kitchen, Bedroom 1"
+                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm lg:text-base"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
                 <textarea
                   value={newMaintenance.description}
@@ -6109,16 +6119,6 @@ const TenantDashboard = () => {
                   <option value="Medium">Medium</option>
                   <option value="High">High</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
-                <input
-                  type="text"
-                  value={newMaintenance.location}
-                  onChange={(e) => setNewMaintenance({...newMaintenance, location: e.target.value})}
-                  placeholder="e.g., Kitchen, Bedroom 1"
-                  className="w-full px-3 lg:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#003366] dark:focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm lg:text-base"
-                />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
